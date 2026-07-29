@@ -1,8 +1,10 @@
 import type { Product } from './api';
+import { FREE_SHIPPING_ENABLED } from './store-config';
 
 export type CartItem = {
   pid: number;
   size: string;
+  color?: string;
   qty: number;
   bundle?: string | null;
 };
@@ -60,7 +62,9 @@ export function calculateCart(
     couponDiscount,
     pixDiscount,
     total,
-    freeShippingRemaining: Math.max(0, 299 - total),
+    freeShippingRemaining: FREE_SHIPPING_ENABLED
+      ? 0
+      : Math.max(0, 299 - total),
   };
 }
 
@@ -69,6 +73,7 @@ function isCartItem(value: unknown): value is CartItem {
   const item = value as Partial<CartItem>;
   return Number.isInteger(item.pid)
     && typeof item.size === 'string'
+    && (item.color === undefined || typeof item.color === 'string')
     && Number.isInteger(item.qty)
     && Number(item.qty) > 0;
 }

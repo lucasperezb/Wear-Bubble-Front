@@ -20,8 +20,8 @@ export function ConfirmationStep({ order, orderNumber, email }: { order: Order |
         </>
       )}
       <div className="mt-7 flex flex-wrap justify-center gap-3">
-        <Link href="/" className="bg-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em] text-bubble-white">Voltar para a loja</Link>
-        <Link href={order ? '/?conta=1' : loginHref} className="border border-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em]">Ver meus pedidos</Link>
+        <Link href="/" className="cursor-pointer bg-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em] text-bubble-white">Voltar para a loja</Link>
+        <Link href={order ? '/?conta=1' : loginHref} className="cursor-pointer border border-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em]">Ver meus pedidos</Link>
       </div>
     </section>
   );

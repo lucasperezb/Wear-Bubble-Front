@@ -58,18 +58,6 @@ npm run dev
 A loja ficará disponível em:
 
 ```text
-https://localhost:4000
-```
-
-Para executar sem HTTPS:
-
-```bash
-npm run dev:http
-```
-
-Nesse caso, acesse:
-
-```text
 http://localhost:4000
 ```
 
@@ -77,8 +65,7 @@ http://localhost:4000
 
 | Comando | Descrição |
 | --- | --- |
-| `npm run dev` | Inicia o Next.js em modo de desenvolvimento com HTTPS |
-| `npm run dev:http` | Inicia o Next.js em modo de desenvolvimento com HTTP |
+| `npm run dev` | Inicia o Next.js em modo de desenvolvimento com HTTP |
 | `npm run build` | Gera o build de produção |
 | `npm run start` | Executa o build de produção na porta `4000` |
 | `npm run typecheck` | Valida os tipos TypeScript sem gerar arquivos |

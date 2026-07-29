@@ -40,7 +40,7 @@ function ShipRow({ order, onSave }: { order: Order; onSave: (order: Order, shipS
     <tr>
       <td>#{order.number}<br /><span className="text-[.7rem] leading-[1.6] text-bubble-ink/55">{new Date(order.date).toLocaleDateString('pt-BR')}</span></td>
       <td className="font-mono text-[.7rem]">{(order as Order & { customerId?: string }).customerId || 'anon'}</td>
-      <td>{order.items.map((item) => `${item.qty}x ${item.name}`).join(', ')}</td>
+      <td>{order.items.map((item) => `${item.qty}x ${item.name}${item.color ? ` (${item.color}, ${item.size})` : ` (${item.size})`}`).join(', ')}</td>
       <td>{money.format(order.total)}</td>
       <td><input value={tracking} onChange={(event) => setTracking(event.target.value)} placeholder="Codigo ou link" /></td>
       <td><select value={shipStage} onChange={(event) => setShipStage(Number(event.target.value))}>{shippingStages.map((stage, index) => <option key={stage} value={index}>{stage}</option>)}</select></td>

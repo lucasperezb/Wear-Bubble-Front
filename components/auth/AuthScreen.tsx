@@ -145,7 +145,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   return (
     <main className="grid min-h-screen grid-cols-[minmax(320px,.9fr)_minmax(0,1.1fr)] bg-bubble-cream max-[860px]:grid-cols-1">
       <section className="flex min-h-screen flex-col bg-bubble-ink p-10 text-bubble-cream max-[860px]:min-h-0 max-[860px]:pb-16">
-        <Link href="/" className="flex w-fit flex-col leading-[.82]">
+        <Link href="/" className="flex w-fit cursor-pointer flex-col leading-[.82]">
           <span className="ml-px font-serif text-[.78rem] italic">wear</span>
           <span className="font-display text-[1.55rem] uppercase">BUBBLE</span>
         </Link>

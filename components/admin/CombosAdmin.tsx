@@ -19,7 +19,7 @@ export function CombosAdmin({ products, onSaved, notify }: { products: Product[]
 
   return (
     <>
-      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Conjuntos.</b> O par escolhido aparece no modal da peca como Complete o conjunto.</div>
+      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Conjuntos.</b> O par salvo recebe o selo Sugestao na pagina principal, sem alterar a ordem das pecas. O cliente ainda pode escolher qualquer outra peca, cor e tamanho disponiveis.</div>
       <div className={chartCard}>
         <h4>Par de cada produto</h4>
         <table className={adminTable}>

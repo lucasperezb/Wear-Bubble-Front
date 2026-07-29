@@ -67,6 +67,7 @@ export function CouponsAdmin({ coupons, orders, onSaved, notify }: { coupons: Co
 }
 
 function CouponRow({ coupon, orders, onSaved, notify }: { coupon: Coupon; orders: Order[]; onSaved: OnSaved; notify: Notify }) {
+  const [deleting, setDeleting] = useState(false);
   const [draft, setDraft] = useState({
     pct: coupon.pct,
     assignedTo: coupon.assignedTo || '',
@@ -87,6 +88,24 @@ function CouponRow({ coupon, orders, onSaved, notify }: { coupon: Coupon; orders
     }
   }
 
+  async function removeCoupon() {
+    const usageWarning = usedOrders.length > 0
+      ? ` Ele ja foi usado em ${usedOrders.length} pedido${usedOrders.length === 1 ? '' : 's'}; os pedidos realizados nao serao apagados.`
+      : '';
+    if (!window.confirm(`Excluir definitivamente o cupom ${coupon.code}?${usageWarning}`)) return;
+
+    setDeleting(true);
+    try {
+      const result = await apiFetch<{ removed: number }>(`/coupons/${encodeURIComponent(coupon.code)}`, { method: 'DELETE' });
+      if (!result.removed) throw new Error('Cupom nao encontrado.');
+      await onSaved();
+      notify(`Cupom ${coupon.code} excluido.`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Nao foi possivel excluir cupom.');
+      setDeleting(false);
+    }
+  }
+
   return (
     <tr>
       <td className="font-bold tracking-px">{coupon.code}</td>
@@ -98,8 +117,16 @@ function CouponRow({ coupon, orders, onSaved, notify }: { coupon: Coupon; orders
       <td className="w-[88px] font-semibold text-bubble-ink">{money.format(revenue)}</td>
       <td><span className={stockBadge(statusKind)}>{statusLabel}</span></td>
       <td className="whitespace-nowrap">
-        <button className={smallButton} onClick={() => patch({ pct: draft.pct, assignedTo: draft.assignedTo, expiresAt: draft.expiresAt ? new Date(`${draft.expiresAt}T23:59:59`).getTime() : null }, `Cupom ${coupon.code} atualizado.`)}>Salvar</button>
-        <button className={smallButton} onClick={() => patch({ active: coupon.active === false }, coupon.active === false ? `Cupom ${coupon.code} ativado.` : `Cupom ${coupon.code} pausado.`)}>{coupon.active === false ? 'Ativar' : 'Pausar'}</button>
+        <button disabled={deleting} className={smallButton} onClick={() => patch({ pct: draft.pct, assignedTo: draft.assignedTo, expiresAt: draft.expiresAt ? new Date(`${draft.expiresAt}T23:59:59`).getTime() : null }, `Cupom ${coupon.code} atualizado.`)}>Salvar</button>
+        <button disabled={deleting} className={smallButton} onClick={() => patch({ active: coupon.active === false }, coupon.active === false ? `Cupom ${coupon.code} ativado.` : `Cupom ${coupon.code} pausado.`)}>{coupon.active === false ? 'Ativar' : 'Pausar'}</button>
+        <button
+          type="button"
+          disabled={deleting}
+          className={`${smallButton} border-bubble-danger text-bubble-danger hover:bg-bubble-danger hover:text-white disabled:cursor-wait disabled:opacity-50`}
+          onClick={removeCoupon}
+        >
+          {deleting ? 'Excluindo...' : 'Excluir'}
+        </button>
       </td>
     </tr>
   );

@@ -1,7 +1,7 @@
 import type { Coupon, Order, Product } from '../../lib/api';
 
-export type ColorDraft = { n: string; h: string; q?: number | string };
-export type ProductDraft = Product & { sizesText: string };
+export type ColorDraft = Product['colors'][number];
+export type ProductDraft = Product;
 
 export type AdminDump = {
   products: Product[];
@@ -14,6 +14,14 @@ export type AdminDump = {
   deletion_reports?: Array<Record<string, unknown>>;
 };
 
-export type AdminTab = 'dash' | 'products' | 'ship' | 'customers' | 'coupons' | 'combos' | 'db';
+export type AdminTab =
+  | 'dash'
+  | 'products'
+  | 'orders'
+  | 'ship'
+  | 'customers'
+  | 'coupons'
+  | 'combos'
+  | 'db';
 export type Notify = (message: string) => void;
 export type OnSaved = () => Promise<void>;

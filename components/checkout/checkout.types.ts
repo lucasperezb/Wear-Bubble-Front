@@ -1,4 +1,4 @@
-export type CheckoutStep = 'cart' | 'delivery' | 'payment' | 'confirmation';
+export type CheckoutStep = "cart" | "delivery" | "payment" | "confirmation";
 
 export type DeliveryProfile = {
   name: string;
@@ -15,17 +15,17 @@ export type DeliveryProfile = {
 };
 
 export const emptyDeliveryProfile: DeliveryProfile = {
-  name: '',
-  email: '',
-  taxId: '',
-  phone: '',
-  cep: '',
-  street: '',
-  neighborhood: '',
-  number: '',
-  reference: '',
-  city: '',
-  state: '',
+  name: "",
+  email: "",
+  taxId: "",
+  phone: "",
+  cep: "",
+  street: "",
+  neighborhood: "",
+  number: "",
+  reference: "",
+  city: "",
+  state: "",
 };
 
 export type CardPaymentForm = {
@@ -37,10 +37,10 @@ export type CardPaymentForm = {
 };
 
 export const emptyCardPaymentForm: CardPaymentForm = {
-  holder: '',
-  number: '',
-  expiry: '',
-  securityCode: '',
+  holder: "",
+  number: "",
+  expiry: "",
+  securityCode: "",
   installments: 1,
 };
 
@@ -54,4 +54,14 @@ export type PixPayment = {
     image: string | null;
     expiresAt: string | null;
   };
+};
+
+export type ShippingOption = {
+  id: string;
+  name: string;
+  company: string;
+  picture: string | null;
+  price: number;
+  deliveryTime: number;
+  quoteToken: string;
 };

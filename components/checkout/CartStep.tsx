@@ -21,12 +21,18 @@ export function CartStep({ lines, couponCode, coupon, message, onCouponCode, onA
       <h1 className="mb-6 text-[clamp(2rem,5vw,3.5rem)]">Seu carrinho</h1>
       <div className="border border-bubble-line bg-bubble-white px-6">
         {lines.map(({ item, product }) => (
-          <div className="grid grid-cols-[96px_minmax(0,1fr)_auto] gap-5 border-b border-bubble-line py-5 last:border-b-0 max-[620px]:grid-cols-[72px_1fr]" key={`${item.pid}-${item.size}-${item.bundle || 'single'}`}>
-            <div className="flex h-[120px] w-24 shrink-0 items-center justify-center bg-bubble-cream2 max-[620px]:h-[92px] max-[620px]:w-[72px] [&_svg]:w-3/5"><ProductIcon icon={product.icon} /></div>
+          <div className="grid grid-cols-[96px_minmax(0,1fr)_auto] gap-5 border-b border-bubble-line py-5 last:border-b-0 max-[620px]:grid-cols-[72px_1fr]" key={`${item.pid}-${item.color || 'legacy'}-${item.size}-${item.bundle || 'single'}`}>
+            <div className="flex h-[120px] w-24 shrink-0 items-center justify-center overflow-hidden bg-bubble-cream2 max-[620px]:h-[92px] max-[620px]:w-[72px] [&_svg]:w-3/5">
+              {product.image ? (
+                <img className="size-full object-cover" src={product.image} alt="" />
+              ) : (
+                <ProductIcon icon={product.icon} />
+              )}
+            </div>
             <div className="flex min-w-0 flex-col">
               {item.bundle ? <span className="mb-1 font-sans text-[.64rem] font-bold uppercase tracking-[.08em] text-bubble-success">Conjunto · 5% OFF</span> : null}
               <strong className="font-serif text-base">{product.name}</strong>
-              <span className="mt-1 text-[.75rem] text-bubble-ink/55">Tamanho: {item.size}</span>
+              <span className="mt-1 text-[.75rem] text-bubble-ink/55">{item.color ? `Cor: ${item.color} · ` : ''}Tamanho: {item.size}</span>
               <span className="mt-1 text-[.72rem] text-bubble-ink/55">Unitario: {money.format(product.price)}</span>
               <div className="mt-auto flex items-center gap-3 pt-3">
                 <button className="size-8 rounded-full border border-bubble-ink bg-transparent" onClick={() => onQty(item, -1)}>−</button>

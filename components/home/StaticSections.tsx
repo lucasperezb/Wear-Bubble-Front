@@ -13,7 +13,7 @@ export function ContactSection() {
             ['WhatsApp Business', '+55 11 93624-0362', 'Chamar no WhatsApp', 'https://wa.me/5511936240362'],
             ['E-mail', 'contato@wearbubble.com.br', 'Enviar e-mail', 'mailto:contato@wearbubble.com.br'],
           ].map(([label, value, cta, href]) => (
-            <a className="flex flex-col items-center gap-2 border border-bubble-cream/30 bg-bubble-cream/[.04] px-[22px] py-[30px] text-center text-bubble-cream transition-colors hover:border-bubble-cream hover:bg-bubble-cream hover:text-bubble-ink" href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener' : undefined} key={label}>
+            <a className="flex cursor-pointer flex-col items-center gap-2 border border-bubble-cream/30 bg-bubble-cream/[.04] px-[22px] py-[30px] text-center text-bubble-cream transition-colors hover:border-bubble-cream hover:bg-bubble-cream hover:text-bubble-ink" href={href} target={href.startsWith('http') ? '_blank' : undefined} rel={href.startsWith('http') ? 'noopener' : undefined} key={label}>
               <span className="font-sans text-[.68rem] font-semibold uppercase tracking-[.24em] opacity-75">{label}</span>
               <span className="text-[.95rem] font-semibold">{value}</span>
               <span className="mt-1.5 border-b border-current pb-0.5 font-sans text-[.64rem] font-semibold uppercase tracking-[.2em]">{cta}</span>
@@ -72,7 +72,7 @@ export function Footer() {
             <span className="block font-display text-2xl uppercase tracking-[.02em] text-bubble-cream">BUBBLE</span>
             <p className="mt-3.5 max-w-[260px] text-[.82rem] leading-[1.6] text-bubble-cream/60">Moda fitness feminina com identidade. Da academia a rua.</p>
           </div>
-          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a:hover]:text-bubble-candy"><li><a href="#colecao">Colecao</a></li><li><a href="#conjunto">Monte seu Conjunto</a></li><li><a href="#contato">Contato</a></li></ul></div>
+          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy"><li><a href="#colecao">Colecao</a></li><li><a href="#conjunto">Monte seu Conjunto</a></li><li><a href="#contato">Contato</a></li></ul></div>
           <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Suporte</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Trocas em ate 30 dias</li><li>Guia de medidas</li><li>Rastreio de pedido</li></ul></div>
           <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Politica de Privacidade (LGPD)</li><li>Dados pseudoanonimizados</li></ul></div>
         </div>

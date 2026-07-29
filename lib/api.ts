@@ -14,9 +14,22 @@ export type Product = {
   material: string;
   pair: number;
   sports: string[];
-  colors: Array<{ n: string; h: string }>;
+  colors: Array<{
+    n: string;
+    h: string;
+    sizes?: Array<{ size: string; q: number }>;
+  }>;
   desc: string;
   image?: string | null;
+  images?: ProductImage[];
+};
+
+export type ProductImage = {
+  id: string;
+  url: string;
+  altText: string;
+  position: number;
+  isPrimary: boolean;
 };
 
 export type User = {
@@ -55,18 +68,45 @@ export type AccountAddress = {
 
 export type Order = {
   id: string;
+  customerId?: string;
   number: string;
   date: number;
   total: number;
   method: string;
   coupon: string | null;
+  couponPct?: number;
   status: "pending" | "paid" | "canceled";
   shipStage: number;
   tracking?: string;
+  gateway?: string;
+  pagbankCheckoutId?: string;
+  pagbankPaymentId?: string;
+  paidAt?: number;
+  delivery?: {
+    name: string;
+    email: string;
+    taxId: string;
+    phone: string;
+    cep: string;
+    street: string;
+    neighborhood: string;
+    number: string;
+    reference: string;
+    city: string;
+    state: string;
+  };
+  shipping?: {
+    serviceId: number;
+    name: string;
+    company: string;
+    price: number;
+    deliveryTime: number;
+  };
   items: Array<{
     pid: number;
     name: string;
     size: string;
+    color?: string;
     qty: number;
     price: number;
   }>;
@@ -89,11 +129,16 @@ export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
+    cache: init.cache ?? "no-store",
     credentials: "include",
     headers: {
-      ...(init.body ? { "content-type": "application/json" } : {}),
+      ...(init.body && !isFormData
+        ? { "content-type": "application/json" }
+        : {}),
       ...init.headers,
     },
   });

@@ -49,6 +49,7 @@ export function AccountPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tab, setTab] = useState<AccountTab>("orders");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">(
@@ -60,27 +61,62 @@ export function AccountPage() {
   }, []);
 
   async function loadAccount() {
+    setLoading(true);
+    setLoadError("");
+    let currentUser: User | null;
+
     try {
-      const currentUser = await apiFetch<User | null>("/auth/session");
-      if (!currentUser) {
-        window.location.replace("/login");
-        return;
-      }
-      setUser(currentUser);
-      const [account, customerOrders] = await Promise.all([
-        apiFetch<Partial<AccountProfile>>("/account"),
-        apiFetch<Order[]>("/orders/mine"),
-      ]);
-      setProfile({
-        ...emptyProfile,
-        ...account,
-        uid: account.uid || currentUser.uid,
-        name: account.name || currentUser.name || "",
-        email: account.email || currentUser.email,
-      });
-      setOrders(customerOrders);
+      currentUser = await apiFetch<User | null>("/auth/session");
     } catch {
+      setLoadError(
+        "Nao foi possivel validar sua sessao agora. Verifique sua conexao e tente novamente.",
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (!currentUser) {
       window.location.replace("/login");
+      return;
+    }
+
+    setUser(currentUser);
+    setProfile({
+      ...emptyProfile,
+      uid: currentUser.uid,
+      name: currentUser.name || "",
+      email: currentUser.email,
+    });
+
+    try {
+      const [accountResult, ordersResult] = await Promise.allSettled([
+        apiFetch<Partial<AccountProfile>>("/account"),
+        apiFetch<Order[] | null>("/orders/mine"),
+      ]);
+
+      if (accountResult.status === "fulfilled") {
+        const account = accountResult.value;
+        setProfile({
+          ...emptyProfile,
+          ...account,
+          uid: account.uid || currentUser.uid,
+          name: account.name || currentUser.name || "",
+          email: account.email || currentUser.email,
+        });
+      }
+
+      if (ordersResult.status === "fulfilled") {
+        setOrders(Array.isArray(ordersResult.value) ? ordersResult.value : []);
+      }
+
+      if (
+        accountResult.status === "rejected" ||
+        ordersResult.status === "rejected"
+      ) {
+        setLoadError(
+          "Sua sessao esta ativa, mas alguns dados da conta nao puderam ser carregados. Tente novamente.",
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -157,7 +193,23 @@ export function AccountPage() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return loadError ? (
+      <main className="flex min-h-screen items-center justify-center bg-bubble-cream px-6 text-bubble-ink">
+        <div className="max-w-lg border border-bubble-ink bg-bubble-white p-8 text-center">
+          <h1 className="text-2xl">Nao foi possivel abrir sua conta</h1>
+          <p className="mt-3 text-sm leading-6 text-bubble-ink/65">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void loadAccount()}
+            className="mt-6 border border-bubble-ink bg-bubble-ink px-5 py-3 font-sans text-[.66rem] font-semibold uppercase tracking-[.1em] text-bubble-white"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </main>
+    ) : null;
+  }
 
   const displayName = profile.name || user.name || user.email;
   const initial = displayName.charAt(0).toUpperCase() || "U";
@@ -166,7 +218,7 @@ export function AccountPage() {
     <main className="min-h-screen bg-bubble-cream text-bubble-ink">
       <header className="border-b border-bubble-ink bg-bubble-cream">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
-          <Link href="/" className="flex flex-col leading-[.82]">
+          <Link href="/" className="flex cursor-pointer flex-col leading-[.82]">
             <span className="ml-px font-serif text-[.74rem] italic">wear</span>
             <span className="font-display text-[1.35rem] uppercase">
               BUBBLE
@@ -197,6 +249,19 @@ export function AccountPage() {
         <h1 className="mt-2 text-[clamp(2.4rem,6vw,4.5rem)] leading-none">
           Minha conta
         </h1>
+
+        {loadError ? (
+          <div className="mt-6 flex flex-col gap-3 border border-bubble-danger/30 bg-bubble-danger/[.06] p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <span>{loadError}</span>
+            <button
+              type="button"
+              onClick={() => void loadAccount()}
+              className="shrink-0 font-sans text-[.62rem] font-bold uppercase tracking-[.1em] underline underline-offset-4"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-10 grid grid-cols-[280px_minmax(0,1fr)] gap-8 max-[820px]:grid-cols-1">
           <aside>
@@ -361,6 +426,7 @@ export function AccountPage() {
 }
 
 function OrdersPanel({ orders }: { orders: Order[] }) {
+  const safeOrders = Array.isArray(orders) ? orders : [];
   const statusLabel: Record<Order["status"], string> = {
     pending: "Aguardando pagamento",
     paid: "Pagamento confirmado",
@@ -376,12 +442,12 @@ function OrdersPanel({ orders }: { orders: Order[] }) {
             Acompanhe pagamentos, preparacao e entrega.
           </p>
         </div>
-        <span className="font-display text-3xl">{orders.length}</span>
+        <span className="font-display text-3xl">{safeOrders.length}</span>
       </div>
 
-      {orders.length ? (
+      {safeOrders.length ? (
         <div className="space-y-4">
-          {orders.map((order) => (
+          {safeOrders.map((order) => (
             <article
               key={order.id}
               className="border border-bubble-line bg-bubble-cream p-5"
@@ -413,10 +479,12 @@ function OrdersPanel({ orders }: { orders: Order[] }) {
                 {order.items.map((item) => (
                   <div
                     className="flex justify-between gap-4 py-1 text-[.72rem]"
-                    key={`${item.pid}-${item.size}`}
+                    key={`${item.pid}-${item.color || "legacy"}-${item.size}`}
                   >
                     <span>
-                      {item.qty}x {item.name} · Tam. {item.size}
+                      {item.qty}x {item.name}
+                      {item.color ? ` · Cor ${item.color}` : ""} · Tam.{" "}
+                      {item.size}
                     </span>
                     <span>{money.format(item.price * item.qty)}</span>
                   </div>

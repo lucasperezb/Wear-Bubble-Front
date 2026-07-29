@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CartStep } from "../../components/checkout/CartStep";
 import { CheckoutStepper } from "../../components/checkout/CheckoutStepper";
 import { ConfirmationStep } from "../../components/checkout/ConfirmationStep";
@@ -15,6 +15,7 @@ import {
   type CheckoutStep,
   type DeliveryProfile,
   type PixPayment,
+  type ShippingOption,
 } from "../../components/checkout/checkout.types";
 import {
   Order,
@@ -32,6 +33,7 @@ import {
   type CartItem,
   type PaymentMethod,
 } from "../../lib/cart";
+import { FREE_SHIPPING_ENABLED } from "../../lib/store-config";
 
 export default function CartPage() {
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -40,7 +42,14 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [addresses, setAddresses] = useState<AccountAddress[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
+  const [showAddressForm, setShowAddressForm] = useState(true);
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShipping, setSelectedShipping] =
+    useState<ShippingOption | null>(null);
+  const [shippingQuoteKey, setShippingQuoteKey] = useState("");
+  const [shippingLoading, setShippingLoading] = useState(false);
   const [profile, setProfile] = useState<DeliveryProfile>(emptyDeliveryProfile);
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState<AppliedCoupon>(null);
@@ -51,6 +60,7 @@ export default function CartPage() {
   const [confirmationNumber, setConfirmationNumber] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const shippingRequestId = useRef(0);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -79,8 +89,10 @@ export default function CartPage() {
       .then(async (currentUser) => {
         if (!currentUser) {
           setUser(null);
+          setAddresses([]);
+          setShowAddressForm(true);
           if (requestedStep === "payment") {
-            const validation = validateDeliveryProfile(restoredProfile);
+            const validation = validateAddressProfile(restoredProfile);
             if (validation) returnDeliveryForCorrection(validation);
           }
           if (requestedStep === "confirmation") {
@@ -90,10 +102,11 @@ export default function CartPage() {
           return;
         }
         setUser(currentUser);
-        const [account, addresses] = await Promise.all([
+        const [account, addressResult] = await Promise.all([
           apiFetch<Partial<AccountProfile>>("/account"),
-          apiFetch<AccountAddress[]>("/account/addresses"),
+          apiFetch<AccountAddress[] | null>("/account/addresses"),
         ]);
+        const addresses = Array.isArray(addressResult) ? addressResult : [];
         const address =
           addresses.find((item) => item.isDefault) || addresses[0];
         const accountProfile = {
@@ -102,11 +115,13 @@ export default function CartPage() {
           ...(address || {}),
           email: account.email || currentUser.email,
         };
+        setAddresses(addresses);
         setAddressId(address?.id || null);
+        setShowAddressForm(!address);
         setProfile(accountProfile);
         saveCheckoutProfile(accountProfile);
         if (requestedStep === "payment") {
-          const validation = validateDeliveryProfile(accountProfile);
+          const validation = validateAddressProfile(accountProfile);
           if (validation) returnDeliveryForCorrection(validation);
         }
         if (requestedStep === "confirmation") {
@@ -121,8 +136,10 @@ export default function CartPage() {
       })
       .catch(() => {
         setUser(null);
+        setAddresses([]);
+        setShowAddressForm(true);
         if (requestedStep === "payment") {
-          const validation = validateDeliveryProfile(restoredProfile);
+          const validation = validateAddressProfile(restoredProfile);
           if (validation) returnDeliveryForCorrection(validation);
         }
         if (requestedStep === "confirmation") {
@@ -135,6 +152,95 @@ export default function CartPage() {
   useEffect(() => {
     if (cartHydrated) writeCart(cart);
   }, [cart, cartHydrated]);
+
+  const cartQuoteSignature = cart
+    .map((item) => `${item.pid}-${item.qty}`)
+    .sort()
+    .join(",");
+
+  const calculateShipping = useCallback(
+    async (postalCode: string) => {
+      const normalizedPostalCode = postalCode.replace(/\D/g, "");
+      if (normalizedPostalCode.length !== 8 || !cart.length) return;
+
+      const requestId = ++shippingRequestId.current;
+      const quoteKey = `${normalizedPostalCode}:${cart
+        .map((item) => `${item.pid}-${item.qty}`)
+        .sort()
+        .join(",")}`;
+
+      setShippingLoading(true);
+      setShippingOptions([]);
+      setSelectedShipping(null);
+      setShippingQuoteKey("");
+      setMessage("");
+
+      try {
+        const options = await apiFetch<ShippingOption[]>(
+          "/integrations/melhor-envio/quote",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              postalCode: normalizedPostalCode,
+              items: cart.map((item) => ({ pid: item.pid, qty: item.qty })),
+            }),
+          },
+        );
+        if (requestId !== shippingRequestId.current) return;
+        if (!options.length) {
+          throw new Error(
+            "Nenhuma transportadora atende este CEP para os produtos selecionados.",
+          );
+        }
+        setShippingOptions(options);
+        setShippingQuoteKey(quoteKey);
+        setMessage("Selecione uma opcao de entrega para continuar.");
+      } catch (error) {
+        if (requestId !== shippingRequestId.current) return;
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Nao foi possivel calcular o frete para este CEP.",
+        );
+      } finally {
+        if (requestId === shippingRequestId.current) {
+          setShippingLoading(false);
+        }
+      }
+    },
+    [cart],
+  );
+
+  useEffect(() => {
+    const postalCode = profile.cep.replace(/\D/g, "");
+    if (step !== "delivery" || postalCode.length !== 8 || !cart.length) {
+      if (postalCode.length !== 8) {
+        shippingRequestId.current += 1;
+        setShippingOptions([]);
+        setSelectedShipping(null);
+        setShippingQuoteKey("");
+        setShippingLoading(false);
+      }
+      return;
+    }
+
+    const quoteKey = `${postalCode}:${cartQuoteSignature}`;
+    if (quoteKey === shippingQuoteKey && shippingOptions.length) return;
+
+    const timer = window.setTimeout(
+      () => void calculateShipping(postalCode),
+      350,
+    );
+    return () => window.clearTimeout(timer);
+  }, [
+    calculateShipping,
+    cart.length,
+    cartQuoteSignature,
+    profile.cep,
+    shippingOptions.length,
+    shippingQuoteKey,
+    step,
+  ]);
 
   useEffect(() => {
     if (!pixPayment) return;
@@ -160,6 +266,14 @@ export default function CartPage() {
   const ready = cartHydrated && productsLoaded;
   const displayedTotal =
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
+  const freeShipping = FREE_SHIPPING_ENABLED || totals.total >= 299;
+  const shippingPrice = selectedShipping
+    ? freeShipping
+      ? 0
+      : selectedShipping.price
+    : 0;
+  const totalWithShipping =
+    displayedTotal + (step === "cart" ? 0 : shippingPrice);
 
   function goToStep(nextStep: CheckoutStep) {
     setMessage("");
@@ -176,6 +290,7 @@ export default function CartPage() {
         .map((entry) =>
           entry.pid === item.pid &&
           entry.size === item.size &&
+          entry.color === item.color &&
           entry.bundle === item.bundle
             ? { ...entry, qty: Math.min(10, entry.qty + delta) }
             : entry,
@@ -198,7 +313,7 @@ export default function CartPage() {
   }
 
   async function saveDelivery() {
-    const validation = validateDeliveryProfile(profile);
+    const validation = validateAddressProfile(profile);
     if (validation) return setMessage(validation);
 
     setBusy(true);
@@ -206,14 +321,9 @@ export default function CartPage() {
     try {
       saveCheckoutProfile(profile);
       if (user) {
-        const saved = await apiFetch<Partial<AccountProfile>>("/account", {
-          method: "PATCH",
-          body: JSON.stringify({
-            name: profile.name,
-            taxId: profile.taxId,
-            phone: profile.phone,
-          }),
-        });
+        const currentAddress = addresses.find(
+          (address) => address.id === addressId,
+        );
         const addressPayload = {
           ...(!addressId ? { label: "Principal" } : {}),
           cep: profile.cep,
@@ -223,19 +333,51 @@ export default function CartPage() {
           reference: profile.reference,
           city: profile.city,
           state: profile.state,
-          isDefault: true,
+          isDefault: currentAddress?.isDefault || addresses.length === 0,
         };
-        const savedAddress = await apiFetch<AccountAddress>(
-          addressId ? `/account/addresses/${addressId}` : "/account/addresses",
-          {
-            method: addressId ? "PATCH" : "POST",
-            body: JSON.stringify(addressPayload),
-          },
-        );
-        setAddressId(savedAddress.id);
-        const savedProfile = { ...profile, ...saved, ...savedAddress };
+        let savedAddress = currentAddress;
+        if (showAddressForm || !savedAddress) {
+          savedAddress = await apiFetch<AccountAddress>(
+            addressId
+              ? `/account/addresses/${addressId}`
+              : "/account/addresses",
+            {
+              method: addressId ? "PATCH" : "POST",
+              body: JSON.stringify(addressPayload),
+            },
+          );
+          setAddresses((current) => {
+            const exists = current.some(
+              (address) => address.id === savedAddress?.id,
+            );
+            return exists
+              ? current.map((address) =>
+                  address.id === savedAddress?.id ? savedAddress! : address,
+                )
+              : [...current, savedAddress!];
+          });
+          setAddressId(savedAddress.id);
+        }
+        const savedProfile = { ...profile, ...savedAddress };
         setProfile(savedProfile);
         saveCheckoutProfile(savedProfile);
+        setShowAddressForm(false);
+      }
+      const nextQuoteKey = `${profile.cep.replace(/\D/g, "")}:${cart
+        .map((item) => `${item.pid}-${item.qty}`)
+        .sort()
+        .join(",")}`;
+      if (shippingLoading) {
+        setMessage("Aguarde enquanto calculamos o frete.");
+        return;
+      }
+      if (shippingQuoteKey !== nextQuoteKey || !shippingOptions.length) {
+        await calculateShipping(profile.cep);
+        return;
+      }
+      if (!selectedShipping) {
+        setMessage("Selecione uma opcao de entrega para continuar.");
+        return;
       }
       goToStep("payment");
     } catch (error) {
@@ -254,20 +396,36 @@ export default function CartPage() {
           : "Nao foi possivel salvar o endereco.",
       );
     } finally {
+      setShippingLoading(false);
       setBusy(false);
     }
   }
 
   async function checkout() {
     if (busy || !totals.lines.length) return;
-    const validation = validateDeliveryProfile(profile);
-    if (validation) {
-      returnDeliveryForCorrection(validation);
+    const addressValidation = validateAddressProfile(profile);
+    if (addressValidation) {
+      returnDeliveryForCorrection(addressValidation);
       return;
     }
+    const buyerValidation = validateBuyerProfile(profile);
+    if (buyerValidation) return setMessage(buyerValidation);
     setBusy(true);
     setMessage("");
     try {
+      if (user) {
+        const saved = await apiFetch<Partial<AccountProfile>>("/account", {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: profile.name,
+            taxId: profile.taxId,
+            phone: profile.phone,
+          }),
+        });
+        const savedProfile = { ...profile, ...saved };
+        setProfile(savedProfile);
+        saveCheckoutProfile(savedProfile);
+      }
       let encryptedCard: string | undefined;
       if (method === "Cartao de credito") {
         encryptedCard = await encryptCard(card);
@@ -284,6 +442,7 @@ export default function CartPage() {
             encryptedCard,
             installments: card.installments,
             existingOrderId: pixPayment?.orderId,
+            shippingQuoteToken: selectedShipping?.quoteToken,
           }),
         },
       );
@@ -333,6 +492,37 @@ export default function CartPage() {
     });
   }
 
+  function selectDeliveryAddress(address: AccountAddress) {
+    setAddressId(address.id);
+    setShowAddressForm(false);
+    setMessage("");
+    setProfile((current) => {
+      const updated = { ...current, ...address };
+      saveCheckoutProfile(updated);
+      return updated;
+    });
+  }
+
+  function startNewDeliveryAddress() {
+    setAddressId(null);
+    setShowAddressForm(true);
+    setMessage("");
+    setProfile((current) => {
+      const updated = {
+        ...current,
+        cep: "",
+        street: "",
+        neighborhood: "",
+        number: "",
+        reference: "",
+        city: "",
+        state: "",
+      };
+      saveCheckoutProfile(updated);
+      return updated;
+    });
+  }
+
   function returnDeliveryForCorrection(reason: string) {
     setStep("delivery");
     setMessage(`${reason} Revise os dados de entrega antes de pagar.`);
@@ -348,7 +538,15 @@ export default function CartPage() {
       />
     ) : step === "delivery" ? (
       <ActionButton
-        label={busy ? "Salvando..." : "Continuar para pagamento"}
+        label={
+          shippingLoading
+            ? "Calculando frete..."
+            : shippingOptions.length
+              ? selectedShipping
+                ? "Continuar para pagamento"
+                : "Selecione uma entrega"
+              : "Calcular frete"
+        }
         onClick={saveDelivery}
         disabled={busy}
       />
@@ -372,7 +570,7 @@ export default function CartPage() {
     <main className="min-h-screen bg-bubble-cream text-bubble-ink">
       <header className="border-b border-bubble-ink bg-bubble-white">
         <div className="mx-auto grid max-w-[1400px] grid-cols-[180px_1fr_180px] items-center gap-6 px-8 py-5 max-[760px]:grid-cols-[1fr_auto]">
-          <Link href="/" className="flex flex-col leading-[.82]">
+          <Link href="/" className="flex cursor-pointer flex-col leading-[.82]">
             <span className="ml-px font-serif text-[.74rem] italic">wear</span>
             <span className="font-display text-[1.35rem] uppercase">
               BUBBLE
@@ -437,9 +635,21 @@ export default function CartPage() {
             {step === "delivery" ? (
               <DeliveryStep
                 user={user}
+                addresses={addresses}
+                selectedAddressId={addressId}
+                showAddressForm={showAddressForm}
+                shippingOptions={shippingOptions}
+                selectedShippingToken={selectedShipping?.quoteToken || null}
+                shippingLoading={shippingLoading}
                 profile={profile}
                 message={message}
                 onProfile={updateProfile}
+                onSelectAddress={selectDeliveryAddress}
+                onAddAddress={startNewDeliveryAddress}
+                onSelectShipping={(option) => {
+                  setSelectedShipping(option);
+                  setMessage("");
+                }}
                 onBack={() => goToStep("cart")}
               />
             ) : null}
@@ -450,6 +660,8 @@ export default function CartPage() {
                 total={totals.total}
                 card={card}
                 pix={pixPayment}
+                user={user}
+                profile={profile}
                 onMethod={(nextMethod) => {
                   setMethod(nextMethod);
                   setMessage("");
@@ -457,6 +669,7 @@ export default function CartPage() {
                 onCard={(patch) =>
                   setCard((current) => ({ ...current, ...patch }))
                 }
+                onProfile={updateProfile}
                 onBack={() => goToStep("delivery")}
               />
             ) : null}
@@ -465,8 +678,15 @@ export default function CartPage() {
               bundleDiscount={totals.bundleDiscount}
               couponDiscount={totals.couponDiscount}
               pixDiscount={step === "payment" ? totals.pixDiscount : 0}
-              total={displayedTotal}
-              freeShipping={displayedTotal >= 299}
+              total={totalWithShipping}
+              freeShipping={freeShipping}
+              shippingPrice={
+                selectedShipping
+                  ? freeShipping
+                    ? 0
+                    : selectedShipping.price
+                  : null
+              }
               coupon={coupon}
               action={summaryAction}
             />
@@ -532,11 +752,8 @@ function isValidCpf(value: string) {
   return digit(9) === Number(cpf[9]) && digit(10) === Number(cpf[10]);
 }
 
-function validateDeliveryProfile(profile: DeliveryProfile) {
+function validateAddressProfile(profile: DeliveryProfile) {
   const missing = [
-    ["nome", profile.name],
-    ["e-mail", profile.email],
-    ["CPF", profile.taxId],
     ["CEP", profile.cep],
     ["rua", profile.street],
     ["numero", profile.number],
@@ -544,17 +761,27 @@ function validateDeliveryProfile(profile: DeliveryProfile) {
     ["estado", profile.state],
   ].find(([, value]) => !String(value).trim());
   if (missing) return `Informe ${missing[0]} para continuar.`;
+  if (profile.cep.replace(/\D/g, "").length !== 8)
+    return "Informe um CEP com 8 digitos.";
+  if (!/^[A-Z]{2}$/.test(profile.state))
+    return "Informe a UF do estado com 2 letras.";
+  return "";
+}
+
+function validateBuyerProfile(profile: DeliveryProfile) {
+  const missing = [
+    ["nome", profile.name],
+    ["e-mail", profile.email],
+    ["CPF", profile.taxId],
+  ].find(([, value]) => !String(value).trim());
+  if (missing) return `Informe ${missing[0]} para continuar.`;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email.trim()))
     return "Informe um e-mail valido para continuar.";
   if (!isValidCpf(profile.taxId))
     return "Informe um CPF valido para o pagamento.";
-  if (profile.cep.replace(/\D/g, "").length !== 8)
-    return "Informe um CEP com 8 digitos.";
   const phoneDigits = profile.phone.replace(/\D/g, "");
   if (phoneDigits && ![10, 11].includes(phoneDigits.length))
     return "Informe um telefone com DDD valido.";
-  if (!/^[A-Z]{2}$/.test(profile.state))
-    return "Informe a UF do estado com 2 letras.";
   return "";
 }
 

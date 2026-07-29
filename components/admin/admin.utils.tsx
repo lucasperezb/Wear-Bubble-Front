@@ -2,6 +2,43 @@ import type { Product } from '../../lib/api';
 import type { ColorDraft, ProductDraft } from './admin.types';
 
 export function productPayload(draft: ProductDraft) {
+  const colors = ((draft.colors || []) as ColorDraft[])
+    .map((color) => ({
+      n: color.n.trim(),
+      h: color.h,
+      sizes: (color.sizes || [])
+        .map((item) => ({
+          size: item.size.trim().toUpperCase(),
+          q: Math.max(0, Number(item.q) || 0),
+        }))
+        .filter((item) => item.size),
+    }))
+    .filter((color) => color.n || color.h);
+  const variantEntries = colors.flatMap((color) => color.sizes);
+  const sizes = Array.from(
+    new Set(
+      (variantEntries.length ? variantEntries.map((item) => item.size) : draft.sizes)
+        .map((size) => size.trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  );
+  const stock = variantEntries.length
+    ? variantEntries.reduce((total, item) => total + item.q, 0)
+    : Math.max(0, Number(draft.stock) || 0);
+  const sports = (draft.sports || []).reduce<string[]>((items, sport) => {
+    const label = sport.trim();
+    if (
+      label &&
+      !items.some(
+        (item) =>
+          item.toLocaleLowerCase('pt-BR') === label.toLocaleLowerCase('pt-BR'),
+      )
+    ) {
+      items.push(label);
+    }
+    return items;
+  }, []);
+  const pair = Number(draft.pair) || 0;
   return {
     name: draft.name.trim(),
     cat: draft.cat,
@@ -9,16 +46,14 @@ export function productPayload(draft: ProductDraft) {
     icon: draft.icon,
     material: draft.material,
     price: Math.max(0, Number(draft.price) || 0),
-    stock: Math.max(0, Number(draft.stock) || 0),
+    stock,
     tag: draft.tag || '',
     active: draft.active !== false,
-    sizes: draft.sizesText.split(',').map((item) => item.trim().toUpperCase()).filter(Boolean),
-    sports: draft.sports || [],
-    colors: ((draft.colors || []) as ColorDraft[])
-      .map((color) => ({ ...color, q: color.q === '' ? undefined : Number(color.q) || undefined }))
-      .filter((color) => color.n || color.h) as Product['colors'],
+    sizes,
+    sports,
+    colors: colors as Product['colors'],
     desc: draft.desc || '',
-    pair: Number(draft.pair) || 0,
+    ...(pair > 0 ? { pair } : {}),
     image: draft.image || null,
   };
 }
@@ -27,7 +62,15 @@ export function validateProductDraft(draft: ProductDraft) {
   if (!draft.name.trim()) return 'Informe o nome do produto.';
   if (!Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0) return 'Informe um preco maior que zero.';
   if (!Number.isFinite(Number(draft.stock)) || Number(draft.stock) < 0) return 'Informe um estoque valido.';
-  const sizes = draft.sizesText.split(',').map((item) => item.trim()).filter(Boolean);
+  const sizes = Array.from(
+    new Set(
+      (draft.colors || [])
+        .flatMap((color) => color.sizes || [])
+        .map((item) => item.size)
+        .concat(draft.sizes || [])
+        .filter(Boolean),
+    ),
+  );
   if (!sizes.length) return 'Informe pelo menos um tamanho.';
   if (draft.image && !/^https?:\/\//i.test(draft.image)) return 'A imagem precisa ser uma URL começando com http:// ou https://.';
   return '';

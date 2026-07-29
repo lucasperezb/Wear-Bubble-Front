@@ -51,6 +51,8 @@ export default function Home() {
   const [combo, setCombo] = useState({
     bottomId: null as number | null,
     topId: null as number | null,
+    bottomColor: "",
+    topColor: "",
     bottomSize: "",
     topSize: "",
   });
@@ -97,7 +99,11 @@ export default function Home() {
     setProductsLoading(true);
     setProductsError("");
     try {
-      setProducts(await apiFetch<Product[]>("/products"));
+      const response = await apiFetch<unknown>("/products");
+      if (!Array.isArray(response)) {
+        throw new Error("A API retornou uma lista de produtos invalida.");
+      }
+      setProducts(response as Product[]);
     } catch (error) {
       setProductsError(
         error instanceof Error
@@ -111,18 +117,30 @@ export default function Home() {
 
   const materials = useMemo(
     () => [
-      ...new Set(products.map((product) => product.material).filter(Boolean)),
+      ...new Set(
+        (Array.isArray(products) ? products : [])
+          .map((product) => product.material)
+          .filter(Boolean),
+      ),
     ],
     [products],
   );
   const sports = useMemo(
     () =>
-      [...new Set(products.flatMap((product) => product.sports || []))].sort(),
+      [
+        ...new Set(
+          (Array.isArray(products) ? products : []).flatMap(
+            (product) => product.sports || [],
+          ),
+        ),
+      ].sort(),
     [products],
   );
 
   const visibleProducts = useMemo(() => {
-    let list = products.filter((product) => product.active !== false);
+    let list = (Array.isArray(products) ? products : []).filter(
+      (product) => product.active !== false,
+    );
     if (filters.cat !== "all")
       list = list.filter((product) => product.cat === filters.cat);
     if (filters.size)
@@ -149,35 +167,47 @@ export default function Home() {
     setSelectedSize(product.sizes[0] || "");
   }
 
-  function addToCart(product: Product, size: string, bundle?: string | null) {
+  function addToCart(
+    product: Product,
+    size: string,
+    color: string,
+    bundle?: string | null,
+  ) {
     setCart((current) => {
       const found = current.find(
         (item) =>
           item.pid === product.id &&
           item.size === size &&
+          item.color === color &&
           item.bundle === bundle,
       );
       if (found)
         return current.map((item) =>
           item === found ? { ...item, qty: Math.min(10, item.qty + 1) } : item,
         );
-      return [...current, { pid: product.id, size, qty: 1, bundle }];
+      return [...current, { pid: product.id, size, color, qty: 1, bundle }];
     });
     setSelectedProduct(null);
     setCartOpen(true);
-    showToast(`Adicionado a sacola · Tam. ${size}`);
+    showToast(
+      `Adicionado a sacola · ${color ? `Cor ${color} · ` : ""}Tam. ${size}`,
+    );
   }
 
   function changeQty(
     pid: number,
     size: string,
+    color: string | undefined,
     bundle: string | null | undefined,
     delta: number,
   ) {
     setCart((current) =>
       current
         .map((item) =>
-          item.pid === pid && item.size === size && item.bundle === bundle
+          item.pid === pid &&
+          item.size === size &&
+          item.color === color &&
+          item.bundle === bundle
             ? { ...item, qty: Math.min(10, item.qty + delta) }
             : item,
         )
@@ -191,14 +221,33 @@ export default function Home() {
     if (!bottom || !top)
       return showToast("Escolha uma parte de baixo e um top.");
     const bundle = crypto.randomUUID().slice(0, 8);
+    const bottomVariant = firstAvailableVariant(
+      bottom,
+      combo.bottomSize,
+      combo.bottomColor,
+    );
+    const topVariant = firstAvailableVariant(
+      top,
+      combo.topSize,
+      combo.topColor,
+    );
+    if (!bottomVariant || !topVariant)
+      return showToast("Uma das pecas do conjunto esta sem estoque.");
     const additions: CartItem[] = [
       {
         pid: bottom.id,
-        size: combo.bottomSize || bottom.sizes[0],
+        size: bottomVariant.size,
+        color: bottomVariant.color,
         qty: 1,
         bundle,
       },
-      { pid: top.id, size: combo.topSize || top.sizes[0], qty: 1, bundle },
+      {
+        pid: top.id,
+        size: topVariant.size,
+        color: topVariant.color,
+        qty: 1,
+        bundle,
+      },
     ];
     setCart((current) => [...current, ...additions]);
     setCartOpen(true);
@@ -229,24 +278,64 @@ export default function Home() {
         onOpen={openProduct}
         onRetry={refreshProducts}
       />
-      <ComboBuilder
+      {/* <ComboBuilder
         products={products}
         bottomId={combo.bottomId}
         topId={combo.topId}
+        bottomColor={combo.bottomColor}
+        topColor={combo.topColor}
         bottomSize={combo.bottomSize}
         topSize={combo.topSize}
-        onSelectBottom={(product) =>
+        onSelectBottom={(product) => {
+          const variant = firstAvailableVariant(product);
+          setCombo((current) => {
+            if (current.bottomId === product.id) {
+              return {
+                ...current,
+                bottomId: null,
+                bottomColor: "",
+                bottomSize: "",
+              };
+            }
+            return {
+              ...current,
+              bottomId: product.id,
+              bottomColor: variant?.color || "",
+              bottomSize: variant?.size || "",
+            };
+          });
+        }}
+        onSelectTop={(product) => {
+          const variant = firstAvailableVariant(product);
+          setCombo((current) => {
+            if (current.topId === product.id) {
+              return {
+                ...current,
+                topId: null,
+                topColor: "",
+                topSize: "",
+              };
+            }
+            return {
+              ...current,
+              topId: product.id,
+              topColor: variant?.color || "",
+              topSize: variant?.size || "",
+            };
+          });
+        }}
+        onBottomColor={(color, size) =>
           setCombo((current) => ({
             ...current,
-            bottomId: product.id,
-            bottomSize: current.bottomSize || product.sizes[0],
+            bottomColor: color,
+            bottomSize: size,
           }))
         }
-        onSelectTop={(product) =>
+        onTopColor={(color, size) =>
           setCombo((current) => ({
             ...current,
-            topId: product.id,
-            topSize: current.topSize || product.sizes[0],
+            topColor: color,
+            topSize: size,
           }))
         }
         onBottomSize={(size) =>
@@ -256,7 +345,7 @@ export default function Home() {
           setCombo((current) => ({ ...current, topSize: size }))
         }
         onAdd={addCombo}
-      />
+      /> */}
       <ContactSection />
       <BrandSections />
       <Footer />
@@ -290,4 +379,33 @@ export default function Home() {
       </div>
     </main>
   );
+}
+
+function firstAvailableVariant(
+  product: Product,
+  preferredSize = "",
+  preferredColor = "",
+) {
+  const configuredColors = (product.colors || []).filter(
+    (color) => (color.sizes || []).length,
+  );
+  const orderedColors = [
+    ...configuredColors.filter((color) => color.n === preferredColor),
+    ...configuredColors.filter((color) => color.n !== preferredColor),
+  ];
+  for (const color of orderedColors) {
+    const available =
+      color.sizes?.find(
+        (item) => item.size === preferredSize && Number(item.q) > 0,
+      ) || color.sizes?.find((item) => Number(item.q) > 0);
+    if (available) return { color: color.n, size: available.size };
+  }
+  if (product.stock <= 0) return null;
+  return {
+    color:
+      product.colors?.find((color) => color.n === preferredColor)?.n ||
+      product.colors?.[0]?.n ||
+      "",
+    size: preferredSize || product.sizes[0] || "U",
+  };
 }

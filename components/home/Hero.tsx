@@ -13,8 +13,8 @@ export function Hero() {
           <p className="m-0 mt-4 font-serif text-[clamp(1.25rem,3vw,1.9rem)] font-semibold italic">vista bubble.</p>
           <p className="mt-6 max-w-[520px] text-[1.02rem] italic leading-[1.75] text-bubble-ink/75">Pecas que unem qualidade, conforto e design autentico — porque toda mulher merece se sentir confortavel e confiante em qualquer momento do seu dia.</p>
           <div className="mt-[34px] flex flex-wrap justify-center gap-3.5">
-            <a href="#colecao" className="inline-flex items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink">Comprar a Colecao</a>
-            <a href="#conjunto" className="inline-flex items-center justify-center gap-2 border border-bubble-ink bg-transparent px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-ink transition-all hover:bg-bubble-ink hover:text-bubble-white">Montar Conjunto · 5% OFF</a>
+            <a href="#colecao" className="inline-flex cursor-pointer items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink">Comprar a Colecao</a>
+            <a href="#conjunto" className="inline-flex cursor-pointer items-center justify-center gap-2 border border-bubble-ink bg-transparent px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-ink transition-all hover:bg-bubble-ink hover:text-bubble-white">Montar Conjunto · 5% OFF</a>
           </div>
           <div className="mt-[50px] flex flex-wrap justify-center gap-11">
             {[
@@ -32,7 +32,7 @@ export function Hero() {
       </section>
       <div className="overflow-hidden whitespace-nowrap bg-bubble-ink py-[13px] text-bubble-cream">
         <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] [&_span]:mx-7 [&_span]:text-bubble-cream/85">
-          <span>COLECAO 01 NO AR</span> FRETE GRATIS ACIMA DE R$299 <span>5% OFF NO PIX</span> CONJUNTO COM 5% OFF <span>TROCA EM 30 DIAS</span> COLECAO 01 NO AR <span>FRETE GRATIS ACIMA DE R$299</span> 5% OFF NO PIX <span>CONJUNTO COM 5% OFF</span> TROCA EM 30 DIAS
+          <span>COLECAO 01 NO AR</span> FRETE GRATIS DE LANCAMENTO <span>5% OFF NO PIX</span> CONJUNTO COM 5% OFF <span>TROCA EM 30 DIAS</span> COLECAO 01 NO AR <span>FRETE GRATIS EM TODOS OS PEDIDOS</span> 5% OFF NO PIX <span>CONJUNTO COM 5% OFF</span> TROCA EM 30 DIAS
         </div>
       </div>
     </>

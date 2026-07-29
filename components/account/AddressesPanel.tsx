@@ -37,6 +37,7 @@ export function AddressesPanel() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [cepStatus, setCepStatus] = useState("");
+  const safeAddresses = Array.isArray(addresses) ? addresses : [];
 
   useEffect(() => {
     void loadAddresses();
@@ -44,7 +45,10 @@ export function AddressesPanel() {
 
   async function loadAddresses() {
     try {
-      setAddresses(await apiFetch<AccountAddress[]>("/account/addresses"));
+      const result = await apiFetch<AccountAddress[] | null>(
+        "/account/addresses",
+      );
+      setAddresses(Array.isArray(result) ? result : []);
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -57,7 +61,7 @@ export function AddressesPanel() {
   }
 
   function startCreate() {
-    setForm({ ...emptyAddress, isDefault: addresses.length === 0 });
+    setForm({ ...emptyAddress, isDefault: safeAddresses.length === 0 });
     setEditingId("new");
     setMessage("");
     setCepStatus("");
@@ -372,9 +376,9 @@ export function AddressesPanel() {
         <p className="py-12 text-center text-[.74rem] text-bubble-ink/50">
           Carregando enderecos...
         </p>
-      ) : addresses.length ? (
+      ) : safeAddresses.length ? (
         <div className="grid grid-cols-2 gap-4 max-[680px]:grid-cols-1">
-          {addresses.map((address) => (
+          {safeAddresses.map((address) => (
             <article
               key={address.id}
               className={`relative border p-5 ${
