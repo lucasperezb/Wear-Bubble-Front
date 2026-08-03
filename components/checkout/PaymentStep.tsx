@@ -64,7 +64,7 @@ export function PaymentStep({
         <div className="mb-6">
           <h2 className="mb-1 text-xl">Dados do comprador</h2>
           <p className="mb-5 text-[.74rem] text-bubble-ink/55">
-            Informe os dados usados na cobranca e na confirmacao do pedido.
+            Informe os dados usados na cobrança e na confirmação do pedido.
           </p>
           <div className="grid grid-cols-2 gap-4 max-[620px]:grid-cols-1">
             <label>
@@ -95,7 +95,7 @@ export function PaymentStep({
                 autoComplete="email"
                 readOnly={Boolean(user)}
                 maxLength={255}
-                placeholder="voce@email.com"
+                placeholder="você@email.com"
               />
             </label>
             <label>
@@ -130,27 +130,27 @@ export function PaymentStep({
           </div>
         </div>
         <div className="border-t border-bubble-line pt-6">
-        <h2 className="mb-5 text-xl">Como voce quer pagar?</h2>
+        <h2 className="mb-5 text-xl">Como você quer pagar?</h2>
         <div className="grid grid-cols-2 gap-4 max-[620px]:grid-cols-1">
           <button type="button" className={`flex min-h-[130px] flex-col items-center justify-center gap-3 border p-5 text-center transition-colors ${method === 'Pix' ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`} onClick={() => onMethod('Pix')}>
             <QrCode className="size-7" />
             <strong className="font-sans text-[.76rem] uppercase tracking-[.1em]">Pix</strong>
             <span className="text-[.72rem] opacity-75">5% de desconto</span>
           </button>
-          <button type="button" className={`flex min-h-[130px] flex-col items-center justify-center gap-3 border p-5 text-center transition-colors ${method === 'Cartao de credito' ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`} onClick={() => onMethod('Cartao de credito')}>
+          <button type="button" className={`flex min-h-[130px] flex-col items-center justify-center gap-3 border p-5 text-center transition-colors ${method === 'Cartão de crédito' ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`} onClick={() => onMethod('Cartão de crédito')}>
             <CreditCard className="size-7" />
-            <strong className="font-sans text-[.76rem] uppercase tracking-[.1em]">Cartao de credito</strong>
+            <strong className="font-sans text-[.76rem] uppercase tracking-[.1em]">Cartão de crédito</strong>
           </button>
         </div>
         </div>
 
-        {method === 'Cartao de credito' ? (
+        {method === 'Cartão de crédito' ? (
           <div className="mt-6 border-t border-bubble-line pt-6">
-            <h3 className="mb-4 text-lg">Dados do cartao</h3>
-            {pix ? <div className="mb-4 border border-bubble-line bg-bubble-cream p-3 text-[.74rem] leading-[1.5] text-bubble-ink/65">Ao trocar para cartao, o desconto exclusivo do Pix sera removido e o resumo voltara ao valor normal.</div> : null}
+            <h3 className="mb-4 text-lg">Dados do cartão</h3>
+            {pix ? <div className="mb-4 border border-bubble-line bg-bubble-cream p-3 text-[.74rem] leading-[1.5] text-bubble-ink/65">Ao trocar para cartão, o desconto exclusivo do Pix será removido e o resumo voltará ao valor normal.</div> : null}
             <div className="grid grid-cols-2 gap-4 max-[620px]:grid-cols-1">
-              <label className="col-span-2 max-[620px]:col-span-1"><span className={labelClass}>Nome impresso no cartao</span><input className={inputClass} value={card.holder} onChange={(event) => onCard({ holder: formatPersonName(event.target.value, 120).toUpperCase() })} autoComplete="cc-name" maxLength={120} placeholder="MARIA DA SILVA" /></label>
-              <label className="col-span-2 max-[620px]:col-span-1"><span className={labelClass}>Numero do cartao</span><input className={inputClass} value={card.number} onChange={(event) => onCard({ number: formatCardNumber(event.target.value) })} inputMode="numeric" autoComplete="cc-number" maxLength={23} placeholder="0000 0000 0000 0000" /></label>
+              <label className="col-span-2 max-[620px]:col-span-1"><span className={labelClass}>Nome impresso no cartão</span><input className={inputClass} value={card.holder} onChange={(event) => onCard({ holder: formatPersonName(event.target.value, 120).toUpperCase() })} autoComplete="cc-name" maxLength={120} placeholder="MARIA DA SILVA" /></label>
+              <label className="col-span-2 max-[620px]:col-span-1"><span className={labelClass}>Número do cartão</span><input className={inputClass} value={card.number} onChange={(event) => onCard({ number: formatCardNumber(event.target.value) })} inputMode="numeric" autoComplete="cc-number" maxLength={23} placeholder="0000 0000 0000 0000" /></label>
               <label><span className={labelClass}>Validade</span><input className={inputClass} value={card.expiry} onChange={(event) => onCard({ expiry: formatExpiry(event.target.value) })} inputMode="numeric" autoComplete="cc-exp" maxLength={5} placeholder="MM/AA" /></label>
               <label><span className={labelClass}>CVV</span><input className={inputClass} value={card.securityCode} onChange={(event) => onCard({ securityCode: event.target.value.replace(/\D/g, '').slice(0, 4) })} type="password" inputMode="numeric" autoComplete="cc-csc" maxLength={4} placeholder="123" /></label>
               <label className="col-span-2 max-[620px]:col-span-1">
@@ -166,17 +166,17 @@ export function PaymentStep({
         {method === 'Pix' && pix ? (
           <div className="mt-6 border-t border-bubble-line pt-6 text-center">
             <span className="font-sans text-[.68rem] font-semibold uppercase tracking-[.1em] text-bubble-success">Pix gerado · aguardando pagamento</span>
-            <h3 className="mt-2 text-xl">Escaneie ou copie o codigo</h3>
+            <h3 className="mt-2 text-xl">Escaneie ou copie o código</h3>
             {pix.pix.image ? <img className="mx-auto mt-5 size-[220px] border border-bubble-line bg-white p-3" src={pix.pix.image} alt="QR Code Pix do pedido" /> : null}
             <div className="mt-5 flex border border-bubble-line bg-bubble-cream p-1">
-              <input className="min-w-0 flex-1 border-0 bg-transparent px-3 text-[.72rem] outline-none" value={pix.pix.text} readOnly aria-label="Codigo Pix copia e cola" />
+              <input className="min-w-0 flex-1 border-0 bg-transparent px-3 text-[.72rem] outline-none" value={pix.pix.text} readOnly aria-label="Código Pix copia e cola" />
               <button type="button" className="inline-flex shrink-0 items-center gap-2 bg-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase text-bubble-white" onClick={copyPix}>{copied ? <Check className="size-4" /> : <Copy className="size-4" />}{copied ? 'Copiado' : 'Copiar'}</button>
             </div>
-            <p className="mt-3 text-[.72rem] text-bubble-ink/55">A confirmacao acontece automaticamente depois do pagamento.</p>
+            <p className="mt-3 text-[.72rem] text-bubble-ink/55">A confirmação acontece automaticamente depois do pagamento.</p>
           </div>
-        ) : method === 'Cartao de credito' ? (
+        ) : method === 'Cartão de crédito' ? (
           <div className="mt-5 border border-bubble-candy bg-bubble-candy/15 p-4 text-[.74rem] leading-[1.6] text-bubble-ink/65">
-            O PagBank criptografa o cartao no navegador. Numero e CVV nao sao armazenados pela Bubble.
+            O PagBank criptografa o cartão no navegador. Número e CVV não são armazenados pela Bubble.
           </div>
         ) : null}
 

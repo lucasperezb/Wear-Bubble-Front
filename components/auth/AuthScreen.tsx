@@ -37,7 +37,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
     const email = params.get("email");
     if (email)
       setForm((current) => ({ ...current, email: formatEmail(email) }));
-    if (!isRegister && params.get("modo") === "codigo") setLoginMethod("code");
+    if (!isRegister && params.get("modo") === "código") setLoginMethod("code");
   }, [isRegister]);
 
   async function submit(event: FormEvent) {
@@ -85,7 +85,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       window.location.assign("/");
     } catch (error) {
       showMessage(
-        error instanceof Error ? error.message : "Nao foi possivel autenticar.",
+        error instanceof Error ? error.message : "Não foi possível autenticar.",
         "error",
       );
       setBusy(false);
@@ -103,14 +103,14 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
         });
         setCodeSent(true);
         showMessage(
-          "Enviamos um codigo de 6 digitos. Ele expira em 10 minutos.",
+          "Enviamos um código de 6 dígitos. Ele expira em 10 minutos.",
           "success",
         );
         setBusy(false);
         return;
       }
       if (!/^\d{6}$/.test(code)) {
-        showMessage("Informe os 6 digitos do codigo.", "error");
+        showMessage("Informe os 6 dígitos do código.", "error");
         setBusy(false);
         return;
       }
@@ -123,7 +123,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
       showMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel validar o codigo.",
+          : "Não foi possível validar o código.",
         "error",
       );
       setBusy(false);
@@ -145,7 +145,10 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
   return (
     <main className="grid min-h-screen grid-cols-[minmax(320px,.9fr)_minmax(0,1.1fr)] bg-bubble-cream max-[860px]:grid-cols-1">
       <section className="flex min-h-screen flex-col bg-bubble-ink p-10 text-bubble-cream max-[860px]:min-h-0 max-[860px]:pb-16">
-        <Link href="/" className="flex w-fit cursor-pointer flex-col leading-[.82]">
+        <Link
+          href="/"
+          className="flex w-fit cursor-pointer flex-col leading-[.82]"
+        >
           <span className="ml-px font-serif text-[.78rem] italic">wear</span>
           <span className="font-display text-[1.55rem] uppercase">BUBBLE</span>
         </Link>
@@ -166,7 +169,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
               <>
                 Bom ter
                 <br />
-                voce de
+                você de
                 <br />
                 volta.
               </>
@@ -174,8 +177,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
           </h1>
           <p className="mt-6 max-w-[430px] font-serif text-[.95rem] italic leading-[1.7] text-bubble-cream/70">
             {isRegister
-              ? "Crie sua conta para finalizar compras, acompanhar pedidos e guardar seus dados de entrega com seguranca."
-              : "Entre para continuar sua compra, acompanhar entregas e acessar seu historico de pedidos."}
+              ? "Crie sua conta para finalizar compras, acompanhar pedidos e guardar seus dados de entrega com segurança."
+              : "Entre para continuar sua compra, acompanhar entregas e acessar seu histórico de pedidos."}
           </p>
         </div>
         <span className="font-sans text-[.62rem] uppercase tracking-[.12em] text-bubble-cream/40">
@@ -201,7 +204,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
             {isRegister
               ? "Preencha seus dados para criar sua conta."
               : loginMethod === "code"
-                ? "Receba um codigo de uso unico no e-mail informado durante a compra."
+                ? "Receba um código de uso único no e-mail informado durante a compra."
                 : "Use o e-mail e a senha cadastrados."}
           </p>
 
@@ -219,7 +222,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 className={`px-3 py-2.5 font-sans text-[.66rem] font-semibold uppercase tracking-[.08em] ${loginMethod === "code" ? "bg-bubble-ink text-bubble-white" : "bg-transparent text-bubble-ink"}`}
                 onClick={() => changeLoginMethod("code")}
               >
-                Codigo por e-mail
+                Código por e-mail
               </button>
             </div>
           ) : null}
@@ -257,7 +260,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                 spellCheck={false}
                 autoComplete="email"
                 maxLength={255}
-                placeholder="voce@email.com"
+                placeholder="você@email.com"
                 readOnly={codeSent}
               />
             </AuthField>
@@ -277,12 +280,22 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   }
                   minLength={6}
                   maxLength={72}
-                  placeholder="Minimo 6 caracteres"
+                  placeholder="Mínimo de 6 caracteres"
                 />
               </AuthField>
             ) : null}
+            {!isRegister && loginMethod === "password" ? (
+              <div className="-mt-1 mb-5 text-right">
+                <Link
+                  href={`/esqueci-senha${form.email ? `?email=${encodeURIComponent(form.email)}` : ""}`}
+                  className="text-[.72rem] font-semibold text-bubble-ink/65 underline hover:text-bubble-ink"
+                >
+                  Esqueci minha senha
+                </Link>
+              </div>
+            ) : null}
             {!isRegister && loginMethod === "code" && codeSent ? (
-              <AuthField icon={<KeyRound />} label="Codigo de 6 digitos">
+              <AuthField icon={<KeyRound />} label="Código de 6 dígitos">
                 <input
                   value={code}
                   onChange={(event) =>
@@ -307,7 +320,7 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                     setForm({ ...form, marketing: event.target.checked })
                   }
                 />
-                Quero receber novidades e lancamentos da Bubble por e-mail.
+                Quero receber novidades e lançamentos da Bubble por e-mail.
               </label>
             ) : null}
 
@@ -330,8 +343,8 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   ? "Criar minha conta"
                   : loginMethod === "code"
                     ? codeSent
-                      ? "Validar codigo e entrar"
-                      : "Enviar codigo por e-mail"
+                      ? "Validar código e entrar"
+                      : "Enviar código por e-mail"
                     : "Entrar na minha conta"}
             </button>
             {!isRegister && loginMethod === "code" && codeSent ? (
@@ -344,15 +357,15 @@ export function AuthScreen({ mode }: { mode: AuthMode }) {
                   setMessage("");
                 }}
               >
-                Enviar um novo codigo
+                Enviar um novo código
               </button>
             ) : null}
           </form>
 
           <p className="mt-6 text-center text-[.8rem] text-bubble-ink/60">
             {isRegister
-              ? "Ja possui uma conta?"
-              : "Ainda nao possui uma conta?"}{" "}
+              ? "Já possui uma conta?"
+              : "Ainda não possui uma conta?"}{" "}
             <Link
               href={alternateHref}
               className="font-semibold text-bubble-ink underline"

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { money, type Order } from '../../lib/api';
+import { apiFetch, money, type Order } from '../../lib/api';
 import { shippingStages } from './admin.constants';
+import type { Notify, OnSaved } from './admin.types';
 
 type StatusFilter = 'all' | Order['status'];
 
@@ -25,13 +26,13 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
 
 function formatDocument(value?: string) {
   const digits = value?.replace(/\D/g, '') ?? '';
-  if (digits.length !== 11) return value || 'Nao informado';
+  if (digits.length !== 11) return value || 'Não informado';
   return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
 }
 
 function formatAddress(order: Order) {
   const delivery = order.delivery;
-  if (!delivery) return 'Endereco nao informado';
+  if (!delivery) return 'Endereço não informado';
 
   const main = [delivery.street, delivery.number].filter(Boolean).join(', ');
   const location = [delivery.neighborhood, delivery.city, delivery.state]
@@ -43,13 +44,14 @@ function formatAddress(order: Order) {
   return [main, location, extra].filter(Boolean).join(' | ');
 }
 
-export function OrdersAdmin({ orders }: { orders: Order[] }) {
+export function OrdersAdmin({ orders, onSaved, notify }: { orders: Order[]; onSaved: OnSaved; notify: Notify }) {
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [paymentMethod, setPaymentMethod] = useState('all');
   const [shippingStage, setShippingStage] = useState('all');
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(1);
+  const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   const counts = useMemo(
     () => ({
@@ -119,10 +121,29 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
     setShippingStage('all');
   }
 
+  async function cancelOrder(order: Order) {
+    if (
+      !window.confirm(
+        `Cancelar o pedido #${order.number} e estornar ${money.format(order.total)} pelo PagBank? Esta ação não pode ser desfeita.`,
+      )
+    ) return;
+
+    setCancelingId(order.id);
+    try {
+      await apiFetch(`/payment/orders/${order.id}/cancel`, { method: 'POST' });
+      await onSaved();
+      notify(`Pedido #${order.number} cancelado e valor estornado.`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : 'Não foi possível cancelar o pedido.');
+    } finally {
+      setCancelingId(null);
+    }
+  }
+
   return (
     <section className="space-y-5">
       <div>
-        <p className="adminEyebrow">Gestao de vendas</p>
+        <p className="adminEyebrow">Gestão de vendas</p>
         <h2 className="adminSectionTitle">Pedidos</h2>
         <p className="mt-1 text-sm text-bubble-ink/60">
           Consulte o pagamento, a entrega e os dados do comprador de cada pedido.
@@ -244,6 +265,16 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                     Total
                   </p>
                   <strong className="text-xl">{money.format(order.total)}</strong>
+                  {order.status === 'paid' && order.gateway === 'pagbank' && order.pagbankPaymentId ? (
+                    <button
+                      type="button"
+                      disabled={cancelingId === order.id}
+                      onClick={() => cancelOrder(order)}
+                      className="mt-2 block w-full border border-red-700 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-red-700 transition-colors hover:bg-red-700 hover:text-white disabled:cursor-wait disabled:opacity-50"
+                    >
+                      {cancelingId === order.id ? 'Cancelando...' : 'Cancelar e estornar'}
+                    </button>
+                  ) : null}
                 </div>
               </header>
 
@@ -270,7 +301,7 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                       <p>
                         Status:{' '}
                         <strong className="text-bubble-ink">
-                          {shippingStages[order.shipStage] ?? 'Nao informado'}
+                          {shippingStages[order.shipStage] ?? 'Não informado'}
                         </strong>
                       </p>
                       {order.shipping?.name ? (
@@ -304,7 +335,7 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                               item.size && `Tamanho: ${item.size}`,
                             ]
                               .filter(Boolean)
-                              .join(' - ') || 'Sem variacao'}
+                              .join(' - ') || 'Sem variação'}
                           </p>
                         </div>
                         <span className="shrink-0">{money.format(item.price * item.qty)}</span>
@@ -336,7 +367,7 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
 
           <nav
             className="flex flex-col gap-3 border border-bubble-line bg-bubble-white p-4 sm:flex-row sm:items-center sm:justify-between"
-            aria-label="Paginacao dos pedidos"
+            aria-label="Paginação dos pedidos"
           >
             <div className="flex items-center gap-2 text-xs text-bubble-ink/60">
               <span>Exibir</span>
@@ -344,13 +375,13 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                 value={pageSize}
                 onChange={(event) => setPageSize(Number(event.target.value))}
                 className="min-h-9 border border-bubble-line bg-bubble-white px-2 outline-none focus:border-bubble-ink"
-                aria-label="Quantidade de pedidos por pagina"
+                aria-label="Quantidade de pedidos por página"
               >
                 <option value={5}>5</option>
                 <option value={10}>10</option>
                 <option value={20}>20</option>
               </select>
-              <span>por pagina</span>
+              <span>por página</span>
             </div>
 
             <p className="text-center text-xs text-bubble-ink/60">
@@ -368,7 +399,7 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                 Anterior
               </button>
               <span className="min-w-20 text-center text-xs">
-                Pagina {currentPage} de {totalPages}
+                Página {currentPage} de {totalPages}
               </span>
               <button
                 type="button"
@@ -376,7 +407,7 @@ export function OrdersAdmin({ orders }: { orders: Order[] }) {
                 disabled={currentPage === totalPages}
                 className="min-h-9 border border-bubble-line px-3 font-sans text-[.6rem] font-bold uppercase tracking-[.08em] disabled:cursor-not-allowed disabled:opacity-35"
               >
-                Proxima
+                Próxima
               </button>
             </div>
           </nav>
@@ -398,7 +429,7 @@ function Info({
   return (
     <div>
       <dt className="text-xs text-bubble-ink/50">{label}</dt>
-      <dd className={breakAll ? 'break-all' : undefined}>{value || 'Nao informado'}</dd>
+      <dd className={breakAll ? 'break-all' : undefined}>{value || 'Não informado'}</dd>
     </div>
   );
 }

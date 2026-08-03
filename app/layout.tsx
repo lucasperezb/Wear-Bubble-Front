@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Bubble Fitness Wear - Moda fitness feminina',
-  description: 'Moda fitness feminina que une qualidade, conforto e design autentico.',
+  description: 'Moda fitness feminina que une qualidade, conforto e design autêntico.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

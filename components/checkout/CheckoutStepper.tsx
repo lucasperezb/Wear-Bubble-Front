@@ -5,7 +5,7 @@ const steps: Array<{ id: CheckoutStep; label: string; icon: typeof ShoppingBag }
   { id: 'cart', label: 'Carrinho', icon: ShoppingBag },
   { id: 'delivery', label: 'Entrega', icon: Truck },
   { id: 'payment', label: 'Pagamento', icon: CreditCard },
-  { id: 'confirmation', label: 'Confirmacao', icon: Check },
+  { id: 'confirmation', label: 'Confirmação', icon: Check },
 ];
 
 export function CheckoutStepper({ current }: { current: CheckoutStep }) {

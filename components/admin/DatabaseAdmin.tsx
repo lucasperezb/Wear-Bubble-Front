@@ -8,12 +8,12 @@ export function DatabaseAdmin({ dump }: { dump: AdminDump }) {
   const collections = [
     { name: 'users', desc: 'Contas sem dados pessoais', records: dump.users },
     { name: 'pii_vault', desc: 'Cofre de dados pessoais', records: dump.pii_vault || [] },
-    { name: 'products', desc: 'Catalogo completo', records: dump.products },
+    { name: 'products', desc: 'Catálogo completo', records: dump.products },
     { name: 'orders', desc: 'Pedidos', records: dump.orders },
     { name: 'events', desc: 'Telemetria pseudoanonimizada', records: dump.events },
     { name: 'leads', desc: 'Novidades por e-mail', records: dump.leads },
     { name: 'coupons', desc: 'Cupons de desconto', records: dump.coupons },
-    { name: 'deletion_reports', desc: 'Relatorios de exclusao LGPD', records: dump.deletion_reports || [] },
+    { name: 'deletion_reports', desc: 'Relatórios de exclusão LGPD', records: dump.deletion_reports || [] },
   ];
   const [open, setOpen] = useState('products');
 

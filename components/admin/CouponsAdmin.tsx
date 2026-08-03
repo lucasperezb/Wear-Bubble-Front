@@ -27,7 +27,7 @@ export function CouponsAdmin({ coupons, orders, onSaved, notify }: { coupons: Co
       await onSaved();
       notify('Cupom criado.');
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel criar cupom.');
+      notify(error instanceof Error ? error.message : 'Não foi possível criar cupom.');
     }
   }
 
@@ -40,7 +40,7 @@ export function CouponsAdmin({ coupons, orders, onSaved, notify }: { coupons: Co
         <div className="mb-5 border border-bubble-line bg-bubble-white p-5">
           <h4 className="mb-4 font-sans text-[.78rem] font-bold uppercase tracking-[.1em] text-bubble-ink">Novo cupom</h4>
           <div className="grid grid-cols-2 gap-3">
-            <div className={field}><label>Codigo</label><input value={draft.code} onChange={(event) => setDraft({ ...draft, code: event.target.value.toUpperCase() })} placeholder="EX: JULIA10" /></div>
+            <div className={field}><label>Código</label><input value={draft.code} onChange={(event) => setDraft({ ...draft, code: event.target.value.toUpperCase() })} placeholder="EX: JULIA10" /></div>
             <div className={field}><label>Desconto (%)</label><input type="number" min="1" max="90" value={draft.pct} onChange={(event) => setDraft({ ...draft, pct: Number(event.target.value) })} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -48,20 +48,20 @@ export function CouponsAdmin({ coupons, orders, onSaved, notify }: { coupons: Co
             <div className={field}><label>Limite de usos</label><input type="number" min="1" value={draft.maxUses} onChange={(event) => setDraft({ ...draft, maxUses: event.target.value })} placeholder="ilimitado" /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div className={field}><label>Compra minima R$</label><input type="number" min="0" step="0.01" value={draft.minSubtotal} onChange={(event) => setDraft({ ...draft, minSubtotal: event.target.value })} placeholder="0" /></div>
-            <div className={field}><label>Atribuido a</label><input value={draft.assignedTo} onChange={(event) => setDraft({ ...draft, assignedTo: event.target.value })} placeholder="Ex: Julia" /></div>
+            <div className={field}><label>Compra mínima (R$)</label><input type="number" min="0" step="0.01" value={draft.minSubtotal} onChange={(event) => setDraft({ ...draft, minSubtotal: event.target.value })} placeholder="0" /></div>
+            <div className={field}><label>Atribuído a</label><input value={draft.assignedTo} onChange={(event) => setDraft({ ...draft, assignedTo: event.target.value })} placeholder="Ex: Julia" /></div>
           </div>
           <button className={primaryButton} onClick={createCoupon}>Criar cupom</button>
         </div>
       ) : null}
       <table className={adminTable}>
-        <thead><tr><th>Codigo</th><th className="w-[88px]">%</th><th>Atribuido a</th><th>Validade</th><th className="w-[88px]">Usos</th><th className="w-[88px]">Pedidos</th><th className="w-[88px]">Receita gerada</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Código</th><th className="w-[88px]">%</th><th>Atribuído a</th><th>Validade</th><th className="w-[88px]">Usos</th><th className="w-[88px]">Pedidos</th><th className="w-[88px]">Receita gerada</th><th>Status</th><th></th></tr></thead>
         <tbody>
           {coupons.length === 0 ? <tr><td colSpan={9} className="p-[26px] text-center text-bubble-ink/50">Nenhum cupom ainda.</td></tr> : null}
           {coupons.map((coupon) => <CouponRow key={coupon.code} coupon={coupon} orders={orders} onSaved={onSaved} notify={notify} />)}
         </tbody>
       </table>
-      <p className={adminNote}>Cupom generico para primeira compra, codigo por embaixadora para medir receita, e codigos curtos para campanhas.</p>
+      <p className={adminNote}>Cupom genérico para primeira compra, código por embaixadora para medir receita e códigos curtos para campanhas.</p>
     </>
   );
 }
@@ -84,24 +84,24 @@ function CouponRow({ coupon, orders, onSaved, notify }: { coupon: Coupon; orders
       await onSaved();
       notify(message);
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel salvar cupom.');
+      notify(error instanceof Error ? error.message : 'Não foi possível salvar cupom.');
     }
   }
 
   async function removeCoupon() {
     const usageWarning = usedOrders.length > 0
-      ? ` Ele ja foi usado em ${usedOrders.length} pedido${usedOrders.length === 1 ? '' : 's'}; os pedidos realizados nao serao apagados.`
+      ? ` Ele já foi usado em ${usedOrders.length} pedido${usedOrders.length === 1 ? '' : 's'}; os pedidos realizados não serão apagados.`
       : '';
     if (!window.confirm(`Excluir definitivamente o cupom ${coupon.code}?${usageWarning}`)) return;
 
     setDeleting(true);
     try {
       const result = await apiFetch<{ removed: number }>(`/coupons/${encodeURIComponent(coupon.code)}`, { method: 'DELETE' });
-      if (!result.removed) throw new Error('Cupom nao encontrado.');
+      if (!result.removed) throw new Error('Cupom não encontrado.');
       await onSaved();
-      notify(`Cupom ${coupon.code} excluido.`);
+      notify(`Cupom ${coupon.code} excluído.`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel excluir cupom.');
+      notify(error instanceof Error ? error.message : 'Não foi possível excluir cupom.');
       setDeleting(false);
     }
   }

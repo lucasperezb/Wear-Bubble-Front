@@ -124,12 +124,12 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
             <div>
               <div className="mb-2 text-[.68rem] uppercase tracking-[.12em] text-bubble-ink/50">{product.cat} · {product.sub}</div>
               <h3 className="text-[1.6rem] leading-[1.2]">{product.name}</h3>
-              <div className="mt-2 flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} · {product.reviews} avaliacoes</div>
+              <div className="mt-2 flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} · {product.reviews} avaliações</div>
               <div className="mt-4 font-display text-[1.8rem] text-bubble-ink">{money.format(product.price)}</div>
               <div className="mt-0.5 text-[.72rem] font-semibold text-bubble-success">{money.format(product.price * 0.95)} no Pix (5% OFF)</div>
               <p className="my-4 font-serif text-[.85rem] leading-[1.65] text-bubble-ink/65">{product.desc}</p>
               {product.sports?.length ? <div className="my-2.5 flex flex-wrap items-center gap-1.5 text-[.8rem]"><b>Recomendado para:</b> {product.sports.map((sport) => <span className="rounded-[20px] border border-bubble-line bg-bubble-ink/10 px-[9px] py-[3px] font-sans text-[.6rem] font-bold uppercase tracking-[.05em] text-bubble-brown" key={sport}>{sport}</span>)}</div> : null}
-              <div className="mb-[18px] border-y border-bubble-line py-[11px] text-[.72rem] leading-[1.6] text-bubble-ink/55"><b>Material:</b> {product.material} · <b>Estoque:</b> {out ? 'Esgotado' : `${selectedStock} un.`} · Troca gratis em 30 dias</div>
+              <div className="mb-[18px] border-y border-bubble-line py-[11px] text-[.72rem] leading-[1.6] text-bubble-ink/55"><b>Material:</b> {product.material} · <b>Estoque:</b> {out ? 'Esgotado' : `${selectedStock} un.`} · Troca grátis em 30 dias</div>
               {product.colors?.length ? (
                 <>
                   <div className="font-sans text-[.68rem] font-bold uppercase tracking-[.12em] text-bubble-ink/60">
@@ -178,7 +178,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
               <div className="font-sans text-[.68rem] font-bold uppercase tracking-[.12em] text-bubble-ink/60">Tamanho</div>
               <div className="mb-[18px] mt-2 flex flex-wrap gap-2">{availableSizes.map((size) => <button key={size} className={`size-[42px] border text-[.76rem] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${selectedSize === size ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`} onClick={() => onSize(size)} disabled={out}>{size}</button>)}</div>
               <button className="inline-flex w-full items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink disabled:cursor-not-allowed disabled:opacity-45" disabled={out || !selectedSize || (product.colors?.length > 0 && !selectedColor)} onClick={() => onAdd(product, selectedSize, selectedColor?.n || '')}>
-                {out ? 'Esgotado' : `Adicionar a sacola · ${money.format(product.price)}`}
+                {out ? 'Esgotado' : `Adicionar à sacola · ${money.format(product.price)}`}
               </button>
             </div>
           </div>

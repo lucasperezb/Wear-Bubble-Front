@@ -101,14 +101,14 @@ export default function Home() {
     try {
       const response = await apiFetch<unknown>("/products");
       if (!Array.isArray(response)) {
-        throw new Error("A API retornou uma lista de produtos invalida.");
+        throw new Error("A API retornou uma lista de produtos inválida.");
       }
       setProducts(response as Product[]);
     } catch (error) {
       setProductsError(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel carregar a colecao.",
+          : "Não foi possível carregar a coleção.",
       );
     } finally {
       setProductsLoading(false);
@@ -190,7 +190,7 @@ export default function Home() {
     setSelectedProduct(null);
     setCartOpen(true);
     showToast(
-      `Adicionado a sacola · ${color ? `Cor ${color} · ` : ""}Tam. ${size}`,
+      `Adicionado à sacola · ${color ? `Cor ${color} · ` : ""}Tam. ${size}`,
     );
   }
 
@@ -232,7 +232,7 @@ export default function Home() {
       combo.topColor,
     );
     if (!bottomVariant || !topVariant)
-      return showToast("Uma das pecas do conjunto esta sem estoque.");
+      return showToast("Uma das peças do conjunto está sem estoque.");
     const additions: CartItem[] = [
       {
         pid: bottom.id,

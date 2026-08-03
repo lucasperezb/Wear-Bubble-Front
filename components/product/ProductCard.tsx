@@ -31,13 +31,13 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
         ) : null}
         <div className="font-serif text-base font-semibold leading-[1.35] max-[520px]:min-h-[2.55rem] max-[520px]:overflow-hidden max-[520px]:text-[.92rem] max-[520px]:leading-[1.35] max-[520px]:[display:-webkit-box] max-[520px]:[-webkit-box-orient:vertical] max-[520px]:[-webkit-line-clamp:2]">{product.name}</div>
         <div className="flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55 max-[520px]:hidden"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} ({product.reviews})</div>
-        {low ? <div className="mt-1 text-[.66rem] font-bold text-bubble-danger">Ultimas {product.stock} unidades</div> : null}
+        {low ? <div className="mt-1 text-[.66rem] font-bold text-bubble-danger">Últimas {product.stock} unidades</div> : null}
         <div className="mt-auto flex items-center justify-between gap-2.5 pt-[18px] max-[520px]:flex-col max-[520px]:items-stretch max-[520px]:gap-2 max-[520px]:pt-2.5">
           <div>
             <span className="text-[1.05rem] font-semibold text-bubble-ink max-[520px]:text-[.98rem]">{money.format(product.price)}</span>
             <span className="block text-[.66rem] font-semibold text-bubble-success max-[520px]:text-[.58rem]">{money.format(product.price * 0.95)} no Pix</span>
           </div>
-          <button className="border border-bubble-ink bg-transparent px-3.5 py-2 font-sans text-[.64rem] font-bold uppercase tracking-[.1em] transition-all hover:bg-bubble-ink hover:text-bubble-white max-[520px]:w-full max-[520px]:py-2.5 max-[520px]:text-[.58rem]" type="button">Ver peca</button>
+          <button className="border border-bubble-ink bg-transparent px-3.5 py-2 font-sans text-[.64rem] font-bold uppercase tracking-[.1em] transition-all hover:bg-bubble-ink hover:text-bubble-white max-[520px]:w-full max-[520px]:py-2.5 max-[520px]:text-[.58rem]" type="button">Ver peça</button>
         </div>
       </div>
     </div>

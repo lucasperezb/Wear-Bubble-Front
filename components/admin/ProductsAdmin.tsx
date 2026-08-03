@@ -63,7 +63,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
       notify(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel alterar a visibilidade.",
+          : "Não foi possível alterar a visibilidade.",
       );
     }
   }
@@ -186,7 +186,7 @@ function ProductAdminRow({
           }`}
           onClick={onToggle}
         >
-          {product.active ? "Visivel" : "Oculto"}
+          {product.active ? "Visível" : "Oculto"}
         </button>
         <button
           type="button"
@@ -271,7 +271,7 @@ function ProductEditorModal({
       const message =
         error instanceof Error
           ? error.message
-          : `Nao foi possivel ${editing ? "salvar" : "cadastrar"} o produto.`;
+          : `Não foi possível ${editing ? "salvar" : "cadastrar"} o produto.`;
       setError(message);
       notify(message);
       if (created) {
@@ -352,7 +352,7 @@ function ProductEditorModal({
             {saving
               ? "Salvando..."
               : editing
-                ? "Salvar alteracoes"
+                ? "Salvar alterações"
                 : "Cadastrar e publicar"}
           </button>
         </div>
@@ -371,7 +371,7 @@ function ProductPreview({ draft, previewUrl }: { draft: ProductDraft; previewUrl
       </div>
       <div className="p-3.5">
         <div className="text-[.66rem] uppercase tracking-[.1em] text-bubble-ink/45">{draft.cat || 'Categoria'}</div>
-        <div className="my-1.5 font-serif text-base leading-[1.35]">{draft.name || 'Nome da peca'}</div>
+        <div className="my-1.5 font-serif text-base leading-[1.35]">{draft.name || 'Nome da peça'}</div>
         <div className="flex items-end justify-between gap-2.5">
           <span className="font-bold text-bubble-ink">{money.format(Number(draft.price) || 0)}</span>
           <span className={stockBadge(draft.stock <= 0 ? 'out' : draft.stock <= 5 ? 'low' : 'ok')}>{draft.stock || 0} un.</span>
@@ -400,12 +400,12 @@ function DeleteProductModal({
     try {
       await apiFetch(`/products/${product.id}`, { method: "DELETE" });
       await onDeleted();
-      notify("Produto excluido.");
+      notify("Produto excluído.");
     } catch (error) {
       notify(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel excluir o produto.",
+          : "Não foi possível excluir o produto.",
       );
       setDeleting(false);
     }
@@ -416,15 +416,15 @@ function DeleteProductModal({
       className="fixed inset-0 z-[950] flex items-center justify-center bg-bubble-ink/75 p-5"
       role="alertdialog"
       aria-modal="true"
-      aria-label="Confirmar exclusao"
+      aria-label="Confirmar exclusão"
     >
       <div className="w-[440px] max-w-full bg-bubble-white p-7 shadow-bubble">
         <span className="font-sans text-[.62rem] font-bold uppercase tracking-[.14em] text-bubble-danger">
-          Exclusao permanente
+          Exclusão permanente
         </span>
         <h3 className="mt-2 text-2xl">Excluir este produto?</h3>
         <p className="mt-3 text-[.82rem] leading-[1.65] text-bubble-ink/60">
-          “{product.name}” e suas imagens serao removidos. Os pedidos anteriores
+          “{product.name}” e suas imagens serão removidos. Os pedidos anteriores
           permanecem registrados.
         </p>
         <div className="mt-6 flex justify-end gap-2.5">
@@ -513,7 +513,7 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <div>
-          <label className={productLabel}>Icone</label>
+          <label className={productLabel}>Ícone</label>
           <select className={productInput} value={draft.icon} onChange={(event) => update({ icon: event.target.value })}>
             {productIcons.map((icon) => <option key={icon}>{icon}</option>)}
           </select>
@@ -521,9 +521,9 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
         <div><label className={productLabel}>Material</label><input className={productInput} value={draft.material || ''} onChange={(event) => update({ material: event.target.value })} placeholder="Ex: Suplex Power" /></div>
       </div>
       <div className="grid grid-cols-3 gap-2.5 max-[520px]:grid-cols-2">
-        <div><label className={productLabel}>Preco (R$)</label><input className={productInput} type="number" step="0.10" min="0" value={draft.price} onChange={(event) => update({ price: Number(event.target.value) })} /></div>
+        <div><label className={productLabel}>Preço (R$)</label><input className={productInput} type="number" step="0.10" min="0" value={draft.price} onChange={(event) => update({ price: Number(event.target.value) })} /></div>
         <div><label className={productLabel}>Estoque total</label><input className={productInput} type="number" min="0" value={totalStock} readOnly={hasVariantStock} onChange={(event) => update({ stock: Number(event.target.value) })} /></div>
-        <div><label className={productLabel}>Selo</label><input className={productInput} value={draft.tag || ''} onChange={(event) => update({ tag: event.target.value })} placeholder="Colecao 01" /></div>
+        <div><label className={productLabel}>Selo</label><input className={productInput} value={draft.tag || ''} onChange={(event) => update({ tag: event.target.value })} placeholder="Coleção 01" /></div>
       </div>
       <label className={productLabel}>Esportes recomendados</label>
       <div className="flex flex-wrap gap-2">
@@ -539,7 +539,7 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
       {customSelectedSports.length ? (
         <div className="mt-2 max-w-[520px] space-y-2">
           <div className="font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/50">
-            Marcacoes personalizadas
+            Marcações personalizadas
           </div>
           {customSelectedSports.map((sport, index) => (
             <div className="flex gap-2" key={`custom-sport-${index}`}>
@@ -547,7 +547,7 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
                 className={productInput}
                 value={sport}
                 maxLength={80}
-                aria-label={`Editar marcacao ${sport}`}
+                aria-label={`Editar marcação ${sport}`}
                 onChange={(event) => {
                   const nextLabel = event.target.value;
                   if (sports.includes(sport)) {
@@ -599,7 +599,7 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
               addCustomSport();
             }
           }}
-          placeholder="Nova marcacao, ex: Beach tennis"
+          placeholder="Nova marcação, ex: Beach tennis"
           maxLength={80}
         />
         <button
@@ -614,8 +614,8 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
       <label className={productLabel}>Cores e estoque por tamanho <span className="ml-1">{(draft.colors || []).map((color, index) => <span className="ml-0.5 inline-block size-3 rounded-full border border-bubble-line align-middle" key={`${color.n}-${index}`} title={color.n} style={{ background: color.h }} />)}</span></label>
       <ColorEditor colors={(draft.colors || []) as ColorDraft[]} sizes={sizes} onColors={(colors) => update({ colors: colors as Product['colors'] })} />
       <div className="mt-1 text-[.66rem] text-bubble-ink/50">Defina a quantidade disponível de cada tamanho em cada cor. O estoque total é calculado automaticamente.</div>
-      <label className={productLabel}>Descricao</label>
-      <textarea className={`${productInput} resize-y leading-[1.5]`} rows={2} value={draft.desc || ''} onChange={(event) => update({ desc: event.target.value })} placeholder="Descricao da peca" />
+      <label className={productLabel}>Descrição</label>
+      <textarea className={`${productInput} resize-y leading-[1.5]`} rows={2} value={draft.desc || ''} onChange={(event) => update({ desc: event.target.value })} placeholder="Descrição da peça" />
     </>
   );
 }
@@ -635,7 +635,7 @@ function PendingImagePicker({
         Imagens do produto
       </div>
       <p className="mb-3 text-[.68rem] text-bubble-ink/55">
-        Ate 8 imagens JPEG, PNG ou WebP. A primeira sera a principal.
+        Até 8 imagens JPEG, PNG ou WebP. A primeira será a principal.
       </p>
       <label className={`${outlineButton} cursor-pointer px-4 py-2.5`}>
         Selecionar imagens
@@ -696,7 +696,7 @@ function ProductImagesManager({
       notify(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel atualizar as imagens.",
+          : "Não foi possível atualizar as imagens.",
       );
     } finally {
       setBusy(false);
@@ -706,7 +706,7 @@ function ProductImagesManager({
   async function upload(files: File[]) {
     if (!files.length) return;
     if (images.length + files.length > 8) {
-      notify("Cada produto pode ter no maximo 8 imagens.");
+      notify("Cada produto pode ter no máximo 8 imagens.");
       return;
     }
     await act(

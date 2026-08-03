@@ -13,21 +13,21 @@ export function ShipAdmin({ orders, onSaved, notify }: { orders: Order[]; onSave
       await onSaved();
       notify(`Envio do #${order.number} atualizado.`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel atualizar envio.');
+      notify(error instanceof Error ? error.message : 'Não foi possível atualizar envio.');
     }
   }
 
   return (
     <>
-      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Controle de entrega.</b> Defina o estagio de cada pedido. O cliente ve a atualizacao em Minha Conta.</div>
+      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Controle de entrega.</b> Defina o estágio de cada pedido. O cliente vê a atualização em Minha Conta.</div>
       <table className={adminTable}>
-        <thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Rastreio</th><th>Estagio</th><th></th></tr></thead>
+        <thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Total</th><th>Rastreio</th><th>Estágio</th><th></th></tr></thead>
         <tbody>
           {orders.length === 0 ? <tr><td colSpan={7} className="p-[26px] text-center text-bubble-ink/50">Nenhum pedido ainda.</td></tr> : null}
           {orders.map((order) => <ShipRow key={order.id} order={order} onSave={save} />)}
         </tbody>
       </table>
-      <p className={adminNote}>Linha do tempo: Confirmado {'>'} Pagamento {'>'} Separacao {'>'} Enviado {'>'} Em transito {'>'} Entregue.</p>
+      <p className={adminNote}>Linha do tempo: Confirmado {'>'} Pagamento {'>'} Separação {'>'} Enviado {'>'} Em trânsito {'>'} Entregue.</p>
     </>
   );
 }
@@ -42,7 +42,7 @@ function ShipRow({ order, onSave }: { order: Order; onSave: (order: Order, shipS
       <td className="font-mono text-[.7rem]">{(order as Order & { customerId?: string }).customerId || 'anon'}</td>
       <td>{order.items.map((item) => `${item.qty}x ${item.name}${item.color ? ` (${item.color}, ${item.size})` : ` (${item.size})`}`).join(', ')}</td>
       <td>{money.format(order.total)}</td>
-      <td><input value={tracking} onChange={(event) => setTracking(event.target.value)} placeholder="Codigo ou link" /></td>
+      <td><input value={tracking} onChange={(event) => setTracking(event.target.value)} placeholder="Código ou link" /></td>
       <td><select value={shipStage} onChange={(event) => setShipStage(Number(event.target.value))}>{shippingStages.map((stage, index) => <option key={stage} value={index}>{stage}</option>)}</select></td>
       <td><button className={saveButton} onClick={() => onSave(order, shipStage, tracking)}>Salvar</button></td>
     </tr>

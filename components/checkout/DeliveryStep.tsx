@@ -71,7 +71,7 @@ export function DeliveryStep({
       if (address.erro) {
         lastCep.current = "";
         setCepStatus(
-          "CEP nao encontrado. Confira os numeros ou preencha o endereco manualmente.",
+          "CEP não encontrado. Confira os números ou preencha o endereço manualmente.",
         );
         return;
       }
@@ -83,12 +83,12 @@ export function DeliveryStep({
         state: address.uf || profile.state,
       });
       setCepStatus(
-        "Endereco preenchido pelo CEP. Confira o numero e o complemento.",
+        "Endereço preenchido pelo CEP. Confira o número e o complemento.",
       );
     } catch {
       lastCep.current = "";
       setCepStatus(
-        "Nao foi possivel consultar o CEP. Voce pode preencher o endereco manualmente.",
+        "Não foi possível consultar o CEP. Você pode preencher o endereço manualmente.",
       );
     }
   }
@@ -109,9 +109,9 @@ export function DeliveryStep({
           <>
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl">Escolha o endereco de entrega</h2>
+                <h2 className="text-xl">Escolha o endereço de entrega</h2>
                 <p className="mt-1 text-[.74rem] text-bubble-ink/55">
-                  O endereco selecionado sera usado neste pedido.
+                  O endereço selecionado será usado neste pedido.
                 </p>
               </div>
               <button
@@ -119,7 +119,7 @@ export function DeliveryStep({
                 className="border border-bubble-ink px-4 py-2.5 font-sans text-[.66rem] font-semibold uppercase tracking-[.08em]"
                 onClick={onAddAddress}
               >
-                Cadastrar outro endereco
+                Cadastrar outro endereço
               </button>
             </div>
             <div className="grid gap-3">
@@ -150,7 +150,7 @@ export function DeliveryStep({
                     </span>
                     <span>
                       <strong className="font-sans text-[.72rem] uppercase tracking-[.08em]">
-                        {address.label || "Endereco"}
+                        {address.label || "Endereço"}
                         {address.isDefault ? " · Principal" : ""}
                       </strong>
                       <span className="mt-1 block text-[.78rem] leading-[1.55] opacity-75">
@@ -171,15 +171,15 @@ export function DeliveryStep({
         ) : (
           <>
             <h2 className="mb-1 text-xl">
-              {user ? "Cadastrar endereco de entrega" : "Endereco de entrega"}
+              {user ? "Cadastrar endereço de entrega" : "Endereço de entrega"}
             </h2>
             <p className="mb-5 text-[.74rem] text-bubble-ink/55">
-              Comece pelo CEP para preenchermos o endereco automaticamente.
-              {user ? " O novo endereco ficara salvo na sua conta." : ""}
+              Comece pelo CEP para preenchermos o endereço automaticamente.
+              {user ? " O novo endereço ficará salvo na sua conta." : ""}
             </p>
             {!user ? (
               <div className="mb-5 border border-bubble-candy bg-bubble-candy/15 p-4 text-[.76rem] leading-[1.6] text-bubble-ink/70">
-                Voce pode comprar sem criar uma senha. Depois, use um codigo
+                Você pode comprar sem criar uma senha. Depois, use um código
                 enviado para este e-mail para acompanhar o pedido.
               </div>
             ) : null}
@@ -197,7 +197,7 @@ export function DeliveryStep({
                 />
                 {cepStatus ? (
                   <span
-                    className={`mt-1.5 block text-[.68rem] leading-[1.4] ${cepStatus.startsWith("Nao") || cepStatus.startsWith("CEP nao") ? "text-bubble-danger" : "text-bubble-success"}`}
+                    className={`mt-1.5 block text-[.68rem] leading-[1.4] ${cepStatus.startsWith("Não") || cepStatus.startsWith("CEP não") ? "text-bubble-danger" : "text-bubble-success"}`}
                   >
                     {cepStatus}
                   </span>
@@ -232,7 +232,7 @@ export function DeliveryStep({
                 />
               </label>
               <label>
-                <span className={labelClass}>Numero</span>
+                <span className={labelClass}>Número</span>
                 <input
                   className={inputClass}
                   value={profile.number}
@@ -245,7 +245,7 @@ export function DeliveryStep({
                 />
               </label>
               <label>
-                <span className={labelClass}>Complemento / referencia</span>
+                <span className={labelClass}>Complemento / referência</span>
                 <input
                   className={inputClass}
                   value={profile.reference}
@@ -295,7 +295,7 @@ export function DeliveryStep({
         ) : null}
         {shippingOptions.length > 0 ? (
           <div className="mt-6 border-t border-bubble-line pt-6">
-            <h2 className="mb-1 text-xl">Opcoes de entrega</h2>
+            <h2 className="mb-1 text-xl">Opções de entrega</h2>
             <p className="mb-4 text-[.74rem] text-bubble-ink/55">
               Selecione o prazo e o valor que preferir.
             </p>
@@ -319,12 +319,12 @@ export function DeliveryStep({
                         {option.company} · {option.name}
                       </strong>
                       <span className="mt-1 block text-[.72rem] opacity-70">
-                        Entrega estimada em ate {option.deliveryTime} dias uteis
+                        Entrega estimada em até {option.deliveryTime} dias úteis
                       </span>
                     </span>
                     <strong className="text-base">
                       {FREE_SHIPPING_ENABLED
-                        ? "Gratis"
+                        ? "Grátis"
                         : new Intl.NumberFormat("pt-BR", {
                             style: "currency",
                             currency: "BRL",

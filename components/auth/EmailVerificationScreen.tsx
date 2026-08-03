@@ -11,7 +11,7 @@ export function EmailVerificationScreen() {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(
-    "Enviamos um codigo de 6 digitos para o seu e-mail.",
+    "Enviamos um código de 6 dígitos para o seu e-mail.",
   );
   const [messageKind, setMessageKind] = useState<"success" | "error">(
     "success",
@@ -26,7 +26,7 @@ export function EmailVerificationScreen() {
     event.preventDefault();
     if (!email) return show("Informe seu e-mail.", "error");
     if (!/^\d{6}$/.test(code))
-      return show("Informe os 6 digitos do codigo.", "error");
+      return show("Informe os 6 dígitos do código.", "error");
     setBusy(true);
     try {
       await apiFetch<User>("/auth/code/verify", {
@@ -38,7 +38,7 @@ export function EmailVerificationScreen() {
       show(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel verificar o e-mail.",
+          : "Não foi possível verificar o e-mail.",
         "error",
       );
       setBusy(false);
@@ -54,14 +54,14 @@ export function EmailVerificationScreen() {
         body: JSON.stringify({ email }),
       });
       show(
-        "Codigo enviado. Confira tambem as pastas de spam e promocoes.",
+        "Código enviado. Confira também as pastas de spam e promoções.",
         "success",
       );
     } catch (error) {
       show(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel reenviar o codigo.",
+          : "Não foi possível reenviar o código.",
         "error",
       );
     } finally {
@@ -83,7 +83,7 @@ export function EmailVerificationScreen() {
         </Link>
         <div className="my-auto max-w-[520px] py-16">
           <span className="font-sans text-[.7rem] font-semibold uppercase tracking-[.3em] text-bubble-candy">
-            Protecao da sua conta
+            Proteção da sua conta
           </span>
           <h1 className="mt-4 text-[clamp(2.6rem,6vw,5.5rem)] leading-[.98] text-bubble-cream">
             Confirme
@@ -91,12 +91,12 @@ export function EmailVerificationScreen() {
             seu e-mail.
           </h1>
           <p className="mt-6 max-w-[430px] font-serif text-[.95rem] italic leading-[1.7] text-bubble-cream/70">
-            Essa verificacao garante que somente voce possa acessar seus pedidos
-            e informacoes pessoais.
+            Essa verificação garante que somente você possa acessar seus pedidos
+            e informações pessoais.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 font-sans text-[.62rem] uppercase tracking-[.12em] text-bubble-cream/40">
-          <ShieldCheck className="size-4" /> Codigo de uso unico
+          <ShieldCheck className="size-4" /> Código de uso único
         </span>
       </section>
 
@@ -109,11 +109,11 @@ export function EmailVerificationScreen() {
             <ArrowLeft className="size-4" /> Voltar para o login
           </Link>
           <span className="block font-sans text-[.68rem] font-semibold uppercase tracking-[.28em] text-bubble-brown">
-            Ultima etapa
+            Última etapa
           </span>
           <h2 className="mt-2 text-[2.2rem]">Verificar conta</h2>
           <p className="mb-8 mt-3 text-[.82rem] leading-[1.6] text-bubble-ink/55">
-            Digite abaixo o codigo recebido. Ele expira em 10 minutos.
+            Digite abaixo o código recebido. Ele expira em 10 minutos.
           </p>
 
           <form onSubmit={verify}>
@@ -126,11 +126,11 @@ export function EmailVerificationScreen() {
                 autoCapitalize="none"
                 spellCheck={false}
                 autoComplete="email"
-                placeholder="voce@email.com"
+                placeholder="você@email.com"
                 required
               />
             </VerificationField>
-            <VerificationField icon={<KeyRound />} label="Codigo de 6 digitos">
+            <VerificationField icon={<KeyRound />} label="Código de 6 dígitos">
               <input
                 value={code}
                 onChange={(event) =>
@@ -170,7 +170,7 @@ export function EmailVerificationScreen() {
               className="mx-auto mt-4 block border-0 bg-transparent text-[.72rem] text-bubble-ink/60 underline disabled:opacity-45"
               onClick={() => void resend()}
             >
-              Reenviar codigo
+              Reenviar código
             </button>
           </form>
         </div>

@@ -10,7 +10,7 @@ export function Header({ cartCount, onCart, onAccount }: HeaderProps) {
   return (
     <>
       <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
-        FRETE GRATIS DE LANCAMENTO em todos os pedidos · <b>5% OFF</b> no Pix · Primeira compra? Use <b>BUBBLE10</b>
+        FRETE GRÁTIS DE LANÇAMENTO em todos os pedidos · <b>5% OFF</b> no Pix · Primeira compra? Use <b>BUBBLE10</b>
       </div>
       <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream/95 backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-8 py-[15px]">
@@ -21,7 +21,7 @@ export function Header({ cartCount, onCart, onAccount }: HeaderProps) {
             </span>
           </a>
           <nav className="flex gap-7 font-sans text-[.8rem] font-medium uppercase tracking-[.08em] max-[980px]:hidden [&_a]:relative [&_a]:cursor-pointer [&_a]:pb-1 [&_a]:after:absolute [&_a]:after:bottom-0 [&_a]:after:left-0 [&_a]:after:h-px [&_a]:after:w-0 [&_a]:after:bg-bubble-ink [&_a]:after:transition-[width] [&_a]:after:duration-200 hover:[&_a]:after:w-full">
-            <a href="#colecao">Colecao</a><a href="#conjunto">Monte seu Conjunto</a><a href="#quemsomos">Quem somos</a><a href="#contato">Contato</a>
+            <a href="#colecao">Coleção</a><a href="#conjunto">Monte seu Conjunto</a><a href="#quemsomos">Quem somos</a><a href="#contato">Contato</a>
           </nav>
           <div className="flex items-center gap-3.5">
             <button className="relative flex size-[38px] cursor-pointer items-center justify-center border-0 bg-transparent text-bubble-ink [&_svg]:size-5" title="Minha conta" onClick={onAccount}>

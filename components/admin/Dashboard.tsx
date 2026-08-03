@@ -167,7 +167,7 @@ export function Dashboard({ dump }: { dump: AdminDump }) {
                 />
                 <Bar
                   yAxisId="events"
-                  dataKey="interacoes"
+                  dataKey="interações"
                   name="Interações"
                   fill="#D9CFB4"
                   maxBarSize={22}

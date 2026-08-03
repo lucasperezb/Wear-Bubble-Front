@@ -13,13 +13,13 @@ export function CombosAdmin({ products, onSaved, notify }: { products: Product[]
       await onSaved();
       notify(pair ? `Par de "${product.name}" atualizado.` : `Par de "${product.name}" removido.`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel salvar conjunto.');
+      notify(error instanceof Error ? error.message : 'Não foi possível salvar conjunto.');
     }
   }
 
   return (
     <>
-      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Conjuntos.</b> O par salvo recebe o selo Sugestao na pagina principal, sem alterar a ordem das pecas. O cliente ainda pode escolher qualquer outra peca, cor e tamanho disponiveis.</div>
+      <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink"><b>Conjuntos.</b> O par salvo recebe o selo Sugestão na página principal, sem alterar a ordem das peças. O cliente ainda pode escolher qualquer outra peça, cor e tamanho disponíveis.</div>
       <div className={chartCard}>
         <h4>Par de cada produto</h4>
         <table className={adminTable}>

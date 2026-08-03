@@ -57,7 +57,7 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
             <div className="text-[.82rem] font-medium">{product.name}</div>
             {suggested ? (
               <span className="bg-bubble-candy px-2 py-0.5 font-sans text-[.52rem] font-bold uppercase tracking-[.08em] text-bubble-ink">
-                Sugestao
+                Sugestão
               </span>
             ) : null}
           </div>
@@ -94,7 +94,7 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
       <div className="mx-auto max-w-[1200px] px-8">
         <div className="mb-9 flex flex-wrap items-end justify-between gap-4">
           <div><span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown">Compre o look completo</span><h2 className="text-[2.6rem]">Monte seu Conjunto · 5% OFF</h2></div>
-          <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60">Escolha qualquer parte de baixo e top. A recomendacao da loja recebe o selo Sugestao, mas voce pode montar a combinacao que preferir.</p>
+          <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60">Escolha qualquer parte de baixo e top. A recomendação da loja recebe o selo Sugestão, mas você pode montar a combinação que preferir.</p>
         </div>
         <div className="mt-2.5 grid grid-cols-2 gap-[34px] max-[980px]:grid-cols-1">
           <div><h4 className="mb-3.5 font-sans text-[.72rem] font-bold uppercase tracking-[.16em] text-bubble-brown">1 · Escolha a parte de baixo</h4>{bottoms.map((product) => option(product, 'bottom'))}</div>
@@ -110,11 +110,11 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
               <div className="text-right">
                 <span className="text-[.85rem] text-bubble-cream/50 line-through">{money.format(full)}</span>
                 <div className="font-display text-[1.8rem] text-bubble-candy">{money.format(discounted)}</div>
-                <div className="text-[.7rem] font-bold uppercase tracking-[.1em] text-bubble-candy">Voce economiza {money.format(full - discounted)}</div>
+                <div className="text-[.7rem] font-bold uppercase tracking-[.1em] text-bubble-candy">Você economiza {money.format(full - discounted)}</div>
               </div>
               <button className="inline-flex items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink" onClick={onAdd}>Adicionar conjunto</button>
             </>
-          ) : <div className="text-[.84rem] text-bubble-cream/70">Escolha uma parte de baixo e um top para ver o preco do conjunto com 5% OFF.</div>}
+          ) : <div className="text-[.84rem] text-bubble-cream/70">Escolha uma parte de baixo e um top para ver o preço do conjunto com 5% OFF.</div>}
         </div>
       </div>
     </section>

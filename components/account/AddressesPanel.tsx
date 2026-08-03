@@ -53,7 +53,7 @@ export function AddressesPanel() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel carregar os enderecos.",
+          : "Não foi possível carregar os endereços.",
       );
     } finally {
       setLoading(false);
@@ -98,7 +98,7 @@ export function AddressesPanel() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel salvar o endereco.",
+          : "Não foi possível salvar o endereço.",
       );
     } finally {
       setBusy(false);
@@ -116,13 +116,13 @@ export function AddressesPanel() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel alterar o endereco principal.",
+          : "Não foi possível alterar o endereço principal.",
       );
     }
   }
 
   async function deleteAddress(address: AccountAddress) {
-    if (!window.confirm(`Excluir o endereco "${address.label}"?`)) return;
+    if (!window.confirm(`Excluir o endereço "${address.label}"?`)) return;
     try {
       await apiFetch(`/account/addresses/${address.id}`, { method: "DELETE" });
       await loadAddresses();
@@ -130,7 +130,7 @@ export function AddressesPanel() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel excluir o endereco.",
+          : "Não foi possível excluir o endereço.",
       );
     }
   }
@@ -159,7 +159,7 @@ export function AddressesPanel() {
         uf?: string;
       };
       if (result.erro) {
-        setCepStatus("CEP nao encontrado.");
+        setCepStatus("CEP não encontrado.");
         return;
       }
       setForm((current) => ({
@@ -169,9 +169,9 @@ export function AddressesPanel() {
         city: result.localidade || current.city,
         state: result.uf || current.state,
       }));
-      setCepStatus("Endereco preenchido. Confira o numero.");
+      setCepStatus("Endereço preenchido. Confira o número.");
     } catch {
-      setCepStatus("Nao foi possivel consultar o CEP.");
+      setCepStatus("Não foi possível consultar o CEP.");
     }
   }
 
@@ -184,9 +184,9 @@ export function AddressesPanel() {
         <div className="mb-7 flex items-start justify-between gap-4 border-b border-bubble-line pb-5">
           <div>
             <span className="font-sans text-[.62rem] font-semibold uppercase tracking-[.12em] text-bubble-ink/45">
-              {editingId === "new" ? "Novo endereco" : "Editar endereco"}
+              {editingId === "new" ? "Novo endereço" : "Editar endereço"}
             </span>
-            <h2 className="mt-1 text-2xl">Endereco de entrega</h2>
+            <h2 className="mt-1 text-2xl">Endereço de entrega</h2>
           </div>
           <button
             type="button"
@@ -199,7 +199,7 @@ export function AddressesPanel() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 max-[620px]:grid-cols-1">
-          <AddressField label="Identificacao">
+          <AddressField label="Identificação">
             <input
               className={inputClass}
               value={form.label}
@@ -258,7 +258,7 @@ export function AddressesPanel() {
               required
             />
           </AddressField>
-          <AddressField label="Numero">
+          <AddressField label="Número">
             <input
               className={inputClass}
               value={form.number}
@@ -272,7 +272,7 @@ export function AddressesPanel() {
               required
             />
           </AddressField>
-          <AddressField label="Complemento / referencia">
+          <AddressField label="Complemento / referência">
             <input
               className={inputClass}
               value={form.reference}
@@ -322,7 +322,7 @@ export function AddressesPanel() {
               setForm({ ...form, isDefault: event.target.checked })
             }
           />
-          Usar como endereco principal
+          Usar como endereço principal
         </label>
 
         {message ? (
@@ -343,7 +343,7 @@ export function AddressesPanel() {
             className="inline-flex items-center gap-2 bg-bubble-ink px-6 py-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.1em] text-bubble-white disabled:opacity-50"
           >
             <Save className="size-4" />
-            {busy ? "Salvando..." : "Salvar endereco"}
+            {busy ? "Salvando..." : "Salvar endereço"}
           </button>
         </div>
       </form>
@@ -354,9 +354,9 @@ export function AddressesPanel() {
     <div className="border border-bubble-ink bg-bubble-white p-7 max-[620px]:p-5">
       <div className="mb-7 flex items-start justify-between gap-4 border-b border-bubble-line pb-5">
         <div>
-          <h2 className="text-2xl">Meus enderecos</h2>
+          <h2 className="text-2xl">Meus endereços</h2>
           <p className="mt-1 text-[.72rem] text-bubble-ink/55">
-            Cadastre enderecos para agilizar suas proximas compras.
+            Cadastre endereços para agilizar suas próximas compras.
           </p>
         </div>
         <button
@@ -374,7 +374,7 @@ export function AddressesPanel() {
 
       {loading ? (
         <p className="py-12 text-center text-[.74rem] text-bubble-ink/50">
-          Carregando enderecos...
+          Carregando endereços...
         </p>
       ) : safeAddresses.length ? (
         <div className="grid grid-cols-2 gap-4 max-[680px]:grid-cols-1">
@@ -437,9 +437,9 @@ export function AddressesPanel() {
       ) : (
         <div className="flex flex-col items-center px-4 py-14 text-center">
           <MapPin className="size-9 text-bubble-ink/25" />
-          <h3 className="mt-4 text-xl">Nenhum endereco salvo</h3>
+          <h3 className="mt-4 text-xl">Nenhum endereço salvo</h3>
           <p className="mt-2 max-w-[360px] text-[.74rem] leading-[1.6] text-bubble-ink/50">
-            Cadastre seu primeiro endereco para preencher o checkout
+            Cadastre seu primeiro endereço para preencher o checkout
             automaticamente.
           </p>
           <button
@@ -447,7 +447,7 @@ export function AddressesPanel() {
             className="mt-6 inline-flex items-center gap-2 bg-bubble-ink px-6 py-3.5 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em] text-bubble-white"
             onClick={startCreate}
           >
-            <Plus className="size-4" /> Cadastrar endereco
+            <Plus className="size-4" /> Cadastrar endereço
           </button>
         </div>
       )}
@@ -471,7 +471,7 @@ function AddressField({
       {hint ? (
         <span
           className={`mt-1.5 block text-[.64rem] ${
-            hint.startsWith("Nao") || hint.includes("nao encontrado")
+            hint.startsWith("Não") || hint.includes("não encontrado")
               ? "text-bubble-danger"
               : "text-bubble-success"
           }`}

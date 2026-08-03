@@ -20,7 +20,7 @@ type CartDrawerProps = {
 export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerProps) {
   useBodyScrollLock(open);
   const router = useRouter();
-  const { lines, subtotal, freeShippingRemaining } = calculateCart(cart, products, null, 'Cartao de credito');
+  const { lines, subtotal, freeShippingRemaining } = calculateCart(cart, products, null, 'Cartão de crédito');
   const progress = FREE_SHIPPING_ENABLED
     ? 100
     : Math.min(100, (subtotal / 299) * 100);
@@ -40,17 +40,17 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
         </div>
         <div className="flex-1 overflow-y-auto px-[26px] py-5">
           {!lines.length ? (
-            <div className="px-2.5 py-[60px] text-center text-[.86rem] leading-[1.7] text-bubble-ink/50">Sua sacola esta vazia.<br />A Colecao 01 tem estoque limitado — garanta suas pecas.</div>
+            <div className="px-2.5 py-[60px] text-center text-[.86rem] leading-[1.7] text-bubble-ink/50">Sua sacola está vazia.<br />A Coleção 01 tem estoque limitado — garanta suas peças.</div>
           ) : (
             <>
               <div className="mb-[18px]">
                 <div className={`mb-2 text-[.74rem] ${freeShippingRemaining <= 0 ? 'font-semibold text-bubble-success' : 'text-bubble-ink/70 [&_b]:text-bubble-brown'}`}>
                   {FREE_SHIPPING_ENABLED ? (
-                    <>Lancamento Bubble: <b>FRETE GRATIS</b> em todos os pedidos!</>
+                    <>Lançamento Bubble: <b>FRETE GRÁTIS</b> em todos os pedidos!</>
                   ) : freeShippingRemaining <= 0 ? (
-                    <>Voce ganhou <b>FRETE GRATIS</b>!</>
+                    <>Você ganhou <b>FRETE GRÁTIS</b>!</>
                   ) : (
-                    <>Faltam <b>R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</b> para o frete gratis</>
+                    <>Faltam <b>R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</b> para o frete grátis</>
                   )}
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-[3px] bg-bubble-cream2"><div className="h-full rounded-[3px] bg-gradient-to-r from-bubble-ink to-bubble-candy transition-[width] duration-[400ms]" style={{ width: `${progress}%` }} /></div>

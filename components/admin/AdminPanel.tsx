@@ -59,7 +59,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
       const response = await apiFetch<unknown>('/admin/db');
       setDump(parseAdminDump(response));
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Nao foi possivel carregar o painel.');
+      notify(error instanceof Error ? error.message : 'Não foi possível carregar o painel.');
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
             </button>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Navegacao do painel">
+          <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Navegação do painel">
             {adminTabs.map((item) => {
               const Icon = adminTabIcons[item.id];
               const active = tab === item.id;
@@ -175,7 +175,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
             <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pt-8">
               {tab === 'dash' && <Dashboard dump={dump} />}
               {tab === 'products' && <ProductsAdmin products={dump.products} sports={sports} onSaved={refreshProducts} notify={notify} />}
-              {tab === 'orders' && <OrdersAdmin orders={dump.orders} />}
+              {tab === 'orders' && <OrdersAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'ship' && <ShipAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'customers' && <CustomersAdmin dump={dump} />}
               {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}

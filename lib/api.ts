@@ -149,7 +149,7 @@ export async function apiFetch<T>(
   } catch {
     throw new Error(
       response.ok
-        ? "A API retornou uma resposta invalida."
+        ? "A API retornou uma resposta inválida."
         : `Erro ${response.status}`,
     );
   }

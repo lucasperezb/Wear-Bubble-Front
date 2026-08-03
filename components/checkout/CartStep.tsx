@@ -33,7 +33,7 @@ export function CartStep({ lines, couponCode, coupon, message, onCouponCode, onA
               {item.bundle ? <span className="mb-1 font-sans text-[.64rem] font-bold uppercase tracking-[.08em] text-bubble-success">Conjunto · 5% OFF</span> : null}
               <strong className="font-serif text-base">{product.name}</strong>
               <span className="mt-1 text-[.75rem] text-bubble-ink/55">{item.color ? `Cor: ${item.color} · ` : ''}Tamanho: {item.size}</span>
-              <span className="mt-1 text-[.72rem] text-bubble-ink/55">Unitario: {money.format(product.price)}</span>
+              <span className="mt-1 text-[.72rem] text-bubble-ink/55">Unitário: {money.format(product.price)}</span>
               <div className="mt-auto flex items-center gap-3 pt-3">
                 <button className="size-8 rounded-full border border-bubble-ink bg-transparent" onClick={() => onQty(item, -1)}>−</button>
                 <span className="min-w-4 text-center">{item.qty}</span>

@@ -54,7 +54,7 @@ export function OrderSummary({
         label="Frete"
         value={
           freeShipping
-            ? "Gratis"
+            ? "Grátis"
             : shippingPrice !== null
               ? money.format(shippingPrice)
               : "Calculado na entrega"

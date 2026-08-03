@@ -60,8 +60,8 @@ export function productPayload(draft: ProductDraft) {
 
 export function validateProductDraft(draft: ProductDraft) {
   if (!draft.name.trim()) return 'Informe o nome do produto.';
-  if (!Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0) return 'Informe um preco maior que zero.';
-  if (!Number.isFinite(Number(draft.stock)) || Number(draft.stock) < 0) return 'Informe um estoque valido.';
+  if (!Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0) return 'Informe um preço maior que zero.';
+  if (!Number.isFinite(Number(draft.stock)) || Number(draft.stock) < 0) return 'Informe um estoque válido.';
   const sizes = Array.from(
     new Set(
       (draft.colors || [])
@@ -79,7 +79,7 @@ export function validateProductDraft(draft: ProductDraft) {
 export function iconForCategory(category: string) {
   if (category === 'Parte de baixo') return 'legging';
   if (category === 'Casaco') return 'jacket';
-  if (category === 'Acessorio') return 'sock';
+  if (category === 'Acessório') return 'sock';
   return 'top';
 }
 
@@ -103,6 +103,6 @@ export function addressLine(profile: Record<string, unknown>) {
   const street = [profile.street, profile.number, profile.complement].filter(Boolean).join(', ');
   const city = String(profile.city || '');
   const cep = String(profile.cep || '');
-  if (!street && !city && !cep) return <span className="text-bubble-danger">Sem endereco cadastrado</span>;
+  if (!street && !city && !cep) return <span className="text-bubble-danger">Sem endereço cadastrado</span>;
   return <>{street}{city ? <><br />{city}</> : null}{cep ? <> - CEP {cep}</> : null}</>;
 }

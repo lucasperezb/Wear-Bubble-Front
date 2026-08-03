@@ -82,7 +82,7 @@ export default function CartPage() {
     setCartHydrated(true);
     apiFetch<Product[]>("/products")
       .then(setProducts)
-      .catch(() => setMessage("Nao foi possivel carregar os produtos."))
+      .catch(() => setMessage("Não foi possível carregar os produtos."))
       .finally(() => setProductsLoaded(true));
 
     apiFetch<User | null>("/auth/session")
@@ -194,13 +194,13 @@ export default function CartPage() {
         }
         setShippingOptions(options);
         setShippingQuoteKey(quoteKey);
-        setMessage("Selecione uma opcao de entrega para continuar.");
+        setMessage("Selecione uma opção de entrega para continuar.");
       } catch (error) {
         if (requestId !== shippingRequestId.current) return;
         setMessage(
           error instanceof Error
             ? error.message
-            : "Nao foi possivel calcular o frete para este CEP.",
+            : "Não foi possível calcular o frete para este CEP.",
         );
       } finally {
         if (requestId === shippingRequestId.current) {
@@ -308,7 +308,7 @@ export default function CartPage() {
       setMessage(`Cupom ${applied.code} aplicado.`);
     } catch (error) {
       setCoupon(null);
-      setMessage(error instanceof Error ? error.message : "Cupom invalido.");
+      setMessage(error instanceof Error ? error.message : "Cupom inválido.");
     }
   }
 
@@ -376,7 +376,7 @@ export default function CartPage() {
         return;
       }
       if (!selectedShipping) {
-        setMessage("Selecione uma opcao de entrega para continuar.");
+        setMessage("Selecione uma opção de entrega para continuar.");
         return;
       }
       goToStep("payment");
@@ -393,7 +393,7 @@ export default function CartPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel salvar o endereco.",
+          : "Não foi possível salvar o endereço.",
       );
     } finally {
       setShippingLoading(false);
@@ -427,7 +427,7 @@ export default function CartPage() {
         saveCheckoutProfile(savedProfile);
       }
       let encryptedCard: string | undefined;
-      if (method === "Cartao de credito") {
+      if (method === "Cartão de crédito") {
         encryptedCard = await encryptCard(card);
       }
       const response = await apiFetch<TransparentPaymentResponse>(
@@ -455,7 +455,7 @@ export default function CartPage() {
       if (
         ["DECLINED", "CANCELED", "CANCELLED"].includes(response.paymentStatus)
       ) {
-        throw new Error(response.message || "Pagamento nao autorizado.");
+        throw new Error(response.message || "Pagamento não autorizado.");
       }
       setCard(emptyCardPaymentForm);
       finishOnSiteCheckout(response.number);
@@ -463,7 +463,7 @@ export default function CartPage() {
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel processar o pagamento.",
+          : "Não foi possível processar o pagamento.",
       );
       setBusy(false);
     }
@@ -594,15 +594,15 @@ export default function CartPage() {
 
         {ready && !totals.lines.length && step !== "confirmation" ? (
           <div className="border border-bubble-line bg-bubble-white px-8 py-20 text-center">
-            <h1 className="text-3xl">Seu carrinho esta vazio</h1>
+            <h1 className="text-3xl">Seu carrinho está vazio</h1>
             <p className="mt-3 text-bubble-ink/60">
-              Escolha suas pecas e volte aqui para finalizar.
+              Escolha suas peças e volte aqui para finalizar.
             </p>
             <Link
-              href="/#colecao"
+              href="/#coleção"
               className="mt-6 inline-flex bg-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em] text-bubble-white"
             >
-              Ver colecao
+              Ver coleção
             </Link>
           </div>
         ) : null}
@@ -756,13 +756,13 @@ function validateAddressProfile(profile: DeliveryProfile) {
   const missing = [
     ["CEP", profile.cep],
     ["rua", profile.street],
-    ["numero", profile.number],
+    ["número", profile.number],
     ["cidade", profile.city],
     ["estado", profile.state],
   ].find(([, value]) => !String(value).trim());
   if (missing) return `Informe ${missing[0]} para continuar.`;
   if (profile.cep.replace(/\D/g, "").length !== 8)
-    return "Informe um CEP com 8 digitos.";
+    return "Informe um CEP com 8 dígitos.";
   if (!/^[A-Z]{2}$/.test(profile.state))
     return "Informe a UF do estado com 2 letras.";
   return "";
@@ -776,12 +776,12 @@ function validateBuyerProfile(profile: DeliveryProfile) {
   ].find(([, value]) => !String(value).trim());
   if (missing) return `Informe ${missing[0]} para continuar.`;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email.trim()))
-    return "Informe um e-mail valido para continuar.";
+    return "Informe um e-mail válido para continuar.";
   if (!isValidCpf(profile.taxId))
-    return "Informe um CPF valido para o pagamento.";
+    return "Informe um CPF válido para o pagamento.";
   const phoneDigits = profile.phone.replace(/\D/g, "");
   if (phoneDigits && ![10, 11].includes(phoneDigits.length))
-    return "Informe um telefone com DDD valido.";
+    return "Informe um telefone com DDD válido.";
   return "";
 }
 
@@ -815,18 +815,18 @@ async function encryptCard(card: CardPaymentForm) {
   const number = card.number.replace(/\D/g, "");
   const [month, shortYear] = card.expiry.split("/");
   if (card.holder.trim().split(/\s+/).length < 2)
-    throw new Error("Informe o nome completo impresso no cartao.");
+    throw new Error("Informe o nome completo impresso no cartão.");
   if (number.length < 14 || number.length > 19)
-    throw new Error("Informe um numero de cartao valido.");
+    throw new Error("Informe um número de cartão válido.");
   if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(card.expiry))
     throw new Error("Informe a validade no formato MM/AA.");
   if (!/^\d{3,4}$/.test(card.securityCode))
-    throw new Error("Informe um CVV valido.");
+    throw new Error("Informe um CVV válido.");
 
   const key = await apiFetch<{ publicKey: string }>("/payment/public-key");
   if (!window.PagSeguro?.encryptCard)
     throw new Error(
-      "O modulo seguro do PagBank ainda esta carregando. Tente novamente.",
+      "O módulo seguro do PagBank ainda está carregando. Tente novamente.",
     );
   const encrypted = window.PagSeguro.encryptCard({
     publicKey: key.publicKey,
@@ -838,7 +838,7 @@ async function encryptCard(card: CardPaymentForm) {
   });
   if (encrypted.hasErrors || !encrypted.encryptedCard) {
     const message = encrypted.errors?.[0]?.message;
-    throw new Error(message || "Confira os dados do cartao.");
+    throw new Error(message || "Confira os dados do cartão.");
   }
   return encrypted.encryptedCard;
 }

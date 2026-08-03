@@ -9,7 +9,7 @@ export type CartItem = {
   bundle?: string | null;
 };
 
-export type PaymentMethod = 'Pix' | 'Cartao de credito';
+export type PaymentMethod = 'Pix' | 'Cartão de crédito';
 export type AppliedCoupon = { code: string; pct: number } | null;
 
 export const CART_STORAGE_KEY = 'bubble_cart';

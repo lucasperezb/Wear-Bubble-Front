@@ -69,7 +69,7 @@ export function AccountPage() {
       currentUser = await apiFetch<User | null>("/auth/session");
     } catch {
       setLoadError(
-        "Nao foi possivel validar sua sessao agora. Verifique sua conexao e tente novamente.",
+        "Não foi possível validar sua sessão agora. Verifique sua conexão e tente novamente.",
       );
       setLoading(false);
       return;
@@ -114,7 +114,7 @@ export function AccountPage() {
         ordersResult.status === "rejected"
       ) {
         setLoadError(
-          "Sua sessao esta ativa, mas alguns dados da conta nao puderam ser carregados. Tente novamente.",
+          "Sua sessão está ativa, mas alguns dados da conta não puderam ser carregados. Tente novamente.",
         );
       }
     } finally {
@@ -142,7 +142,7 @@ export function AccountPage() {
       showMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel atualizar seus dados.",
+          : "Não foi possível atualizar seus dados.",
         "error",
       );
     } finally {
@@ -158,7 +158,7 @@ export function AccountPage() {
   async function deleteAccount() {
     if (
       !window.confirm(
-        "Excluir sua conta e seus dados pessoais? Esta acao nao pode ser desfeita.",
+        "Excluir sua conta e seus dados pessoais? Esta ação não pode ser desfeita.",
       )
     )
       return;
@@ -166,13 +166,13 @@ export function AccountPage() {
       const result = await apiFetch<{ protocol: string }>("/account/delete", {
         method: "POST",
       });
-      window.alert(`Conta excluida. Protocolo: ${result.protocol}`);
+      window.alert(`Conta excluída. Protocolo: ${result.protocol}`);
       window.location.replace("/");
     } catch (error) {
       showMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel excluir a conta.",
+          : "Não foi possível excluir a conta.",
         "error",
       );
     }
@@ -197,7 +197,7 @@ export function AccountPage() {
     return loadError ? (
       <main className="flex min-h-screen items-center justify-center bg-bubble-cream px-6 text-bubble-ink">
         <div className="max-w-lg border border-bubble-ink bg-bubble-white p-8 text-center">
-          <h1 className="text-2xl">Nao foi possivel abrir sua conta</h1>
+          <h1 className="text-2xl">Não foi possível abrir sua conta</h1>
           <p className="mt-3 text-sm leading-6 text-bubble-ink/65">{loadError}</p>
           <button
             type="button"
@@ -244,7 +244,7 @@ export function AccountPage() {
 
       <section className="mx-auto max-w-[1200px] px-6 py-12">
         <span className="font-sans text-[.66rem] font-semibold uppercase tracking-[.28em] text-bubble-brown">
-          Area do cliente
+          Área do cliente
         </span>
         <h1 className="mt-2 text-[clamp(2.4rem,6vw,4.5rem)] leading-none">
           Minha conta
@@ -295,7 +295,7 @@ export function AccountPage() {
                 <AccountNavButton
                   active={tab === "addresses"}
                   icon={<MapPin />}
-                  label="Enderecos"
+                  label="Endereços"
                   onClick={() => setTab("addresses")}
                 />
               </div>
@@ -310,7 +310,7 @@ export function AccountPage() {
             </div>
             <div className="mt-4 flex gap-3 border border-bubble-success/25 bg-bubble-success/[.08] p-4 text-[.68rem] leading-[1.55] text-bubble-success">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
-              Seus dados pessoais ficam separados do historico comercial.
+              Seus dados pessoais ficam separados do histórico comercial.
             </div>
           </aside>
 
@@ -324,7 +324,7 @@ export function AccountPage() {
               >
                 <div className="mb-7 flex items-center justify-between gap-4 border-b border-bubble-line pb-5">
                   <div>
-                    <h2 className="text-2xl">Informacoes pessoais</h2>
+                    <h2 className="text-2xl">Informações pessoais</h2>
                     <p className="mt-1 text-[.72rem] text-bubble-ink/55">
                       Mantenha seus dados pessoais atualizados.
                     </p>
@@ -413,7 +413,7 @@ export function AccountPage() {
                     className="inline-flex items-center gap-2 bg-bubble-ink px-6 py-3.5 font-sans text-[.7rem] font-semibold uppercase tracking-[.12em] text-bubble-white disabled:opacity-50"
                   >
                     <Save className="size-4" />
-                    {saving ? "Salvando..." : "Salvar alteracoes"}
+                    {saving ? "Salvando..." : "Salvar alterações"}
                   </button>
                 </div>
               </form>
@@ -439,7 +439,7 @@ function OrdersPanel({ orders }: { orders: Order[] }) {
         <div>
           <h2 className="text-2xl">Meus pedidos</h2>
           <p className="mt-1 text-[.72rem] text-bubble-ink/55">
-            Acompanhe pagamentos, preparacao e entrega.
+            Acompanhe pagamentos, preparação e entrega.
           </p>
         </div>
         <span className="font-display text-3xl">{safeOrders.length}</span>
@@ -521,13 +521,13 @@ function OrdersPanel({ orders }: { orders: Order[] }) {
           <ShoppingBag className="size-9 text-bubble-ink/25" />
           <h3 className="mt-4 text-xl">Nenhum pedido ainda</h3>
           <p className="mt-2 max-w-[360px] text-[.76rem] leading-[1.6] text-bubble-ink/50">
-            Quando voce fizer uma compra, o acompanhamento aparecera aqui.
+            Quando você fizer uma compra, o acompanhamento aparecerá aqui.
           </p>
           <Link
-            href="/#colecao"
+            href="/#coleção"
             className="mt-6 bg-bubble-ink px-6 py-3.5 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em] text-bubble-white"
           >
-            Conhecer a colecao
+            Conhecer a coleção
           </Link>
         </div>
       )}
@@ -579,7 +579,7 @@ function AccountField({
       {hint ? (
         <span
           className={`mt-1.5 block text-[.64rem] ${
-            hint.startsWith("Nao") || hint.includes("nao encontrado")
+            hint.startsWith("Não") || hint.includes("não encontrado")
               ? "text-bubble-danger"
               : "text-bubble-success"
           }`}

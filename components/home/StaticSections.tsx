@@ -5,7 +5,7 @@ export function ContactSection() {
         <div className="mx-auto mb-10 max-w-[640px] text-center">
           <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-cream">fale com a gente</span>
           <h2 className="mt-3 text-bubble-white">Contato</h2>
-          <p className="mt-3.5 italic leading-[1.7] text-bubble-cream/80">Duvida sobre tamanho, pedido ou troca? Estamos por aqui — respondemos rapido.</p>
+          <p className="mt-3.5 italic leading-[1.7] text-bubble-cream/80">Dúvida sobre tamanho, pedido ou troca? Estamos por aqui — respondemos rápido.</p>
         </div>
         <div className="grid grid-cols-3 gap-4 max-[860px]:grid-cols-1">
           {[
@@ -32,14 +32,14 @@ export function BrandSections() {
         <div className="mx-auto grid max-w-[1200px] grid-cols-2 items-center gap-[60px] px-8 max-[980px]:grid-cols-1">
           <div>
             <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-candy">A Marca</span>
-            <h2 className="text-[2.4rem] text-bubble-cream">Feita para quem<br />nao para.</h2>
-            <p className="mt-4 max-w-[420px] leading-[1.7] text-bubble-cream/75">Cada peca bubble nasce da mesma pergunta: como equilibrar sofisticacao e energia esportiva? A resposta esta no corte, no tecido e no detalhe.</p>
+            <h2 className="text-[2.4rem] text-bubble-cream">Feita para quem<br />não para.</h2>
+            <p className="mt-4 max-w-[420px] leading-[1.7] text-bubble-cream/75">Cada peça bubble nasce da mesma pergunta: como equilibrar sofisticação e energia esportiva? A resposta está no corte, no tecido e no detalhe.</p>
           </div>
           <ul className="m-0 flex list-none flex-col gap-[18px] p-0">
             {[
-              ['01', 'Tecido de compressao com secagem rapida e protecao UV50+'],
+              ['01', 'Tecido de compressão com secagem rápida e proteção UV50+'],
               ['02', 'Modelagem desenhada para o corpo da mulher brasileira'],
-              ['03', 'Costura flatlock reforcada nas zonas de maior atrito'],
+              ['03', 'Costura flatlock reforçada nas zonas de maior atrito'],
               ['04', 'Paleta autoral, exclusiva bubble'],
             ].map(([number, text]) => (
               <li className="flex items-baseline gap-4" key={number}><span className="font-display text-[1.4rem] text-bubble-candy">{number}</span><span className="text-[.9rem] text-bubble-cream/85">{text}</span></li>
@@ -52,8 +52,8 @@ export function BrandSections() {
           <h2 className="text-[clamp(3rem,9vw,6rem)] tracking-[.02em]">bubble</h2>
           <p className="m-0 mt-[18px] font-sans text-[clamp(1.5rem,3.5vw,2.25rem)] font-semibold lowercase">quem somos?</p>
           <div className="mt-9 text-[1.06rem] font-medium leading-[1.85]">
-            <p>Somos a Bubble, uma marca nascida com o proposito de mostrar que nao e necessario escolher entre conforto, qualidade e estilo.</p>
-            <p>Cada detalhe dessa jornada foi pensado com carinho para entregar o melhor produto e experiencia para voces, mulheres.</p>
+            <p>Somos a Bubble, uma marca nascida com o propósito de mostrar que não é necessário escolher entre conforto, qualidade e estilo.</p>
+            <p>Cada detalhe dessa jornada foi pensado com carinho para entregar o melhor produto e experiência para vocês, mulheres.</p>
           </div>
           <p className="m-0 mt-[52px] font-serif text-[clamp(1.35rem,3vw,1.9rem)] font-semibold italic">estoure seus limites, vista bubble.</p>
         </div>
@@ -70,13 +70,13 @@ export function Footer() {
           <div>
             <span className="block font-serif text-[.82rem] font-semibold italic text-bubble-cream">wear</span>
             <span className="block font-display text-2xl uppercase tracking-[.02em] text-bubble-cream">BUBBLE</span>
-            <p className="mt-3.5 max-w-[260px] text-[.82rem] leading-[1.6] text-bubble-cream/60">Moda fitness feminina com identidade. Da academia a rua.</p>
+            <p className="mt-3.5 max-w-[260px] text-[.82rem] leading-[1.6] text-bubble-cream/60">Moda fitness feminina com identidade. Da academia à rua.</p>
           </div>
-          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy"><li><a href="#colecao">Colecao</a></li><li><a href="#conjunto">Monte seu Conjunto</a></li><li><a href="#contato">Contato</a></li></ul></div>
-          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Suporte</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Trocas em ate 30 dias</li><li>Guia de medidas</li><li>Rastreio de pedido</li></ul></div>
-          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Politica de Privacidade (LGPD)</li><li>Dados pseudoanonimizados</li></ul></div>
+          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy"><li><a href="#colecao">Coleção</a></li><li><a href="#conjunto">Monte seu Conjunto</a></li><li><a href="#contato">Contato</a></li></ul></div>
+          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Suporte</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Trocas em até 30 dias</li><li>Guia de medidas</li><li>Rastreio de pedido</li></ul></div>
+          <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Política de Privacidade (LGPD)</li><li>Dados pseudoanonimizados</li></ul></div>
         </div>
-        <div className="flex flex-wrap justify-between gap-2.5 pt-6 text-[.7rem] text-bubble-cream/45"><span>© 2026 Bubble Fitness Wear · CNPJ em breve</span><span>Pagamentos via PagBank · Pix e Cartao · Ambiente seguro</span></div>
+        <div className="flex flex-wrap justify-between gap-2.5 pt-6 text-[.7rem] text-bubble-cream/45"><span>© 2026 Bubble Fitness Wear · CNPJ em breve</span><span>Pagamentos via PagBank · Pix e Cartão · Ambiente seguro</span></div>
       </div>
     </footer>
   );
