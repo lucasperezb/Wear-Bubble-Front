@@ -142,9 +142,9 @@ NEXT_PUBLIC_API_BASE=/api
 BACKEND_API_URL=https://api.wearbubble.com.br/api
 ```
 
-Em produção, `wearbubble.com.br` é redirecionado permanentemente para
-`www.wearbubble.com.br`. Isso mantém uma única origem canônica e evita que caches
-independentes sirvam versões diferentes após um deploy.
+Em produção, `www.wearbubble.com.br` é o domínio canônico da aplicação. O
+redirecionamento de `wearbubble.com.br` para o `www` deve ser configurado no
+hPanel, antes do runtime Node.js, para existir somente um cache de conteúdo.
 
 No backend, configure:
 
