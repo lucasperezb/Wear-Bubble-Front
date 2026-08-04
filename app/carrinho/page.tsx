@@ -266,7 +266,10 @@ export default function CartPage() {
   const ready = cartHydrated && productsLoaded;
   const displayedTotal =
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
-  const freeShipping = FREE_SHIPPING_ENABLED || totals.total >= 299;
+  const freeShipping =
+    FREE_SHIPPING_ENABLED ||
+    coupon?.type === 'store_credit' ||
+    totals.total >= 299;
   const shippingPrice = selectedShipping
     ? freeShipping
       ? 0
@@ -301,11 +304,24 @@ export default function CartPage() {
 
   async function applyCoupon() {
     try {
-      const applied = await apiFetch<{ code: string; pct: number }>(
-        `/coupons/${encodeURIComponent(couponCode)}`,
-      );
-      setCoupon(applied);
-      setMessage(`Cupom ${applied.code} aplicado.`);
+      const code = couponCode.trim().toUpperCase();
+      if (code.startsWith('WB-')) {
+        const credit = await apiFetch<{
+          code: string;
+          value: number;
+          balance: number;
+          expiresAt: number;
+          type: 'store_credit';
+        }>(`/credits/${encodeURIComponent(code)}`);
+        setCoupon(credit);
+        setMessage(`Crédito ${credit.code} aplicado com frete grátis.`);
+      } else {
+        const applied = await apiFetch<{ code: string; pct: number }>(
+          `/coupons/${encodeURIComponent(code)}`,
+        );
+        setCoupon({ ...applied, type: 'coupon' });
+        setMessage(`Cupom ${applied.code} aplicado.`);
+      }
     } catch (error) {
       setCoupon(null);
       setMessage(error instanceof Error ? error.message : "Cupom inválido.");
@@ -426,9 +442,9 @@ export default function CartPage() {
         setProfile(savedProfile);
         saveCheckoutProfile(savedProfile);
       }
-      let encryptedCard: string | undefined;
+      let paymentCard: ReturnType<typeof prepareCard> | undefined;
       if (method === "Cartão de crédito") {
-        encryptedCard = await encryptCard(card);
+        paymentCard = prepareCard(card);
       }
       const response = await apiFetch<TransparentPaymentResponse>(
         "/payment/checkout",
@@ -437,9 +453,11 @@ export default function CartPage() {
           body: JSON.stringify({
             items: cart,
             method,
-            coupon: coupon?.code,
+            coupon: coupon?.type === 'coupon' ? coupon.code : undefined,
+            creditCode:
+              coupon?.type === 'store_credit' ? coupon.code : undefined,
             customer: profile,
-            encryptedCard,
+            card: paymentCard,
             installments: card.installments,
             existingOrderId: pixPayment?.orderId,
             shippingQuoteToken: selectedShipping?.quoteToken,
@@ -811,7 +829,7 @@ type TransparentPaymentResponse =
     }
   | PixPayment;
 
-async function encryptCard(card: CardPaymentForm) {
+function prepareCard(card: CardPaymentForm) {
   const number = card.number.replace(/\D/g, "");
   const [month, shortYear] = card.expiry.split("/");
   if (card.holder.trim().split(/\s+/).length < 2)
@@ -823,41 +841,11 @@ async function encryptCard(card: CardPaymentForm) {
   if (!/^\d{3,4}$/.test(card.securityCode))
     throw new Error("Informe um CVV válido.");
 
-  const key = await apiFetch<{ publicKey: string }>("/payment/public-key");
-  if (!window.PagSeguro?.encryptCard)
-    throw new Error(
-      "O módulo seguro do PagBank ainda está carregando. Tente novamente.",
-    );
-  const encrypted = window.PagSeguro.encryptCard({
-    publicKey: key.publicKey,
-    holder: card.holder.trim(),
+  return {
+    holderName: card.holder.trim(),
     number,
-    expMonth: month,
-    expYear: `20${shortYear}`,
-    securityCode: card.securityCode,
-  });
-  if (encrypted.hasErrors || !encrypted.encryptedCard) {
-    const message = encrypted.errors?.[0]?.message;
-    throw new Error(message || "Confira os dados do cartão.");
-  }
-  return encrypted.encryptedCard;
-}
-
-declare global {
-  interface Window {
-    PagSeguro?: {
-      encryptCard(data: {
-        publicKey: string;
-        holder: string;
-        number: string;
-        expMonth: string;
-        expYear: string;
-        securityCode: string;
-      }): {
-        encryptedCard?: string;
-        hasErrors: boolean;
-        errors?: Array<{ code?: string; message?: string }>;
-      };
-    };
-  }
+    expiryMonth: month,
+    expiryYear: `20${shortYear}`,
+    ccv: card.securityCode,
+  };
 }

@@ -79,9 +79,10 @@ export type Order = {
   shipStage: number;
   tracking?: string;
   gateway?: string;
-  pagbankCheckoutId?: string;
-  pagbankPaymentId?: string;
+  asaasCustomerId?: string;
+  asaasPaymentId?: string;
   paidAt?: number;
+  deliveredAt?: number;
   delivery?: {
     name: string;
     email: string;
@@ -103,6 +104,7 @@ export type Order = {
     deliveryTime: number;
   };
   items: Array<{
+    id?: number;
     pid: number;
     name: string;
     size: string;
@@ -110,6 +112,62 @@ export type Order = {
     qty: number;
     price: number;
   }>;
+};
+
+export type ReturnRequest = {
+  id: string;
+  protocol: string;
+  orderId: string;
+  customerUid: string;
+  kind: "exchange" | "return" | "defect";
+  reason: string;
+  details: string;
+  status:
+    | "requested"
+    | "approved"
+    | "awaiting_posting"
+    | "returning"
+    | "received"
+    | "inspecting"
+    | "completed"
+    | "rejected"
+    | "canceled";
+  publicNote: string;
+  postingCode: string | null;
+  returnTracking: string | null;
+  postingExpiresAt: number | null;
+  resolution: "credit" | "refund" | null;
+  resolutionAmount: number;
+  creditCode: string | null;
+  requestedAt: number;
+  approvedAt: number | null;
+  postedAt: number | null;
+  receivedAt: number | null;
+  resolvedAt: number | null;
+  items: Array<{
+    id: number;
+    orderItemId: number;
+    quantity: number;
+    unitRefundValue: number;
+    condition: "pending" | "resellable" | "damaged";
+  }>;
+  events: Array<{
+    id: number;
+    status: string;
+    label: string;
+    message: string;
+    occurredAt: number;
+  }>;
+};
+
+export type StoreCredit = {
+  id: string;
+  code: string;
+  initialAmount: number;
+  balance: number;
+  status: "active" | "used" | "expired" | "canceled";
+  expiresAt: number;
+  returnRequestId: string;
 };
 
 export type Coupon = {

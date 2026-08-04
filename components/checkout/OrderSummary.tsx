@@ -38,7 +38,7 @@ export function OrderSummary({
       ) : null}
       {couponDiscount > 0 ? (
         <SummaryRow
-          label={`Cupom ${coupon?.code}`}
+          label={coupon?.type === 'store_credit' ? `Crédito ${coupon.code}` : `Cupom ${coupon?.code}`}
           value={`-${money.format(couponDiscount)}`}
           discount
         />

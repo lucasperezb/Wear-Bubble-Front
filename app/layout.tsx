@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Bubble Fitness Wear - Moda fitness feminina',
+  title: 'Wear Bubble - Moda fitness feminina',
   description: 'Moda fitness feminina que une qualidade, conforto e design autêntico.',
 };
 

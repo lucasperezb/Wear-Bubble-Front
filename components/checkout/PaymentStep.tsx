@@ -1,7 +1,6 @@
 'use client';
 
 import { Check, Copy, CreditCard, QrCode } from 'lucide-react';
-import Script from 'next/script';
 import { useState } from 'react';
 import { money, type User } from '../../lib/api';
 import {
@@ -58,7 +57,6 @@ export function PaymentStep({
 
   return (
     <section>
-      <Script src="https://assets.pagseguro.com.br/checkout-sdk-js/rc/dist/browser/pagseguro.min.js" strategy="afterInteractive" />
       <h1 className="mb-6 text-[clamp(2rem,5vw,3.5rem)]">Pagamento</h1>
       <div className="border border-bubble-line bg-bubble-white p-6">
         <div className="mb-6">
@@ -176,7 +174,7 @@ export function PaymentStep({
           </div>
         ) : method === 'Cartão de crédito' ? (
           <div className="mt-5 border border-bubble-candy bg-bubble-candy/15 p-4 text-[.74rem] leading-[1.6] text-bubble-ink/65">
-            O PagBank criptografa o cartão no navegador. Número e CVV não são armazenados pela Bubble.
+            Pagamento processado com segurança pelo Asaas. Número e CVV não são armazenados pela Bubble.
           </div>
         ) : null}
 

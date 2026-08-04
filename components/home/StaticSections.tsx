@@ -76,7 +76,7 @@ export function Footer() {
           <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Suporte</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Trocas em até 30 dias</li><li>Guia de medidas</li><li>Rastreio de pedido</li></ul></div>
           <div><h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4><ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70"><li>Política de Privacidade (LGPD)</li><li>Dados pseudoanonimizados</li></ul></div>
         </div>
-        <div className="flex flex-wrap justify-between gap-2.5 pt-6 text-[.7rem] text-bubble-cream/45"><span>© 2026 Bubble Fitness Wear · CNPJ em breve</span><span>Pagamentos via PagBank · Pix e Cartão · Ambiente seguro</span></div>
+        <div className="flex flex-wrap justify-between gap-2.5 pt-6 text-[.7rem] text-bubble-cream/45"><span>© 2026 Wear Bubble · CNPJ 68.177.794/0001-05</span><span>Pagamentos via Asaas · Pix e Cartão · Ambiente seguro</span></div>
       </div>
     </footer>
   );

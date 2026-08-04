@@ -19,6 +19,7 @@ export type AdminTab =
   | 'products'
   | 'orders'
   | 'ship'
+  | 'returns'
   | 'customers'
   | 'coupons'
   | 'combos'

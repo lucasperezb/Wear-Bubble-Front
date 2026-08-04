@@ -10,7 +10,10 @@ export type CartItem = {
 };
 
 export type PaymentMethod = 'Pix' | 'Cartão de crédito';
-export type AppliedCoupon = { code: string; pct: number } | null;
+export type AppliedCoupon =
+  | { code: string; type: 'coupon'; pct: number }
+  | { code: string; type: 'store_credit'; value: number; balance: number; expiresAt: number }
+  | null;
 
 export const CART_STORAGE_KEY = 'bubble_cart';
 
@@ -50,10 +53,15 @@ export function calculateCart(
   ), 0);
   const bundleDiscount = bundleSubtotal * 0.05;
   const afterBundle = subtotal - bundleDiscount;
-  const couponDiscount = coupon ? afterBundle * (coupon.pct / 100) : 0;
-  const beforePayment = afterBundle - couponDiscount;
+  const percentDiscount = coupon?.type === 'coupon' ? afterBundle * (coupon.pct / 100) : 0;
+  const beforePayment = afterBundle - percentDiscount;
   const pixDiscount = method === 'Pix' ? beforePayment * 0.05 : 0;
-  const total = beforePayment - pixDiscount;
+  const beforeCredit = beforePayment - pixDiscount;
+  const creditDiscount = coupon?.type === 'store_credit'
+    ? Math.min(beforeCredit, coupon.value)
+    : 0;
+  const couponDiscount = percentDiscount + creditDiscount;
+  const total = beforeCredit - creditDiscount;
 
   return {
     lines,

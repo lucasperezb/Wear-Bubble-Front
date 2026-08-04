@@ -50,7 +50,9 @@ export function CartStep({ lines, couponCode, coupon, message, onCouponCode, onA
         <h2 className="mb-3 text-lg">Cupom de desconto</h2>
         {coupon ? (
           <div className="border border-bubble-success/30 bg-bubble-success/10 p-4 text-[.8rem] font-semibold text-bubble-success">
-            Cupom {coupon.code} aplicado (-{coupon.pct}%) · <button className="border-0 bg-transparent text-inherit underline" onClick={onRemoveCoupon}>remover</button>
+            {coupon.type === 'store_credit'
+              ? `Crédito ${coupon.code} aplicado (${money.format(coupon.value)})`
+              : `Cupom ${coupon.code} aplicado (-${coupon.pct}%)`} · <button className="border-0 bg-transparent text-inherit underline" onClick={onRemoveCoupon}>remover</button>
           </div>
         ) : (
           <div className="flex border border-bubble-line bg-bubble-white p-1">

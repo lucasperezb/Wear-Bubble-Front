@@ -5,6 +5,7 @@ export const adminTabs: Array<{ id: AdminTab; label: string }> = [
   { id: 'products', label: 'Produtos' },
   { id: 'orders', label: 'Pedidos' },
   { id: 'ship', label: 'Envios' },
+  { id: 'returns', label: 'Trocas e devoluções' },
   { id: 'customers', label: 'Clientes' },
   { id: 'coupons', label: 'Cupons' },
   { id: 'combos', label: 'Conjuntos' },

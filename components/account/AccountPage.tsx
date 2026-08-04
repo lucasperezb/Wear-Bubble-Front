@@ -6,6 +6,7 @@ import {
   LogOut,
   MapPin,
   PackageCheck,
+  RotateCcw,
   Save,
   ShieldCheck,
   ShoppingBag,
@@ -19,6 +20,8 @@ import {
   money,
   type AccountProfile,
   type Order,
+  type ReturnRequest,
+  type StoreCredit,
   type User,
 } from "../../lib/api";
 import {
@@ -27,8 +30,9 @@ import {
   formatPhone,
 } from "../../lib/input-formatters";
 import { AddressesPanel } from "./AddressesPanel";
+import { ReturnsPanel } from "./ReturnsPanel";
 
-type AccountTab = "orders" | "profile" | "addresses";
+type AccountTab = "orders" | "returns" | "profile" | "addresses";
 
 const emptyProfile: AccountProfile = {
   uid: "",
@@ -47,6 +51,8 @@ export function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<AccountProfile>(emptyProfile);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
+  const [credits, setCredits] = useState<StoreCredit[]>([]);
   const [tab, setTab] = useState<AccountTab>("orders");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -89,9 +95,12 @@ export function AccountPage() {
     });
 
     try {
-      const [accountResult, ordersResult] = await Promise.allSettled([
+      const [accountResult, ordersResult, returnsResult, creditsResult] =
+        await Promise.allSettled([
         apiFetch<Partial<AccountProfile>>("/account"),
         apiFetch<Order[] | null>("/orders/mine"),
+        apiFetch<ReturnRequest[]>("/returns/mine"),
+        apiFetch<StoreCredit[]>("/returns/credits/mine"),
       ]);
 
       if (accountResult.status === "fulfilled") {
@@ -108,10 +117,14 @@ export function AccountPage() {
       if (ordersResult.status === "fulfilled") {
         setOrders(Array.isArray(ordersResult.value) ? ordersResult.value : []);
       }
+      if (returnsResult.status === "fulfilled") setReturns(returnsResult.value);
+      if (creditsResult.status === "fulfilled") setCredits(creditsResult.value);
 
       if (
         accountResult.status === "rejected" ||
-        ordersResult.status === "rejected"
+        ordersResult.status === "rejected" ||
+        returnsResult.status === "rejected" ||
+        creditsResult.status === "rejected"
       ) {
         setLoadError(
           "Sua sessão está ativa, mas alguns dados da conta não puderam ser carregados. Tente novamente.",
@@ -281,6 +294,12 @@ export function AccountPage() {
               </div>
               <div className="mt-5 border-t border-bubble-line pt-3">
                 <AccountNavButton
+                  active={tab === "returns"}
+                  icon={<RotateCcw />}
+                  label="Trocas e devoluções"
+                  onClick={() => setTab("returns")}
+                />
+                <AccountNavButton
                   active={tab === "orders"}
                   icon={<ShoppingBag />}
                   label="Meus pedidos"
@@ -316,6 +335,14 @@ export function AccountPage() {
 
           <section>
             {tab === "orders" ? <OrdersPanel orders={orders} /> : null}
+            {tab === "returns" ? (
+              <ReturnsPanel
+                orders={orders}
+                requests={returns}
+                credits={credits}
+                onChanged={loadAccount}
+              />
+            ) : null}
             {tab === "addresses" ? <AddressesPanel /> : null}
             {tab === "profile" ? (
               <form

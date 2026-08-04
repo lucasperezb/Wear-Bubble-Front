@@ -9,6 +9,7 @@ import {
   Menu,
   Package,
   RefreshCw,
+  RotateCcw,
   ShoppingBag,
   TicketPercent,
   Truck,
@@ -32,6 +33,7 @@ import { DatabaseAdmin } from './DatabaseAdmin';
 import { Dashboard } from './Dashboard';
 import { OrdersAdmin } from './OrdersAdmin';
 import { ProductsAdmin } from './ProductsAdmin';
+import { ReturnsAdmin } from './ReturnsAdmin';
 import { ShipAdmin } from './ShipAdmin';
 
 type AdminPanelProps = {
@@ -177,6 +179,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
               {tab === 'products' && <ProductsAdmin products={dump.products} sports={sports} onSaved={refreshProducts} notify={notify} />}
               {tab === 'orders' && <OrdersAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'ship' && <ShipAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
+              {tab === 'returns' && <ReturnsAdmin orders={dump.orders} notify={notify} />}
               {tab === 'customers' && <CustomersAdmin dump={dump} />}
               {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'combos' && <CombosAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
@@ -194,6 +197,7 @@ const adminTabIcons: Record<AdminTab, LucideIcon> = {
   products: Package,
   orders: ShoppingBag,
   ship: Truck,
+  returns: RotateCcw,
   customers: Users,
   coupons: TicketPercent,
   combos: Layers3,

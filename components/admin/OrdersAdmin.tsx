@@ -124,7 +124,7 @@ export function OrdersAdmin({ orders, onSaved, notify }: { orders: Order[]; onSa
   async function cancelOrder(order: Order) {
     if (
       !window.confirm(
-        `Cancelar o pedido #${order.number} e estornar ${money.format(order.total)} pelo PagBank? Esta ação não pode ser desfeita.`,
+        `Cancelar o pedido #${order.number} e estornar ${money.format(order.total)} pelo Asaas? Esta ação não pode ser desfeita.`,
       )
     ) return;
 
@@ -265,7 +265,7 @@ export function OrdersAdmin({ orders, onSaved, notify }: { orders: Order[]; onSa
                     Total
                   </p>
                   <strong className="text-xl">{money.format(order.total)}</strong>
-                  {order.status === 'paid' && order.gateway === 'pagbank' && order.pagbankPaymentId ? (
+                  {order.status === 'paid' && order.gateway === 'asaas' && order.asaasPaymentId ? (
                     <button
                       type="button"
                       disabled={cancelingId === order.id}
