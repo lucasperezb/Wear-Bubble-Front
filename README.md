@@ -142,6 +142,10 @@ NEXT_PUBLIC_API_BASE=/api
 BACKEND_API_URL=https://api.wearbubble.com.br/api
 ```
 
+Em produção, `wearbubble.com.br` é redirecionado permanentemente para
+`www.wearbubble.com.br`. Isso mantém uma única origem canônica e evita que caches
+independentes sirvam versões diferentes após um deploy.
+
 No backend, configure:
 
 ```env
