@@ -143,8 +143,9 @@ BACKEND_API_URL=https://api.wearbubble.com.br/api
 ```
 
 Em produção, `www.wearbubble.com.br` é o domínio canônico da aplicação. O
-redirecionamento de `wearbubble.com.br` para o `www` deve ser configurado no
-hPanel, antes do runtime Node.js, para existir somente um cache de conteúdo.
+runtime redireciona requisições cujo host seja exatamente `wearbubble.com.br`
+para o `www` com redirecionamento temporário, evitando que um erro de
+configuração fique preso no cache do navegador ou do CDN.
 
 No backend, configure:
 
