@@ -142,10 +142,10 @@ NEXT_PUBLIC_API_BASE=/api
 BACKEND_API_URL=https://api.wearbubble.com.br/api
 ```
 
-Em produção, `www.wearbubble.com.br` é o domínio canônico da aplicação. O
-runtime redireciona requisições cujo host seja exatamente `wearbubble.com.br`
-para o `www` com redirecionamento temporário, evitando que um erro de
-configuração fique preso no cache do navegador ou do CDN.
+Em produção, `wearbubble.com.br` é o domínio canônico da aplicação. O runtime
+redireciona requisições cujo host seja exatamente `www.wearbubble.com.br` para
+o domínio sem `www` com redirecionamento temporário, evitando versões distintas
+da loja.
 
 No backend, configure:
 

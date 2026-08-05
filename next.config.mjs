@@ -11,8 +11,8 @@ const nextConfig = {
     return [
       {
         source: '/:path*',
-        has: [{ type: 'host', value: 'wearbubble.com.br' }],
-        destination: 'https://www.wearbubble.com.br/:path*',
+        has: [{ type: 'host', value: 'www.wearbubble.com.br' }],
+        destination: 'https://wearbubble.com.br/:path*',
         permanent: false,
       },
     ];
