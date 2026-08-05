@@ -1,21 +1,49 @@
-import type { ProductDraft, AdminDump, AdminTab } from './admin.types';
+import type { ProductDraft, AdminDump, AdminTab } from "./admin.types";
 
 export const adminTabs: Array<{ id: AdminTab; label: string }> = [
-  { id: 'dash', label: 'Dashboard' },
-  { id: 'products', label: 'Produtos' },
-  { id: 'orders', label: 'Pedidos' },
-  { id: 'ship', label: 'Envios' },
-  { id: 'returns', label: 'Trocas e devoluções' },
-  { id: 'customers', label: 'Clientes' },
-  { id: 'coupons', label: 'Cupons' },
-  { id: 'combos', label: 'Conjuntos' },
-  { id: 'db', label: 'Banco' },
+  { id: "dash", label: "Dashboard" },
+  { id: "products", label: "Produtos" },
+  { id: "orders", label: "Pedidos" },
+  { id: "ship", label: "Envios" },
+  { id: "returns", label: "Trocas e devoluções" },
+  { id: "customers", label: "Clientes" },
+  { id: "coupons", label: "Cupons" },
+  { id: "combos", label: "Conjuntos" },
+  { id: "db", label: "Banco" },
 ];
 
-export const productCategories = ['Top', 'Parte de baixo', 'Casaco', 'Acessório'];
-export const productIcons = ['legging', 'top', 'shorts', 'wideleg', 'regata', 'jacket', 'sock'];
-export const defaultSports = ['Musculação', 'Yoga/Pilates', 'Funcional/HIIT', 'Corrida', 'Ciclismo', 'Crossfit', 'Casual/Dia a dia'];
-export const shippingStages = ['Confirmado', 'Pagamento', 'Separação', 'Enviado', 'Em trânsito', 'Entregue'];
+export const productCategories = [
+  "Top",
+  "Parte de baixo",
+  "Casaco",
+  "Acessório",
+];
+export const productIcons = [
+  "legging",
+  "top",
+  "shorts",
+  "wideleg",
+  "regata",
+  "jacket",
+  "sock",
+];
+export const defaultSports = [
+  "Musculação",
+  "Yoga/Pilates",
+  "Funcional/HIIT",
+  "Corrida",
+  "Ciclismo",
+  "Crossfit",
+  "Casual/Dia a dia",
+];
+export const shippingStages = [
+  "Confirmado",
+  "Pagamento",
+  "Separação",
+  "Enviado",
+  "Em trânsito",
+  "Entregue",
+];
 
 export const emptyAdminDump: AdminDump = {
   products: [],
@@ -29,22 +57,22 @@ export const emptyAdminDump: AdminDump = {
 };
 
 export function parseAdminDump(value: unknown): AdminDump {
-  if (!value || typeof value !== 'object') {
-    throw new Error('A API retornou dados inválidos para o painel.');
+  if (!value || typeof value !== "object") {
+    throw new Error("A API retornou dados inválidos para o painel.");
   }
 
   const dump = value as Partial<AdminDump>;
   const requiredCollections: Array<keyof AdminDump> = [
-    'products',
-    'orders',
-    'coupons',
-    'leads',
-    'users',
-    'events',
+    "products",
+    "orders",
+    "coupons",
+    "leads",
+    "users",
+    "events",
   ];
 
   if (requiredCollections.some((key) => !Array.isArray(dump[key]))) {
-    throw new Error('A API retornou dados incompletos para o painel.');
+    throw new Error("A API retornou dados incompletos para o painel.");
   }
 
   return {
@@ -63,22 +91,23 @@ export function parseAdminDump(value: unknown): AdminDump {
 
 export const createEmptyProductDraft = (): ProductDraft => ({
   id: 0,
-  name: '',
-  cat: 'Top',
-  sub: '',
+  name: "",
+  cat: "Top",
+  sub: "",
   price: 0,
-  tag: '',
-  icon: 'top',
+  tag: "",
+  icon: "top",
   rating: 5,
   reviews: 0,
   stock: 0,
   active: true,
-  sizes: ['P', 'M', 'G', 'GG'],
-  material: '',
+  sizes: ["P", "M", "G", "GG"],
+  material: "",
   pair: 0,
+  bundlePosition: 0,
   sports: [],
-  colors: [{ n: 'Preto', h: '#2B1420' }],
-  desc: '',
+  colors: [{ n: "Preto", h: "#2B1420" }],
+  desc: "",
   image: null,
   images: [],
 });
