@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Product, money } from '../../lib/api';
 import { ProductIcon } from '../shared/ProductIcon';
 
@@ -43,11 +44,26 @@ export function ComboBuilder({
   const tops = orderSuggestedFirst(allTops, selectedBottom);
   const full = selectedBottom && selectedTop ? selectedBottom.price + selectedTop.price : 0;
   const discounted = full * 0.95;
+  const [activeStep, setActiveStep] = useState<'bottom' | 'top'>(bottomId && !topId ? 'top' : 'bottom');
+  const showingBottoms = activeStep === 'bottom';
+  const visibleProducts = showingBottoms ? bottoms : tops;
+  const selectedId = showingBottoms ? bottomId : topId;
+  const selectedColor = showingBottoms ? bottomColor : topColor;
+  const selectedSize = showingBottoms ? bottomSize : topSize;
+  const opposite = showingBottoms ? selectedTop : selectedBottom;
+  const selectProduct = (product: Product) => {
+    if (showingBottoms) {
+      onSelectBottom(product);
+      setActiveStep('top');
+      return;
+    }
+    onSelectTop(product);
+  };
 
   return (
-    <section className="border-y border-bubble-line bg-bubble-white py-[85px]" id="conjunto">
-      <div className="mx-auto max-w-[1240px] px-8 max-[620px]:px-4">
-        <div className="mb-10 flex flex-wrap items-end justify-between gap-5">
+    <section className="border-y border-bubble-line bg-bubble-cream py-[78px]" id="conjunto">
+      <div className="mx-auto max-w-[1200px] px-8 max-[620px]:px-4">
+        <div className="mb-9 flex flex-wrap items-end justify-between gap-5">
           <div>
             <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown">
               Seu look, suas escolhas
@@ -56,145 +72,97 @@ export function ComboBuilder({
               Monte seu Conjunto
             </h2>
           </div>
-          <div className="max-w-[430px] border-l-2 border-bubble-candy pl-5">
-            <div className="font-sans text-sm font-bold uppercase tracking-[.12em] text-bubble-ink">
-              Qualquer top + parte de baixo · 5% OFF
-            </div>
-            <p className="mt-1 text-[.88rem] leading-[1.55] text-bubble-ink/60">
-              Combine livremente. Cor e tamanho podem ser diferentes em cada peça.
-            </p>
+          <div className="bg-bubble-candy px-4 py-2 font-sans text-[.7rem] font-bold uppercase tracking-[.12em] text-bubble-ink">
+            Qualquer combinação · 5% OFF
           </div>
         </div>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_44px_minmax(0,1fr)] items-stretch gap-5 max-[760px]:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)] max-[520px]:gap-2">
-          <SelectedPiece
-            label="Parte de baixo"
-            product={selectedBottom}
-            color={bottomColor}
-            size={bottomSize}
-          />
-          <div className="flex items-center justify-center font-display text-[2.5rem] text-bubble-candy max-[520px]:text-[1.8rem]">+</div>
-          <SelectedPiece
-            label="Top"
-            product={selectedTop}
-            color={topColor}
-            size={topSize}
-          />
-        </div>
-
-        <div className="mt-12 grid grid-cols-2 gap-10 max-[900px]:grid-cols-1">
-          <ChoiceColumn
-            step="1"
-            title="Escolha a parte de baixo"
-            empty="Nenhuma parte de baixo disponível no momento."
-            products={bottoms}
-            selectedId={bottomId}
-            selectedColor={bottomColor}
-            selectedSize={bottomSize}
-            opposite={selectedTop}
-            onSelect={onSelectBottom}
-            onColor={onBottomColor}
-            onSize={onBottomSize}
-          />
-          <ChoiceColumn
-            step="2"
-            title="Escolha o top"
-            empty="Nenhum top disponível no momento."
-            products={tops}
-            selectedId={topId}
-            selectedColor={topColor}
-            selectedSize={topSize}
-            opposite={selectedBottom}
-            onSelect={onSelectTop}
-            onColor={onTopColor}
-            onSize={onTopSize}
-          />
-        </div>
-
-        <div className="sticky bottom-0 z-20 mt-10 border border-bubble-ink bg-bubble-ink p-6 font-serif text-bubble-cream shadow-[0_-12px_30px_rgba(43,20,32,.12)] max-[620px]:p-4">
-          {selectedBottom && selectedTop ? (
-            <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-8 max-[760px]:grid-cols-2 max-[520px]:gap-3">
-              <div className="min-w-0 max-[760px]:col-span-2">
-                <div className="font-sans text-[.64rem] font-bold uppercase tracking-[.14em] text-bubble-cream/55">Seu conjunto</div>
-                <div className="mt-1 truncate text-[.95rem]">{selectedBottom.name} + {selectedTop.name}</div>
-              </div>
-              <div className="text-right max-[520px]:text-left">
-                <span className="text-[.8rem] text-bubble-cream/45 line-through">{money.format(full)}</span>
-                <div className="font-display text-[2rem] leading-none text-bubble-candy">{money.format(discounted)}</div>
-                <div className="mt-1 font-sans text-[.6rem] font-bold uppercase tracking-[.08em] text-bubble-candy">Economize {money.format(full - discounted)}</div>
-              </div>
-              <button className="inline-flex min-h-12 items-center justify-center border border-bubble-candy bg-bubble-candy px-7 py-3 font-sans text-[.72rem] font-bold uppercase tracking-[.12em] text-bubble-ink transition-all hover:border-bubble-white hover:bg-bubble-white max-[520px]:px-4" onClick={onAdd}>
-                Adicionar conjunto
-              </button>
+        <div className="grid grid-cols-[minmax(320px,.8fr)_minmax(0,1.35fr)] items-start gap-8 max-[900px]:grid-cols-1">
+          <aside className="border border-bubble-line bg-bubble-white p-5 max-[900px]:order-2">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="font-sans text-[.72rem] font-bold uppercase tracking-[.15em] text-bubble-brown">Seu conjunto</h3>
+              <span className="font-sans text-[.6rem] uppercase tracking-[.1em] text-bubble-ink/45">
+                {[selectedBottom, selectedTop].filter(Boolean).length}/2 peças
+              </span>
             </div>
-          ) : (
-            <div className="flex items-center justify-between gap-5 max-[620px]:flex-col max-[620px]:items-start">
-              <div>
-                <div className="font-sans text-[.64rem] font-bold uppercase tracking-[.14em] text-bubble-candy">5% OFF no look completo</div>
-                <div className="mt-1 text-[.9rem] text-bubble-cream/70">Escolha uma peça de cada lado para ver seu conjunto.</div>
-              </div>
-              <div className="font-sans text-[.68rem] uppercase tracking-[.1em] text-bubble-cream/45">
-                {selectedBottom || selectedTop ? '1 de 2 peças escolhidas' : 'Comece pela peça que preferir'}
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <SelectedPiece label="Parte de baixo" product={selectedBottom} color={bottomColor} size={bottomSize} onClick={() => setActiveStep('bottom')} />
+              <SelectedPiece label="Top" product={selectedTop} color={topColor} size={topSize} onClick={() => setActiveStep('top')} />
             </div>
-          )}
+            <div className="mt-5 border-t border-bubble-line pt-5">
+              {selectedBottom && selectedTop ? (
+                <>
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-ink/45">Total com 5% OFF</div>
+                      <div className="mt-1 font-display text-[2.2rem] leading-none text-bubble-brown">{money.format(discounted)}</div>
+                    </div>
+                    <div className="text-right font-sans text-[.66rem] uppercase tracking-[.06em] text-bubble-ink/50">
+                      <div className="line-through">{money.format(full)}</div>
+                      <div className="mt-1 font-bold text-bubble-brown">Economize {money.format(full - discounted)}</div>
+                    </div>
+                  </div>
+                  <button className="mt-5 w-full bg-bubble-ink px-5 py-4 font-sans text-[.7rem] font-bold uppercase tracking-[.13em] text-bubble-white transition-colors hover:bg-bubble-brown" onClick={onAdd}>
+                    Adicionar conjunto
+                  </button>
+                </>
+              ) : (
+                <div className="py-2 text-center">
+                  <div className="font-sans text-[.65rem] font-bold uppercase tracking-[.12em] text-bubble-brown">5% OFF no conjunto completo</div>
+                  <p className="mt-2 text-[.82rem] text-bubble-ink/55">Escolha uma peça de cada categoria.</p>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          <div className="min-w-0 border border-bubble-line bg-bubble-white max-[900px]:order-1">
+            <div className="grid grid-cols-2 border-b border-bubble-line">
+              <StepTab active={activeStep === 'bottom'} done={Boolean(selectedBottom)} number="1" label="Parte de baixo" onClick={() => setActiveStep('bottom')} />
+              <StepTab active={activeStep === 'top'} done={Boolean(selectedTop)} number="2" label="Top" onClick={() => setActiveStep('top')} />
+            </div>
+            <div className="p-5 max-[520px]:p-3">
+              <div className="mb-4 flex items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-serif text-lg font-semibold">Escolha {showingBottoms ? 'a parte de baixo' : 'o top'}</h3>
+                  <p className="mt-1 text-[.78rem] text-bubble-ink/50">Clique em uma peça para selecionar. Depois escolha cor e tamanho.</p>
+                </div>
+                <span className="shrink-0 font-sans text-[.6rem] uppercase tracking-[.1em] text-bubble-ink/40">{visibleProducts.length} opções</span>
+              </div>
+              {visibleProducts.length ? (
+                <div className="grid max-h-[720px] grid-cols-2 gap-4 overflow-y-auto pr-1 max-[520px]:gap-2">
+                  {visibleProducts.map((product) => (
+                    <ProductChoice
+                      key={product.id}
+                      product={product}
+                      selected={selectedId === product.id}
+                      suggested={Boolean(opposite && productsCanPair(product, opposite))}
+                      color={selectedColor}
+                      size={selectedSize}
+                      onSelect={() => selectProduct(product)}
+                      onColor={showingBottoms ? onBottomColor : onTopColor}
+                      onSize={showingBottoms ? onBottomSize : onTopSize}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="border border-bubble-line bg-bubble-cream p-5 text-sm text-bubble-ink/60">Nenhum produto disponível nesta categoria.</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>
   );
 }
 
-function ChoiceColumn({
-  step,
-  title,
-  empty,
-  products,
-  selectedId,
-  selectedColor,
-  selectedSize,
-  opposite,
-  onSelect,
-  onColor,
-  onSize,
-}: {
-  step: string;
-  title: string;
-  empty: string;
-  products: Product[];
-  selectedId: number | null;
-  selectedColor: string;
-  selectedSize: string;
-  opposite?: Product;
-  onSelect: (product: Product) => void;
-  onColor: (color: string, size: string) => void;
-  onSize: (size: string) => void;
-}) {
+function StepTab({ active, done, number, label, onClick }: { active: boolean; done: boolean; number: string; label: string; onClick: () => void }) {
   return (
-    <div>
-      <div className="mb-4 flex items-center gap-3 border-b border-bubble-line pb-3">
-        <span className="flex size-8 items-center justify-center rounded-full bg-bubble-ink font-sans text-xs font-bold text-bubble-white">{step}</span>
-        <h3 className="font-sans text-[.78rem] font-bold uppercase tracking-[.14em] text-bubble-brown">{title}</h3>
-      </div>
-      {products.length ? (
-        <div className="grid max-h-[920px] grid-cols-2 gap-4 overflow-y-auto pr-1 max-[420px]:gap-2">
-          {products.map((product) => (
-            <ProductChoice
-              key={product.id}
-              product={product}
-              selected={selectedId === product.id}
-              suggested={Boolean(opposite && productsCanPair(product, opposite))}
-              color={selectedColor}
-              size={selectedSize}
-              onSelect={() => onSelect(product)}
-              onColor={onColor}
-              onSize={onSize}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="border border-bubble-line bg-bubble-cream p-5 text-sm text-bubble-ink/60">{empty}</p>
-      )}
-    </div>
+    <button className={`flex items-center justify-center gap-3 px-4 py-5 font-sans text-[.7rem] font-bold uppercase tracking-[.12em] transition-colors ${active ? 'bg-bubble-ink text-bubble-white' : 'bg-bubble-white text-bubble-ink/50 hover:bg-bubble-cream'}`} onClick={onClick}>
+      <span className={`flex size-6 items-center justify-center rounded-full border text-[.62rem] ${active ? 'border-bubble-candy text-bubble-candy' : done ? 'border-bubble-brown bg-bubble-brown text-bubble-white' : 'border-bubble-line'}`}>
+        {done ? '✓' : number}
+      </span>
+      {label}
+    </button>
   );
 }
 
@@ -276,25 +244,25 @@ function ProductChoice({
   );
 }
 
-function SelectedPiece({ label, product, color, size }: { label: string; product?: Product; color: string; size: string }) {
+function SelectedPiece({ label, product, color, size, onClick }: { label: string; product?: Product; color: string; size: string; onClick: () => void }) {
   return (
-    <div className={`relative min-h-[360px] overflow-hidden border ${product ? 'border-bubble-ink bg-bubble-cream2' : 'border-dashed border-bubble-line bg-bubble-cream'}`}>
+    <button className={`group relative aspect-[4/5] w-full overflow-hidden border text-left transition-colors ${product ? 'border-bubble-ink bg-bubble-cream2' : 'border-dashed border-bubble-line bg-bubble-cream hover:border-bubble-ink'}`} onClick={onClick}>
       {product ? (
         <>
           <div className="absolute inset-0"><ProductImage product={product} /></div>
-          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink via-bubble-ink/85 to-transparent px-5 pb-5 pt-16 text-bubble-white max-[520px]:px-3 max-[520px]:pb-3">
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink via-bubble-ink/85 to-transparent px-3 pb-3 pt-12 text-bubble-white">
             <div className="font-sans text-[.58rem] font-bold uppercase tracking-[.13em] text-bubble-candy">{label}</div>
-            <div className="mt-1 truncate font-serif text-lg font-semibold max-[520px]:text-sm">{product.name}</div>
-            <div className="mt-1 font-sans text-[.68rem] text-bubble-cream/70">{color || 'Escolha a cor'} · Tam. {size || '—'}</div>
+            <div className="mt-1 truncate font-serif text-sm font-semibold">{product.name}</div>
+            <div className="mt-1 font-sans text-[.58rem] text-bubble-cream/70">{color || 'Escolha a cor'} · Tam. {size || '—'}</div>
           </div>
         </>
       ) : (
-        <div className="flex h-full min-h-[360px] flex-col items-center justify-center p-6 text-center text-bubble-ink/40">
-          <div className="font-display text-6xl">+</div>
-          <div className="mt-3 font-sans text-[.68rem] font-bold uppercase tracking-[.14em]">Escolha {label.toLowerCase()}</div>
+        <div className="flex size-full flex-col items-center justify-center p-3 text-center text-bubble-ink/40">
+          <div className="font-display text-5xl">+</div>
+          <div className="mt-2 font-sans text-[.58rem] font-bold uppercase tracking-[.12em]">Escolha {label.toLowerCase()}</div>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
