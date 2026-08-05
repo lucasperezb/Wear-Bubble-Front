@@ -178,6 +178,7 @@ export type Coupon = {
   uses: number;
   expiresAt?: number | null;
   maxUses?: number | null;
+  maxUsesPerCustomer?: number | null;
   minSubtotal?: number;
   assignedTo?: string;
 };
