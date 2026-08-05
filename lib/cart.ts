@@ -41,16 +41,24 @@ export function calculateCart(
     .filter((line): line is { item: CartItem; product: Product } => Boolean(line.product));
 
   const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.item.qty, 0);
-  const bundleCounts = new Map<string, number>();
-  for (const { item } of lines) {
-    if (item.bundle) bundleCounts.set(item.bundle, (bundleCounts.get(item.bundle) || 0) + 1);
+  const bundles = new Map<string, typeof lines>();
+  for (const line of lines) {
+    if (!line.item.bundle) continue;
+    const grouped = bundles.get(line.item.bundle) || [];
+    grouped.push(line);
+    bundles.set(line.item.bundle, grouped);
   }
 
-  const bundleSubtotal = lines.reduce((sum, line) => (
-    line.item.bundle && (bundleCounts.get(line.item.bundle) || 0) >= 2
-      ? sum + line.product.price * line.item.qty
-      : sum
-  ), 0);
+  const bundleSubtotal = [...bundles.values()].reduce((sum, grouped) => {
+    if (grouped.length !== 2 || grouped[0].product.id === grouped[1].product.id) {
+      return sum;
+    }
+    const bottom = grouped.find((line) => line.product.cat === 'Parte de baixo');
+    const top = grouped.find((line) => line.product.cat === 'Top');
+    if (!bottom || !top) return sum;
+    const matchedQuantity = Math.min(bottom.item.qty, top.item.qty);
+    return sum + (bottom.product.price + top.product.price) * matchedQuantity;
+  }, 0);
   const bundleDiscount = bundleSubtotal * 0.05;
   const afterBundle = subtotal - bundleDiscount;
   const percentDiscount = coupon?.type === 'coupon' ? afterBundle * (coupon.pct / 100) : 0;

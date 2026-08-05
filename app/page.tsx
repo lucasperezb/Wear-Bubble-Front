@@ -278,7 +278,7 @@ export default function Home() {
         onOpen={openProduct}
         onRetry={refreshProducts}
       />
-      {/* <ComboBuilder
+      <ComboBuilder
         products={products}
         bottomId={combo.bottomId}
         topId={combo.topId}
@@ -345,7 +345,7 @@ export default function Home() {
           setCombo((current) => ({ ...current, topSize: size }))
         }
         onAdd={addCombo}
-      /> */}
+      />
       <ContactSection />
       <BrandSections />
       <Footer />

@@ -24,8 +24,8 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
   const allTops = active.filter((product) => product.cat === 'Top');
   const selectedBottom = allBottoms.find((product) => product.id === bottomId);
   const selectedTop = allTops.find((product) => product.id === topId);
-  const bottoms = allBottoms;
-  const tops = allTops;
+  const bottoms = orderSuggestedFirst(allBottoms, selectedTop);
+  const tops = orderSuggestedFirst(allTops, selectedBottom);
   const bottom = products.find((product) => product.id === bottomId);
   const top = products.find((product) => product.id === topId);
   const full = bottom && top ? bottom.price + top.price : 0;
@@ -97,8 +97,8 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
           <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60">Escolha qualquer parte de baixo e top. A recomendação da loja recebe o selo Sugestão, mas você pode montar a combinação que preferir.</p>
         </div>
         <div className="mt-2.5 grid grid-cols-2 gap-[34px] max-[980px]:grid-cols-1">
-          <div><h4 className="mb-3.5 font-sans text-[.72rem] font-bold uppercase tracking-[.16em] text-bubble-brown">1 · Escolha a parte de baixo</h4>{bottoms.map((product) => option(product, 'bottom'))}</div>
-          <div><h4 className="mb-3.5 font-sans text-[.72rem] font-bold uppercase tracking-[.16em] text-bubble-brown">2 · Escolha o top</h4>{tops.map((product) => option(product, 'top'))}</div>
+          <div><h4 className="mb-3.5 font-sans text-[.72rem] font-bold uppercase tracking-[.16em] text-bubble-brown">1 · Escolha a parte de baixo</h4>{bottoms.length ? bottoms.map((product) => option(product, 'bottom')) : <p className="border border-bubble-line bg-bubble-cream p-5 text-sm text-bubble-ink/60">Nenhuma parte de baixo disponível no momento.</p>}</div>
+          <div><h4 className="mb-3.5 font-sans text-[.72rem] font-bold uppercase tracking-[.16em] text-bubble-brown">2 · Escolha o top</h4>{tops.length ? tops.map((product) => option(product, 'top')) : <p className="border border-bubble-line bg-bubble-cream p-5 text-sm text-bubble-ink/60">Nenhum top disponível no momento.</p>}</div>
         </div>
         <div className="mt-[26px] flex flex-wrap items-center justify-between gap-4 border-bubble-ink bg-bubble-ink p-6 font-serif text-bubble-cream">
           {bottom && top ? (
@@ -112,7 +112,7 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
                 <div className="font-display text-[1.8rem] text-bubble-candy">{money.format(discounted)}</div>
                 <div className="text-[.7rem] font-bold uppercase tracking-[.1em] text-bubble-candy">Você economiza {money.format(full - discounted)}</div>
               </div>
-              <button className="inline-flex items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink" onClick={onAdd}>Adicionar conjunto</button>
+              <button className="inline-flex items-center justify-center gap-2 border border-bubble-candy bg-bubble-candy px-[30px] py-[15px] font-sans text-[.78rem] font-bold uppercase tracking-[.14em] text-bubble-ink transition-all hover:border-bubble-white hover:bg-bubble-white" onClick={onAdd}>Adicionar conjunto</button>
             </>
           ) : <div className="text-[.84rem] text-bubble-cream/70">Escolha uma parte de baixo e um top para ver o preço do conjunto com 5% OFF.</div>}
         </div>
@@ -123,6 +123,15 @@ export function ComboBuilder({ products, bottomId, topId, bottomColor, topColor,
 
 function productsCanPair(first: Product, second: Product) {
   return first.pair === second.id || second.pair === first.id;
+}
+
+function orderSuggestedFirst(products: Product[], opposite?: Product) {
+  if (!opposite) return products;
+  return [...products].sort(
+    (first, second) =>
+      Number(productsCanPair(second, opposite)) -
+      Number(productsCanPair(first, opposite)),
+  );
 }
 
 function availableColors(product: Product) {
