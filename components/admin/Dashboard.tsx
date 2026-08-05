@@ -33,28 +33,26 @@ const chartTooltipStyle = {
 };
 
 export function Dashboard({ dump }: { dump: AdminDump }) {
-  const revenue = dump.orders.reduce(
+  const paidOrders = dump.orders.filter((order) => order.status === "paid");
+  const revenue = paidOrders.reduce(
     (sum, order) => sum + (Number(order.total) || 0),
     0,
   );
-  const ticket = dump.orders.length ? revenue / dump.orders.length : 0;
+  const ticket = paidOrders.length ? revenue / paidOrders.length : 0;
   const clicks = dump.events.filter((event) =>
     ["click", "add", "view"].includes(String(event.type)),
   ).length;
-  const buys =
-    dump.events.filter((event) => event.type === "buy").length +
-    dump.orders.length;
+  const buys = paidOrders.length;
   const conversion = clicks ? (buys / clicks) * 100 : 0;
   const customers = dump.users.filter((user) => user.role !== "manager").length;
 
   const chartData = lastNDays(14).map((day) => ({
     day: formatDay(day),
-    vendas: dump.orders
+    vendas: paidOrders
       .filter((order) => dayKey(order.date) === day)
       .reduce((sum, order) => sum + Number(order.total || 0), 0),
     interacoes: dump.events.filter(
-      (event) =>
-        event.type !== "buy" && dayKey(Number(event.ts || 0)) === day,
+      (event) => event.type !== "buy" && dayKey(Number(event.ts || 0)) === day,
     ).length,
   }));
 
@@ -65,7 +63,7 @@ export function Dashboard({ dump }: { dump: AdminDump }) {
         product.name.length > 22
           ? `${product.name.slice(0, 21)}…`
           : product.name,
-      receita: dump.orders.reduce(
+      receita: paidOrders.reduce(
         (sum, order) =>
           sum +
           order.items
@@ -91,13 +89,13 @@ export function Dashboard({ dump }: { dump: AdminDump }) {
           icon={DollarSign}
           label="Receita total"
           value={money.format(revenue)}
-          sub={`${dump.orders.length} pedidos`}
+          sub={`${paidOrders.length} pagamentos confirmados`}
         />
         <Kpi
           icon={ReceiptText}
           label="Ticket médio"
           value={money.format(ticket)}
-          sub="por pedido"
+          sub="por pedido pago"
         />
         <Kpi
           icon={MousePointerClick}
@@ -131,9 +129,19 @@ export function Dashboard({ dump }: { dump: AdminDump }) {
                 margin={{ top: 16, right: 8, left: -12, bottom: 0 }}
               >
                 <defs>
-                  <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient
+                    id="salesGradient"
+                    x1="0"
+                    y1="0"
+                    x2="0"
+                    y2="1"
+                  >
                     <stop offset="0%" stopColor="#17130E" stopOpacity={0.22} />
-                    <stop offset="100%" stopColor="#17130E" stopOpacity={0.01} />
+                    <stop
+                      offset="100%"
+                      stopColor="#17130E"
+                      stopOpacity={0.01}
+                    />
                   </linearGradient>
                 </defs>
                 <CartesianGrid

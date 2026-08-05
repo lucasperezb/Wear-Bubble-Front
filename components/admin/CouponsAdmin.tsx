@@ -252,7 +252,9 @@ function CouponRow({
   const usedOrders = orders.filter(
     (order) => order.coupon === coupon.code && order.status !== "canceled",
   );
-  const revenue = usedOrders.reduce((sum, order) => sum + order.total, 0);
+  const revenue = usedOrders
+    .filter((order) => order.status === "paid")
+    .reduce((sum, order) => sum + order.total, 0);
   const statusKind =
     coupon.active === false
       ? "out"
