@@ -1,6 +1,6 @@
 {
   "name": "bubble-store-frontend",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "private": true,
   "scripts": {
     "dev": "next dev -p 4000",

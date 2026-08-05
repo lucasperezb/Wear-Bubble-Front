@@ -36,8 +36,6 @@ export function ProductCatalog({ filters, materials, sports, products, loading, 
     ['Top', 'Tops'],
     ['Parte de baixo', 'Partes de baixo'],
     ['Casaco', 'Casacos'],
-    ['Acessorio', 'Acessórios'],
-    ['Acessório', 'Acessórios'],
   ];
 
   useEffect(() => {
@@ -56,9 +54,15 @@ export function ProductCatalog({ filters, materials, sports, products, loading, 
           <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60 max-[520px]:hidden">Clique na peça para ver detalhes, tecido e sugestão de conjunto. Peças da coleção não voltam ao estoque.</p>
         </div>
         <div className="mb-[26px] flex flex-wrap items-center gap-2.5 max-[520px]:mb-4 max-[520px]:max-h-[88px] max-[520px]:overflow-y-auto">
-          {categories.slice(0, 5).map(([value, label]) => (
+          {categories.map(([value, label]) => (
             <button key={value} className={`${filters.cat === value ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-white text-bubble-ink/60'} border px-[18px] py-[9px] font-sans text-[.7rem] font-semibold uppercase tracking-[.1em]`} onClick={() => onFilter({ cat: value })}>{label}</button>
           ))}
+          <a
+            className="border border-bubble-line bg-bubble-white px-[18px] py-[9px] font-sans text-[.7rem] font-semibold uppercase tracking-[.1em] text-bubble-ink/60"
+            href="#conjunto"
+          >
+            Conjuntos
+          </a>
           <select className="cursor-pointer border border-bubble-line bg-bubble-white px-3 py-[9px] font-sans text-[.72rem] font-semibold tracking-[.04em] text-bubble-ink/70" value={filters.size} onChange={(event) => onFilter({ size: event.target.value })}>
             <option value="">Tamanho</option><option>P</option><option>M</option><option>G</option><option>GG</option><option>U</option>
           </select>
