@@ -7,16 +7,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, '..'),
   allowedDevOrigins: ['*.trycloudflare.com'],
-  async redirects() {
-    return [
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: 'www.wearbubble.com.br' }],
-        destination: 'https://wearbubble.com.br/:path*',
-        permanent: false,
-      },
-    ];
-  },
   async headers() {
     const noStaleHtml = [
       {

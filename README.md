@@ -142,10 +142,9 @@ NEXT_PUBLIC_API_BASE=/api
 BACKEND_API_URL=https://api.wearbubble.com.br/api
 ```
 
-Em produção, `wearbubble.com.br` é o domínio canônico da aplicação. O runtime
-redireciona requisições cujo host seja exatamente `www.wearbubble.com.br` para
-o domínio sem `www` com redirecionamento temporário, evitando versões distintas
-da loja.
+Em produção, `wearbubble.com.br` e `www.wearbubble.com.br` apontam para a mesma
+aplicação na Hostinger. O Next.js não redireciona entre os hosts, evitando que a
+indisponibilidade temporária de um alias impeça o acesso pelo outro.
 
 No backend, configure:
 
