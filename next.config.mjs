@@ -5,7 +5,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  outputFileTracingRoot: path.join(__dirname, '..'),
+  output: 'standalone',
+  outputFileTracingRoot: __dirname,
   allowedDevOrigins: ['*.trycloudflare.com'],
   async headers() {
     const noStaleHtml = [
