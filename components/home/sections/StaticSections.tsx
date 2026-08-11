@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SizeGuideDialog } from "../../shared";
+import { COOKIE_PREFERENCES_EVENT } from "../../../lib/google-ads";
 
 export function ContactSection() {
   return (
@@ -143,9 +144,17 @@ export function Footer() {
             </div>
             <div>
               <h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4>
-              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy">
+              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy [&_button]:cursor-pointer [&_button:hover]:text-bubble-candy">
                 <li><a href="/politica-de-privacidade">Política de Privacidade (LGPD)</a></li>
-                <li><a href="/politica-de-privacidade#cookies">Cookies</a></li>
+                <li>
+                  <button
+                    type="button"
+                    className="border-0 bg-transparent p-0 text-left text-inherit"
+                    onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
+                  >
+                    Preferências de cookies
+                  </button>
+                </li>
                 <li><a href="/politica-de-privacidade#pseudoanonimizacao">Dados pseudoanonimizados</a></li>
               </ul>
             </div>

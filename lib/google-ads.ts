@@ -1,6 +1,7 @@
 export const GOOGLE_ADS_ID = "AW-18384376708";
 export const GOOGLE_ADS_PURCHASE_DESTINATION =
   "AW-18384376708/G7rlCLa39t8cEISnrb5E";
+export const COOKIE_PREFERENCES_EVENT = "bubble:open-cookie-preferences";
 
 declare global {
   interface Window {

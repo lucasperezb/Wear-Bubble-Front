@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { COOKIE_PREFERENCES_EVENT } from "../../lib/google-ads";
 
 const CONSENT_KEY = "bubble_ads_consent";
 
@@ -31,6 +32,13 @@ export function CookieConsentBanner() {
     }
   }, []);
 
+  useEffect(() => {
+    const openPreferences = () => setChoice(null);
+    window.addEventListener(COOKIE_PREFERENCES_EVENT, openPreferences);
+    return () =>
+      window.removeEventListener(COOKIE_PREFERENCES_EVENT, openPreferences);
+  }, []);
+
   function choose(nextChoice: ConsentChoice) {
     try {
       window.localStorage.setItem(CONSENT_KEY, nextChoice);
@@ -43,17 +51,7 @@ export function CookieConsentBanner() {
 
   if (choice === undefined) return null;
 
-  if (choice) {
-    return (
-      <button
-        type="button"
-        onClick={() => setChoice(null)}
-        className="fixed bottom-4 left-4 z-[90] border border-bubble-ink bg-bubble-white px-3 py-2 font-sans text-[.62rem] font-semibold uppercase tracking-[.1em] shadow-md"
-      >
-        Cookies
-      </button>
-    );
-  }
+  if (choice) return null;
 
   return (
     <aside
