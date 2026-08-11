@@ -12,6 +12,7 @@ import {
   RotateCcw,
   ShoppingBag,
   TicketPercent,
+  BadgePercent,
   Truck,
   Users,
   X,
@@ -33,6 +34,7 @@ import { DatabaseAdmin } from './DatabaseAdmin';
 import { Dashboard } from './Dashboard';
 import { OrdersAdmin } from './OrdersAdmin';
 import { ProductsAdmin } from './ProductsAdmin';
+import { PromotionsAdmin } from './PromotionsAdmin';
 import { ReturnsAdmin } from './ReturnsAdmin';
 import { ShipAdmin } from './ShipAdmin';
 
@@ -182,6 +184,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
               {tab === 'returns' && <ReturnsAdmin orders={dump.orders} notify={notify} />}
               {tab === 'customers' && <CustomersAdmin dump={dump} />}
               {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}
+              {tab === 'promotions' && <PromotionsAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
               {tab === 'combos' && <CombosAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
               {tab === 'db' && <DatabaseAdmin dump={dump} />}
             </div>
@@ -200,6 +203,7 @@ const adminTabIcons: Record<AdminTab, LucideIcon> = {
   returns: RotateCcw,
   customers: Users,
   coupons: TicketPercent,
+  promotions: BadgePercent,
   combos: Layers3,
   db: Database,
 };

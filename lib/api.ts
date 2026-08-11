@@ -4,6 +4,7 @@ export type Product = {
   cat: string;
   sub: string;
   price: number;
+  promoPct: number;
   tag: string;
   icon: string;
   rating: number;

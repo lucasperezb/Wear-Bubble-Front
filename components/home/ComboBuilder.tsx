@@ -1,4 +1,7 @@
 import { Product, money } from "../../lib/api";
+import { isBottomCategory, isTopCategory } from "../../lib/product-filters";
+import { availableVariantSizes, sortProductSizes } from "../../lib/product-sizes";
+import { productPrice } from "../../lib/pricing";
 import { ProductIcon } from "../shared/ProductIcon";
 
 type ComboBuilderProps = {
@@ -41,12 +44,11 @@ export function ComboBuilder({
     )
     .sort((first, second) => first.bundlePosition - second.bundlePosition);
   const bottoms = featured
-    .filter((product) => product.cat === "Parte de baixo")
-    .slice(0, 3);
-  const tops = featured.filter((product) => product.cat === "Top").slice(0, 3);
+    .filter((product) => isBottomCategory(product.cat));
+  const tops = featured.filter((product) => isTopCategory(product.cat));
   const bottom = products.find((product) => product.id === bottomId);
   const top = products.find((product) => product.id === topId);
-  const full = bottom && top ? bottom.price + top.price : 0;
+  const full = bottom && top ? productPrice(bottom) + productPrice(top) : 0;
   const discounted = full * 0.95;
 
   const option = (product: Product, kind: "bottom" | "top") => {
@@ -83,7 +85,7 @@ export function ComboBuilder({
         <div className="min-w-0 flex-1">
           <div className="text-[.82rem] font-medium">{product.name}</div>
           <div className="text-[.74rem] font-semibold text-bubble-ink">
-            {money.format(product.price)}
+            {money.format(productPrice(product))}
           </div>
           {selected ? (
             <div className="mt-1 font-sans text-[.54rem] font-bold uppercase tracking-[.08em] text-bubble-brown">
@@ -235,9 +237,7 @@ function availableSizes(product: Product, colorName: string) {
   const configured = (product.colors || []).some(
     (color) => (color.sizes || []).length,
   );
-  if (!configured) return product.sizes || [];
+  if (!configured) return sortProductSizes(product.sizes);
   const color = product.colors.find((item) => item.n === colorName);
-  return (color?.sizes || [])
-    .filter((item) => Number(item.q) > 0)
-    .map((item) => item.size);
+  return availableVariantSizes(color?.sizes || []);
 }
