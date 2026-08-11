@@ -1,4 +1,10 @@
 import type { Product } from '../../lib/api';
+import { catalogCategory } from '../../lib/product-filters';
+import {
+  normalizeProductSize,
+  sortProductSizes,
+  sortSizeStockEntries,
+} from '../../lib/product-sizes';
 import type { ColorDraft, ProductDraft } from './admin.types';
 
 export function productPayload(draft: ProductDraft) {
@@ -6,21 +12,19 @@ export function productPayload(draft: ProductDraft) {
     .map((color) => ({
       n: color.n.trim(),
       h: color.h,
-      sizes: (color.sizes || [])
-        .map((item) => ({
-          size: item.size.trim().toUpperCase(),
-          q: Math.max(0, Number(item.q) || 0),
-        }))
-        .filter((item) => item.size),
+      sizes: sortSizeStockEntries(
+        (color.sizes || [])
+          .map((item) => ({
+            size: normalizeProductSize(item.size),
+            q: Math.max(0, Number(item.q) || 0),
+          }))
+          .filter((item) => item.size),
+      ),
     }))
     .filter((color) => color.n || color.h);
   const variantEntries = colors.flatMap((color) => color.sizes);
-  const sizes = Array.from(
-    new Set(
-      (variantEntries.length ? variantEntries.map((item) => item.size) : draft.sizes)
-        .map((size) => size.trim().toUpperCase())
-        .filter(Boolean),
-    ),
+  const sizes = sortProductSizes(
+    variantEntries.length ? variantEntries.map((item) => item.size) : draft.sizes,
   );
   const stock = variantEntries.length
     ? variantEntries.reduce((total, item) => total + item.q, 0)
@@ -46,6 +50,7 @@ export function productPayload(draft: ProductDraft) {
     icon: draft.icon,
     material: draft.material,
     price: Math.max(0, Number(draft.price) || 0),
+    promoPct: Math.min(90, Math.max(0, Number(draft.promoPct) || 0)),
     stock,
     tag: draft.tag || '',
     active: draft.active !== false,
@@ -77,6 +82,10 @@ export function validateProductDraft(draft: ProductDraft) {
 }
 
 export function iconForCategory(category: string) {
+  const normalized = catalogCategory(category);
+  if (normalized === 'Shorts/Calça') return 'legging';
+  if (normalized === 'Conjunto') return 'wideleg';
+  if (normalized === 'Blusas/Top') return 'top';
   if (category === 'Parte de baixo') return 'legging';
   if (category === 'Casaco') return 'jacket';
   if (category === 'Acessório') return 'sock';

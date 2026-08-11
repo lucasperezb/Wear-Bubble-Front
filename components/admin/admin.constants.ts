@@ -1,3 +1,5 @@
+import { clothingCategories } from "../../lib/product-filters";
+import { standardProductSizes } from "../../lib/product-sizes";
 import type { ProductDraft, AdminDump, AdminTab } from "./admin.types";
 
 export const adminTabs: Array<{ id: AdminTab; label: string }> = [
@@ -8,16 +10,12 @@ export const adminTabs: Array<{ id: AdminTab; label: string }> = [
   { id: "returns", label: "Trocas e devoluções" },
   { id: "customers", label: "Clientes" },
   { id: "coupons", label: "Cupons" },
+  { id: "promotions", label: "PROMOÇÕES" },
   { id: "combos", label: "Conjuntos" },
   { id: "db", label: "Banco" },
 ];
 
-export const productCategories = [
-  "Top",
-  "Parte de baixo",
-  "Casaco",
-  "Acessório",
-];
+export const productCategories = clothingCategories;
 export const productIcons = [
   "legging",
   "top",
@@ -92,16 +90,17 @@ export function parseAdminDump(value: unknown): AdminDump {
 export const createEmptyProductDraft = (): ProductDraft => ({
   id: 0,
   name: "",
-  cat: "Top",
+  cat: "Blusas/Top",
   sub: "",
   price: 0,
+  promoPct: 0,
   tag: "",
   icon: "top",
   rating: 5,
   reviews: 0,
   stock: 0,
   active: true,
-  sizes: ["P", "M", "G", "GG"],
+  sizes: standardProductSizes,
   material: "",
   pair: 0,
   bundlePosition: 0,

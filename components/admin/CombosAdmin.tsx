@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Product, apiFetch, money } from "../../lib/api";
+import { isBottomCategory, isTopCategory } from "../../lib/product-filters";
 import { ProductIcon } from "../shared/ProductIcon";
 import { chartCard, saveButton } from "./admin.styles";
 import type { Notify, OnSaved } from "./admin.types";
@@ -16,10 +17,10 @@ export function CombosAdmin({
   notify: Notify;
 }) {
   const bottoms = useMemo(
-    () => available(products, "Parte de baixo"),
+    () => available(products, isBottomCategory),
     [products],
   );
-  const tops = useMemo(() => available(products, "Top"), [products]);
+  const tops = useMemo(() => available(products, isTopCategory), [products]);
   const [bottomIds, setBottomIds] = useState<number[]>(() =>
     selectedIds(bottoms),
   );
@@ -33,7 +34,7 @@ export function CombosAdmin({
 
   async function save() {
     if (!validSelection(bottomIds) || !validSelection(topIds)) {
-      notify("Selecione três produtos diferentes em cada categoria.");
+      notify("Preencha as posições abertas com produtos diferentes em cada coluna.");
       return;
     }
     setSaving(true);
@@ -43,7 +44,7 @@ export function CombosAdmin({
         body: JSON.stringify({ bottomIds, topIds }),
       });
       await onSaved();
-      notify("Vitrine de conjuntos atualizada com 3 partes de baixo e 3 tops.");
+      notify("Vitrine de conjuntos atualizada.");
     } catch (error) {
       notify(
         error instanceof Error
@@ -58,19 +59,18 @@ export function CombosAdmin({
   return (
     <>
       <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink">
-        <b>Vitrine de conjuntos.</b> Escolha exatamente 3 partes de baixo e 3
-        tops. Somente essas seis peças aparecerão no configurador da loja, na
-        ordem definida abaixo.
+        <b>Vitrine de conjuntos.</b> Adicione ou remova peças em cada coluna
+        para definir o que aparece no configurador da loja, na ordem abaixo.
       </div>
       <div className="grid grid-cols-2 gap-5 max-[980px]:grid-cols-1">
         <SelectionGroup
-          title="Partes de baixo"
+          title="Shorts/Calça"
           products={bottoms}
           ids={bottomIds}
           onIds={setBottomIds}
         />
         <SelectionGroup
-          title="Tops"
+          title="Blusas/Top"
           products={tops}
           ids={topIds}
           onIds={setTopIds}
@@ -83,7 +83,7 @@ export function CombosAdmin({
         </p>
         <button
           className={saveButton}
-          disabled={saving || bottoms.length < 3 || tops.length < 3}
+          disabled={saving || !bottoms.length || !tops.length}
           onClick={() => void save()}
         >
           {saving ? "Salvando..." : "Salvar vitrine"}
@@ -104,18 +104,36 @@ function SelectionGroup({
   ids: number[];
   onIds: (ids: number[]) => void;
 }) {
+  function addPosition() {
+    if (ids.length >= products.length) return;
+    onIds([...ids, 0]);
+  }
+
+  function removePosition(position: number) {
+    if (ids.length <= 1) return;
+    onIds(ids.filter((_, index) => index !== position));
+  }
+
   return (
     <div className={chartCard}>
-      <h4>{title}</h4>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h4>{title}</h4>
+        <button
+          type="button"
+          className="border border-bubble-ink bg-bubble-white px-3 py-2 font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink transition-colors hover:bg-bubble-ink hover:text-bubble-white disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/30 disabled:hover:bg-bubble-white"
+          disabled={ids.length >= products.length}
+          onClick={addPosition}
+        >
+          + Adicionar peça
+        </button>
+      </div>
       <div className="mt-4 space-y-3">
-        {[0, 1, 2].map((position) => {
-          const selected = products.find(
-            (product) => product.id === ids[position],
-          );
+        {ids.map((id, position) => {
+          const selected = products.find((product) => product.id === id);
           return (
             <div
-              className="grid grid-cols-[58px_minmax(0,1fr)] items-center gap-3 border border-bubble-line bg-bubble-cream p-3"
-              key={position}
+              className="grid grid-cols-[58px_minmax(0,1fr)_auto] items-center gap-3 border border-bubble-line bg-bubble-cream p-3 max-[520px]:grid-cols-[58px_minmax(0,1fr)]"
+              key={`${position}-${id || "empty"}`}
             >
               <div className="flex h-[68px] w-[58px] items-center justify-center overflow-hidden bg-bubble-white [&_img]:size-full [&_img]:object-cover [&_svg]:w-3/5">
                 {selected?.image ? (
@@ -132,7 +150,7 @@ function SelectionGroup({
                 Posição {position + 1}
                 <select
                   className="mt-1.5 w-full border border-bubble-line bg-bubble-white px-3 py-2.5 font-serif text-[.78rem] normal-case tracking-normal text-bubble-ink"
-                  value={ids[position] || 0}
+                  value={id || 0}
                   onChange={(event) => {
                     const next = [...ids];
                     next[position] = Number(event.target.value);
@@ -143,7 +161,8 @@ function SelectionGroup({
                   {products.map((product) => (
                     <option
                       disabled={ids.some(
-                        (id, index) => index !== position && id === product.id,
+                        (selectedId, index) =>
+                          index !== position && selectedId === product.id,
                       )}
                       key={product.id}
                       value={product.id}
@@ -153,6 +172,14 @@ function SelectionGroup({
                   ))}
                 </select>
               </label>
+              <button
+                type="button"
+                className="border border-bubble-line bg-bubble-white px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.08em] text-bubble-danger disabled:cursor-not-allowed disabled:text-bubble-ink/25 max-[520px]:col-start-2 max-[520px]:justify-self-start"
+                disabled={ids.length <= 1}
+                onClick={() => removePosition(position)}
+              >
+                Remover
+              </button>
             </div>
           );
         })}
@@ -161,10 +188,13 @@ function SelectionGroup({
   );
 }
 
-function available(products: Product[], category: string) {
+function available(
+  products: Product[],
+  matchesCategory: (category: string) => boolean,
+) {
   return products.filter(
     (product) =>
-      product.active && product.stock > 0 && product.cat === category,
+      product.active && product.stock > 0 && matchesCategory(product.cat),
   );
 }
 
@@ -172,13 +202,14 @@ function selectedIds(products: Product[]) {
   const ids = products
     .filter((product) => product.bundlePosition > 0)
     .sort((first, second) => first.bundlePosition - second.bundlePosition)
-    .slice(0, 3)
     .map((product) => product.id);
-  return [...ids, 0, 0, 0].slice(0, 3);
+  return ids.length ? ids : [0];
 }
 
 function validSelection(ids: number[]) {
   return (
-    ids.length === 3 && ids.every((id) => id > 0) && new Set(ids).size === 3
+    ids.length >= 1 &&
+    ids.every((id) => id > 0) &&
+    new Set(ids).size === ids.length
   );
 }

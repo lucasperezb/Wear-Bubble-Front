@@ -8,6 +8,16 @@ import {
   apiFetch,
   money,
 } from "../../lib/api";
+import {
+  catalogCategory,
+  categoryFilterOptions,
+  categoryMatches,
+} from "../../lib/product-filters";
+import {
+  sortProductSizes,
+  standardProductSizes,
+} from "../../lib/product-sizes";
+import { productPrice } from "../../lib/pricing";
 import { useBodyScrollLock } from "../../lib/use-body-scroll-lock";
 import { ProductIcon } from "../shared/ProductIcon";
 import {
@@ -39,9 +49,26 @@ type ProductsAdminProps = {
   notify: Notify;
 };
 
+type ProductAdminFilters = {
+  cat: string;
+  size: string;
+  sport: string;
+  sort: string;
+};
+
+const initialProductAdminFilters: ProductAdminFilters = {
+  cat: "all",
+  size: "",
+  sport: "",
+  sort: "rel",
+};
+
 export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdminProps) {
   const [editor, setEditor] = useState<"new" | number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [filters, setFilters] = useState<ProductAdminFilters>(
+    initialProductAdminFilters,
+  );
   const editingProduct =
     typeof editor === "number"
       ? products.find((product) => product.id === editor) || null
@@ -50,6 +77,36 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
     deletingId === null
       ? null
       : products.find((product) => product.id === deletingId) || null;
+  const filteredProducts = useMemo(() => {
+    let list = [...products];
+    if (filters.cat !== "all") {
+      list = list.filter((product) => categoryMatches(product.cat, filters.cat));
+    }
+    if (filters.size) {
+      list = list.filter((product) =>
+        sortProductSizes(product.sizes).includes(filters.size),
+      );
+    }
+    if (filters.sport) {
+      list = list.filter((product) => product.sports?.includes(filters.sport));
+    }
+    if (filters.sort === "price-asc") {
+      list.sort((first, second) => productPrice(first) - productPrice(second));
+    }
+    if (filters.sort === "price-desc") {
+      list.sort((first, second) => productPrice(second) - productPrice(first));
+    }
+    if (filters.sort === "stock-asc") {
+      list.sort((first, second) => first.stock - second.stock);
+    }
+    if (filters.sort === "stock-desc") {
+      list.sort((first, second) => second.stock - first.stock);
+    }
+    return list;
+  }, [filters, products]);
+
+  const updateFilters = (patch: Partial<ProductAdminFilters>) =>
+    setFilters((current) => ({ ...current, ...patch }));
 
   async function toggleVisibility(product: Product) {
     try {
@@ -74,7 +131,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
         <div>
           <h4 className="text-xl">Produtos</h4>
           <p className="mt-1 text-[.72rem] text-bubble-ink/55">
-            {products.length} produto{products.length === 1 ? "" : "s"} cadastrado
+            {filteredProducts.length} de {products.length} produto{products.length === 1 ? "" : "s"} cadastrado
             {products.length === 1 ? "" : "s"}.
           </p>
         </div>
@@ -85,8 +142,14 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
           + Adicionar produto
         </button>
       </div>
+      <ProductAdminFilterBar
+        filters={filters}
+        sports={sports}
+        onFilter={updateFilters}
+        onClear={() => setFilters(initialProductAdminFilters)}
+      />
       <div className="overflow-hidden border border-bubble-line bg-bubble-white">
-        {products.map((product) => (
+        {filteredProducts.map((product) => (
           <ProductAdminRow
             key={product.id}
             product={product}
@@ -95,6 +158,11 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
             onToggle={() => void toggleVisibility(product)}
           />
         ))}
+        {!filteredProducts.length ? (
+          <div className="p-6 text-center text-[.8rem] text-bubble-ink/55">
+            Nenhum produto encontrado com estes filtros.
+          </div>
+        ) : null}
       </div>
       <p className={adminNote}>
         Edite detalhes e imagens dentro do modal. Ocultar remove o produto da
@@ -121,6 +189,71 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
         />
       ) : null}
     </>
+  );
+}
+
+function ProductAdminFilterBar({
+  filters,
+  sports,
+  onFilter,
+  onClear,
+}: {
+  filters: ProductAdminFilters;
+  sports: string[];
+  onFilter: (patch: Partial<ProductAdminFilters>) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-2.5 border border-bubble-line bg-bubble-cream2 p-3">
+      {categoryFilterOptions.map(({ value, label }) => (
+        <button
+          type="button"
+          key={value}
+          className={`${filters.cat === value ? "border-bubble-ink bg-bubble-ink text-bubble-white" : "border-bubble-line bg-bubble-white text-bubble-ink/60"} border px-3 py-2 font-sans text-[.62rem] font-bold uppercase tracking-[.08em]`}
+          onClick={() => onFilter({ cat: value })}
+        >
+          {label}
+        </button>
+      ))}
+      <select
+        className={`${productInput} w-auto min-w-[118px] py-2 text-[.72rem]`}
+        value={filters.size}
+        onChange={(event) => onFilter({ size: event.target.value })}
+      >
+        <option value="">Tamanho</option>
+        {standardProductSizes.map((size) => (
+          <option key={size}>{size}</option>
+        ))}
+      </select>
+      <select
+        className={`${productInput} w-auto min-w-[136px] py-2 text-[.72rem]`}
+        value={filters.sport}
+        onChange={(event) => onFilter({ sport: event.target.value })}
+      >
+        <option value="">Esporte</option>
+        {sports.map((sport) => (
+          <option key={sport}>{sport}</option>
+        ))}
+      </select>
+      <select
+        className={`${productInput} w-auto min-w-[152px] py-2 text-[.72rem]`}
+        value={filters.sort}
+        onChange={(event) => onFilter({ sort: event.target.value })}
+      >
+        <option value="rel">Ordenar</option>
+        <option value="price-asc">Menor preço</option>
+        <option value="price-desc">Maior preço</option>
+        <option value="stock-desc">Maior quantidade</option>
+        <option value="stock-asc">Menor quantidade</option>
+      </select>
+      <button
+        type="button"
+        className="border-0 bg-transparent font-sans text-[.68rem] font-semibold text-bubble-brown underline"
+        onClick={onClear}
+      >
+        Limpar filtros
+      </button>
+    </div>
   );
 }
 
@@ -223,7 +356,7 @@ function ProductEditorModal({
   useBodyScrollLock(true);
   const editing = Boolean(product);
   const [draft, setDraft] = useState<ProductDraft>(() =>
-    product ? { ...product } : createEmptyProductDraft(),
+    product ? { ...product, cat: catalogCategory(product.cat) } : createEmptyProductDraft(),
   );
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -232,7 +365,7 @@ function ProductEditorModal({
 
   useEffect(() => {
     setDraft(
-      product ? { ...product } : createEmptyProductDraft(),
+      product ? { ...product, cat: catalogCategory(product.cat) } : createEmptyProductDraft(),
     );
     setFiles([]);
     setError("");
@@ -370,7 +503,7 @@ function ProductPreview({ draft, previewUrl }: { draft: ProductDraft; previewUrl
         {previewUrl || draft.image ? <img src={previewUrl || draft.image || ''} alt="" className="size-full object-cover" /> : <div className="w-[52%] text-bubble-white"><ProductIcon icon={draft.icon} /></div>}
       </div>
       <div className="p-3.5">
-        <div className="text-[.66rem] uppercase tracking-[.1em] text-bubble-ink/45">{draft.cat || 'Categoria'}</div>
+        <div className="text-[.66rem] uppercase tracking-[.1em] text-bubble-ink/45">{draft.cat ? catalogCategory(draft.cat) : 'Categoria'}</div>
         <div className="my-1.5 font-serif text-base leading-[1.35]">{draft.name || 'Nome da peça'}</div>
         <div className="flex items-end justify-between gap-2.5">
           <span className="font-bold text-bubble-ink">{money.format(Number(draft.price) || 0)}</span>
@@ -452,13 +585,11 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
   const variantEntries = (draft.colors || []).flatMap(
     (color) => color.sizes || [],
   );
-  const sizes = Array.from(
-    new Set([
-      ...(draft.sizes || []),
-      ...variantEntries.map((item) => item.size),
-      ...standardProductSizes,
-    ]),
-  );
+  const sizes = sortProductSizes([
+    ...standardProductSizes,
+    ...(draft.sizes || []),
+    ...variantEntries.map((item) => item.size),
+  ]);
   const hasVariantStock = variantEntries.length > 0;
   const totalStock = hasVariantStock
     ? variantEntries.reduce(
@@ -928,8 +1059,6 @@ function ColorEditor({ colors, sizes, onColors }: { colors: ColorDraft[]; sizes:
     </div>
   );
 }
-
-const standardProductSizes = ['P', 'M', 'G', 'GG', 'U'];
 
 function isDefaultSport(sport: string) {
   return defaultSports.some(

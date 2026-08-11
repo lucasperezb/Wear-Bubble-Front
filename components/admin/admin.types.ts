@@ -22,6 +22,7 @@ export type AdminTab =
   | 'returns'
   | 'customers'
   | 'coupons'
+  | 'promotions'
   | 'combos'
   | 'db';
 export type Notify = (message: string) => void;

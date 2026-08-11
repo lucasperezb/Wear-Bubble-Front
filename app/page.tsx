@@ -15,22 +15,21 @@ import { ProductCatalog } from "../components/product/ProductCatalog";
 import { ProductModal } from "../components/product/ProductModal";
 import { Product, User, apiFetch } from "../lib/api";
 import { readCart, writeCart, type CartItem } from "../lib/cart";
+import { categoryMatches } from "../lib/product-filters";
+import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
+import { productPrice } from "../lib/pricing";
 
 type Filters = {
   cat: string;
   size: string;
-  material: string;
   sport: string;
-  stock: string;
   sort: string;
 };
 
 const initialFilters: Filters = {
   cat: "all",
   size: "",
-  material: "",
   sport: "",
-  stock: "",
   sort: "rel",
 };
 
@@ -115,16 +114,6 @@ export default function Home() {
     }
   }
 
-  const materials = useMemo(
-    () => [
-      ...new Set(
-        (Array.isArray(products) ? products : [])
-          .map((product) => product.material)
-          .filter(Boolean),
-      ),
-    ],
-    [products],
-  );
   const sports = useMemo(
     () =>
       [
@@ -142,29 +131,27 @@ export default function Home() {
       (product) => product.active !== false,
     );
     if (filters.cat !== "all")
-      list = list.filter((product) => product.cat === filters.cat);
+      list = list.filter((product) => categoryMatches(product.cat, filters.cat));
     if (filters.size)
-      list = list.filter((product) => product.sizes.includes(filters.size));
-    if (filters.material)
-      list = list.filter((product) => product.material === filters.material);
+      list = list.filter((product) =>
+        sortProductSizes(product.sizes).includes(filters.size),
+      );
     if (filters.sport)
       list = list.filter((product) => product.sports?.includes(filters.sport));
-    if (filters.stock === "in")
-      list = list.filter((product) => product.stock > 0);
-    if (filters.stock === "low")
-      list = list.filter((product) => product.stock > 0 && product.stock <= 5);
-    if (filters.sort === "asc")
-      list = [...list].sort((a, b) => a.price - b.price);
-    if (filters.sort === "desc")
-      list = [...list].sort((a, b) => b.price - a.price);
-    if (filters.sort === "rating")
-      list = [...list].sort((a, b) => b.rating - a.rating);
+    if (filters.sort === "price-asc" || filters.sort === "asc")
+      list = [...list].sort((a, b) => productPrice(a) - productPrice(b));
+    if (filters.sort === "price-desc" || filters.sort === "desc")
+      list = [...list].sort((a, b) => productPrice(b) - productPrice(a));
+    if (filters.sort === "stock-asc")
+      list = [...list].sort((a, b) => a.stock - b.stock);
+    if (filters.sort === "stock-desc")
+      list = [...list].sort((a, b) => b.stock - a.stock);
     return list;
   }, [filters, products]);
 
   function openProduct(product: Product) {
     setSelectedProduct(product);
-    setSelectedSize(product.sizes[0] || "");
+    setSelectedSize(sortProductSizes(product.sizes)[0] || "");
   }
 
   function addToCart(
@@ -266,7 +253,6 @@ export default function Home() {
       <Hero />
       <ProductCatalog
         filters={filters}
-        materials={materials}
         sports={sports}
         products={visibleProducts}
         loading={productsLoading}
@@ -394,11 +380,9 @@ function firstAvailableVariant(
     ...configuredColors.filter((color) => color.n !== preferredColor),
   ];
   for (const color of orderedColors) {
-    const available =
-      color.sizes?.find(
-        (item) => item.size === preferredSize && Number(item.q) > 0,
-      ) || color.sizes?.find((item) => Number(item.q) > 0);
-    if (available) return { color: color.n, size: available.size };
+    const sizes = availableVariantSizes(color.sizes || []);
+    const available = sizes.includes(preferredSize) ? preferredSize : sizes[0];
+    if (available) return { color: color.n, size: available };
   }
   if (product.stock <= 0) return null;
   return {
@@ -406,6 +390,6 @@ function firstAvailableVariant(
       product.colors?.find((color) => color.n === preferredColor)?.n ||
       product.colors?.[0]?.n ||
       "",
-    size: preferredSize || product.sizes[0] || "U",
+    size: preferredSize || sortProductSizes(product.sizes)[0] || "P",
   };
 }

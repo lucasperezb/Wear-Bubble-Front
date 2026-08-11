@@ -67,6 +67,11 @@ export function AccountPage() {
   }, []);
 
   async function loadAccount() {
+    const params = new URLSearchParams(window.location.search);
+    const requestedTab = accountTabFromParam(params.get("tab"));
+    const intent = params.get("intent");
+    if (requestedTab) setTab(requestedTab);
+
     setLoading(true);
     setLoadError("");
     let currentUser: User | null;
@@ -82,7 +87,7 @@ export function AccountPage() {
     }
 
     if (!currentUser) {
-      window.location.replace("/login");
+      window.location.replace(intent === "rastreio" ? "/cadastro" : "/login");
       return;
     }
 
@@ -588,6 +593,18 @@ function AccountNavButton({
       <ChevronRight className="ml-auto size-4" />
     </button>
   );
+}
+
+function accountTabFromParam(value: string | null): AccountTab | null {
+  if (
+    value === "orders" ||
+    value === "returns" ||
+    value === "profile" ||
+    value === "addresses"
+  ) {
+    return value;
+  }
+  return null;
 }
 
 function AccountField({
