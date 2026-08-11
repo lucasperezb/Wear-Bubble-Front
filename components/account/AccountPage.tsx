@@ -29,8 +29,8 @@ import {
   formatPersonName,
   formatPhone,
 } from "../../lib/input-formatters";
-import { AddressesPanel } from "./AddressesPanel";
-import { ReturnsPanel } from "./ReturnsPanel";
+import { AddressesPanel } from "./panels/AddressesPanel";
+import { ReturnsPanel } from "./panels/ReturnsPanel";
 
 type AccountTab = "orders" | "returns" | "profile" | "addresses";
 

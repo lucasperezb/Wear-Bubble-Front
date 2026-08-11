@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export type Product = {
   id: number;
   name: string;
@@ -15,6 +17,7 @@ export type Product = {
   material: string;
   pair: number;
   bundlePosition: number;
+  catalogPosition: number;
   sports: string[];
   colors: Array<{
     n: string;
@@ -32,6 +35,20 @@ export type ProductImage = {
   altText: string;
   position: number;
   isPrimary: boolean;
+};
+
+export type HeroSlide = {
+  id: string;
+  imageUrl: string;
+  linkUrl: string;
+  altText: string;
+  position: number;
+  active: boolean;
+};
+
+export type HeroConfig = {
+  enabled: boolean;
+  slides: HeroSlide[];
 };
 
 export type User = {
@@ -186,35 +203,61 @@ export type Coupon = {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "/api";
 
+export const apiClient = axios.create({
+  baseURL: API_BASE,
+  withCredentials: true,
+});
+
+function normalizeHeaders(headers?: HeadersInit) {
+  const normalized: Record<string, string> = {};
+  new Headers(headers).forEach((value, key) => {
+    normalized[key] = value;
+  });
+  return normalized;
+}
+
 export async function apiFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
   const isFormData =
     typeof FormData !== "undefined" && init.body instanceof FormData;
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    cache: init.cache ?? "no-store",
-    credentials: "include",
-    headers: {
-      ...(init.body && !isFormData
-        ? { "content-type": "application/json" }
-        : {}),
-      ...init.headers,
-    },
-  });
-  const text = await response.text();
+  const headers = normalizeHeaders(init.headers);
+  if (init.body && !isFormData && !headers["content-type"]) {
+    headers["content-type"] = "application/json";
+  }
+
+  let response;
+  try {
+    response = await apiClient.request<string>({
+      url: path,
+      method: init.method || "GET",
+      data: init.body ?? undefined,
+      headers,
+      signal: init.signal ?? undefined,
+      transformResponse: [(value) => value],
+      validateStatus: () => true,
+    });
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === "ERR_CANCELED") throw error;
+      throw new Error("Não foi possível conectar à API.");
+    }
+    throw error;
+  }
+
+  const text = response.data;
   let data: unknown = null;
   try {
     data = text ? JSON.parse(text) : null;
   } catch {
     throw new Error(
-      response.ok
+      response.status >= 200 && response.status < 300
         ? "A API retornou uma resposta inválida."
         : `Erro ${response.status}`,
     );
   }
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     const error = data as { message?: string | string[]; error?: string };
     const validationMessage = Array.isArray(error.message)
       ? error.message[0]?.replace(/^customer\./, "")

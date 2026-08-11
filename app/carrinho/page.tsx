@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CartStep } from "../../components/checkout/CartStep";
-import { CheckoutStepper } from "../../components/checkout/CheckoutStepper";
-import { ConfirmationStep } from "../../components/checkout/ConfirmationStep";
-import { DeliveryStep } from "../../components/checkout/DeliveryStep";
-import { OrderSummary } from "../../components/checkout/OrderSummary";
-import { PaymentStep } from "../../components/checkout/PaymentStep";
 import {
+  CartStep,
+  CheckoutStepper,
+  ConfirmationStep,
+  DeliveryStep,
+  OrderSummary,
+  PaymentStep,
   emptyCardPaymentForm,
   emptyDeliveryProfile,
   type CardPaymentForm,
@@ -16,7 +16,7 @@ import {
   type DeliveryProfile,
   type PixPayment,
   type ShippingOption,
-} from "../../components/checkout/checkout.types";
+} from "../../components/checkout";
 import {
   Order,
   Product,

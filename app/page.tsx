@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AdminPanel } from "../components/admin/AdminPanel";
-import { CartDrawer } from "../components/cart/CartDrawer";
-import { ComboBuilder } from "../components/home/ComboBuilder";
-import { Hero } from "../components/home/Hero";
+import { AdminPanel } from "../components/admin";
+import { CartDrawer } from "../components/cart";
 import {
   BrandSections,
+  ComboBuilder,
   ContactSection,
   Footer,
-} from "../components/home/StaticSections";
-import { Header } from "../components/layout/Header";
-import { ProductCatalog } from "../components/product/ProductCatalog";
-import { ProductModal } from "../components/product/ProductModal";
-import { Product, User, apiFetch } from "../lib/api";
+  Hero,
+} from "../components/home";
+import { Header } from "../components/layout";
+import { ProductCatalog, ProductModal } from "../components/product";
+import { HeroConfig, Product, User, apiFetch } from "../lib/api";
 import { readCart, writeCart, type CartItem } from "../lib/cart";
 import { categoryMatches } from "../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
@@ -35,6 +34,10 @@ const initialFilters: Filters = {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [heroConfig, setHeroConfig] = useState<HeroConfig>({
+    enabled: false,
+    slides: [],
+  });
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
   const [filters, setFilters] = useState<Filters>(initialFilters);
@@ -58,6 +61,7 @@ export default function Home() {
 
   useEffect(() => {
     void refreshProducts();
+    void refreshHero();
     const wantsAccount =
       new URLSearchParams(window.location.search).get("conta") === "1";
     apiFetch<User | null>("/auth/session")
@@ -111,6 +115,16 @@ export default function Home() {
       );
     } finally {
       setProductsLoading(false);
+    }
+  }
+
+  async function refreshHero() {
+    try {
+      const response = await apiFetch<HeroConfig>("/hero");
+      if (!response || !Array.isArray(response.slides)) return;
+      setHeroConfig(response);
+    } catch {
+      setHeroConfig({ enabled: false, slides: [] });
     }
   }
 
@@ -250,7 +264,7 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      <Hero />
+      <Hero config={heroConfig} />
       <ProductCatalog
         filters={filters}
         sports={sports}
@@ -347,7 +361,9 @@ export default function Home() {
           open={adminOpen}
           managerLabel={user.email}
           onClose={() => setAdminOpen(false)}
-          onChanged={refreshProducts}
+          onChanged={async () => {
+            await Promise.all([refreshProducts(), refreshHero()]);
+          }}
           notify={showToast}
         />
       ) : null}

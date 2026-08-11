@@ -5,7 +5,7 @@ import {
   PasswordResetShell,
   passwordResetButton,
   passwordResetInput,
-} from "../../components/auth/PasswordResetShell";
+} from "../../components/auth";
 import { apiFetch } from "../../lib/api";
 import { formatEmail } from "../../lib/input-formatters";
 

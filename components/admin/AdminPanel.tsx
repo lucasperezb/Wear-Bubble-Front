@@ -5,6 +5,7 @@ import {
   Database,
   LayoutDashboard,
   Layers3,
+  Images,
   LogOut,
   Menu,
   Package,
@@ -25,18 +26,20 @@ import {
   defaultSports,
   emptyAdminDump,
   parseAdminDump,
-} from './admin.constants';
-import type { AdminDump, AdminTab } from './admin.types';
-import { CombosAdmin } from './CombosAdmin';
-import { CouponsAdmin } from './CouponsAdmin';
-import { CustomersAdmin } from './CustomersAdmin';
-import { DatabaseAdmin } from './DatabaseAdmin';
-import { Dashboard } from './Dashboard';
-import { OrdersAdmin } from './OrdersAdmin';
-import { ProductsAdmin } from './ProductsAdmin';
-import { PromotionsAdmin } from './PromotionsAdmin';
-import { ReturnsAdmin } from './ReturnsAdmin';
-import { ShipAdmin } from './ShipAdmin';
+} from './shared/constants';
+import type { AdminDump, AdminTab } from './shared/types';
+import { CombosAdmin } from './catalog/CombosAdmin';
+import { HeroCarouselAdmin } from './catalog/HeroCarouselAdmin';
+import { ProductsAdmin } from './catalog/ProductsAdmin';
+import { PromotionsAdmin } from './catalog/PromotionsAdmin';
+import { CouponsAdmin } from './commerce/CouponsAdmin';
+import { OrdersAdmin } from './commerce/OrdersAdmin';
+import { CustomersAdmin } from './customers/CustomersAdmin';
+import { Dashboard } from './dashboard/Dashboard';
+import { DatabaseAdmin } from './data/DatabaseAdmin';
+import { ReturnsAdmin } from './fulfillment/ReturnsAdmin';
+import { ShipAdmin } from './fulfillment/ShipAdmin';
+import type { HeroConfig } from '../../lib/api';
 
 type AdminPanelProps = {
   open: boolean;
@@ -52,6 +55,10 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
   const [dump, setDump] = useState<AdminDump>(emptyAdminDump);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [heroConfig, setHeroConfig] = useState<HeroConfig>({
+    enabled: false,
+    slides: [],
+  });
 
   useEffect(() => {
     if (open) void refresh();
@@ -60,8 +67,12 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
   async function refresh() {
     setLoading(true);
     try {
-      const response = await apiFetch<unknown>('/admin/db');
+      const [response, hero] = await Promise.all([
+        apiFetch<unknown>('/admin/db'),
+        apiFetch<HeroConfig>('/hero/admin'),
+      ]);
       setDump(parseAdminDump(response));
+      setHeroConfig(hero);
     } catch (error) {
       notify(error instanceof Error ? error.message : 'Não foi possível carregar o painel.');
     } finally {
@@ -185,6 +196,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
               {tab === 'customers' && <CustomersAdmin dump={dump} />}
               {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'promotions' && <PromotionsAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
+              {tab === 'hero' && <HeroCarouselAdmin config={heroConfig} onConfig={setHeroConfig} onPublished={onChanged} notify={notify} />}
               {tab === 'combos' && <CombosAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
               {tab === 'db' && <DatabaseAdmin dump={dump} />}
             </div>
@@ -204,6 +216,7 @@ const adminTabIcons: Record<AdminTab, LucideIcon> = {
   customers: Users,
   coupons: TicketPercent,
   promotions: BadgePercent,
+  hero: Images,
   combos: Layers3,
   db: Database,
 };

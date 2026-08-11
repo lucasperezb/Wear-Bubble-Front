@@ -1,5 +1,5 @@
 import { Check, CreditCard, ShoppingBag, Truck } from 'lucide-react';
-import type { CheckoutStep } from './checkout.types';
+import type { CheckoutStep } from './shared/types';
 
 const steps: Array<{ id: CheckoutStep; label: string; icon: typeof ShoppingBag }> = [
   { id: 'cart', label: 'Carrinho', icon: ShoppingBag },
