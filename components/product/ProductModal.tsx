@@ -2,6 +2,8 @@ import { Product, money } from '../../lib/api';
 import { ProductIcon } from '../shared/ProductIcon';
 import { useEffect, useState } from 'react';
 import { useBodyScrollLock } from '../../lib/use-body-scroll-lock';
+import { availableVariantSizes, sortProductSizes } from '../../lib/product-sizes';
+import { pixPrice, productHasPromotion, productPrice, promotionPct } from '../../lib/pricing';
 
 type ProductModalProps = {
   product: Product | null;
@@ -39,8 +41,8 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
         : product.colors?.[0]) || product.colors?.[0];
     setSelectedColorName(firstColor?.n || '');
     const firstSize = configured
-      ? firstColor?.sizes?.find((item) => Number(item.q) > 0)?.size || ''
-      : product.sizes?.[0] || '';
+      ? availableVariantSizes(firstColor?.sizes || [])[0] || ''
+      : sortProductSizes(product.sizes)[0] || '';
     onSize(firstSize);
   }, [product?.id]);
 
@@ -52,17 +54,21 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
     product.colors?.find((color) => color.n === selectedColorName) ||
     product.colors?.[0];
   const availableSizes = hasVariantStock
-    ? (selectedColor?.sizes || [])
-        .filter((item) => Number(item.q) > 0)
-        .map((item) => item.size)
-    : product.sizes;
+    ? availableVariantSizes(selectedColor?.sizes || [])
+    : sortProductSizes(product.sizes);
   const selectedStock = hasVariantStock
-    ? (selectedColor?.sizes || []).reduce(
-        (total, item) => total + Math.max(0, Number(item.q) || 0),
+    ? Math.max(
         0,
+        Number(
+          (selectedColor?.sizes || []).find(
+            (item) => item.size.toUpperCase() === selectedSize.toUpperCase(),
+          )?.q,
+        ) || 0,
       )
     : product.stock;
   const out = selectedStock <= 0;
+  const finalPrice = productPrice(product);
+  const promo = productHasPromotion(product);
   const gallery = product.images?.length
     ? [...product.images].sort(
         (a, b) =>
@@ -90,7 +96,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
           <div className="grid grid-cols-2 gap-[30px] max-[980px]:grid-cols-1">
             <div>
               <div className="relative flex min-h-[430px] items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#EAE2CC,#F3EDDD)] max-[620px]:aspect-[4/5] max-[620px]:min-h-0 [&_svg]:w-[52%] [&_svg]:opacity-90">
-                {product.tag ? <span className={`absolute left-3.5 top-3.5 z-[2] px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] ${product.tag.includes('Limitada') ? 'bg-bubble-ink text-bubble-candy' : 'bg-bubble-ink text-bubble-white'}`}>{product.tag}</span> : null}
+                {promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{promotionPct(product)}% OFF</span> : product.tag ? <span className={`absolute left-3.5 top-3.5 z-[2] px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] ${product.tag.includes('Limitada') ? 'bg-bubble-ink text-bubble-candy' : 'bg-bubble-ink text-bubble-white'}`}>{product.tag}</span> : null}
                 {selectedImage ? (
                   <img
                     className="absolute inset-0 size-full object-cover"
@@ -125,8 +131,9 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
               <div className="mb-2 text-[.68rem] uppercase tracking-[.12em] text-bubble-ink/50">{product.cat} · {product.sub}</div>
               <h3 className="text-[1.6rem] leading-[1.2]">{product.name}</h3>
               <div className="mt-2 flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} · {product.reviews} avaliações</div>
-              <div className="mt-4 font-display text-[1.8rem] text-bubble-ink">{money.format(product.price)}</div>
-              <div className="mt-0.5 text-[.72rem] font-semibold text-bubble-success">{money.format(product.price * 0.95)} no Pix (5% OFF)</div>
+              {promo ? <div className="mt-4 text-[.84rem] text-bubble-ink/45 line-through">{money.format(product.price)}</div> : null}
+              <div className={`${promo ? 'mt-1' : 'mt-4'} font-display text-[1.8rem] text-bubble-ink`}>{money.format(finalPrice)}</div>
+              <div className="mt-0.5 text-[.72rem] font-semibold text-bubble-success">{money.format(pixPrice(product))} no Pix (5% OFF)</div>
               <p className="my-4 font-serif text-[.85rem] leading-[1.65] text-bubble-ink/65">{product.desc}</p>
               {product.sports?.length ? <div className="my-2.5 flex flex-wrap items-center gap-1.5 text-[.8rem]"><b>Recomendado para:</b> {product.sports.map((sport) => <span className="rounded-[20px] border border-bubble-line bg-bubble-ink/10 px-[9px] py-[3px] font-sans text-[.6rem] font-bold uppercase tracking-[.05em] text-bubble-brown" key={sport}>{sport}</span>)}</div> : null}
               <div className="mb-[18px] border-y border-bubble-line py-[11px] text-[.72rem] leading-[1.6] text-bubble-ink/55"><b>Material:</b> {product.material} · <b>Estoque:</b> {out ? 'Esgotado' : `${selectedStock} un.`} · Troca grátis em 30 dias</div>
@@ -153,10 +160,8 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
                           onClick={() => {
                             setSelectedColorName(color.n);
                             const nextSizes = hasVariantStock
-                              ? (color.sizes || [])
-                                  .filter((item) => Number(item.q) > 0)
-                                  .map((item) => item.size)
-                              : product.sizes;
+                              ? availableVariantSizes(color.sizes || [])
+                              : sortProductSizes(product.sizes);
                             if (!nextSizes.includes(selectedSize)) {
                               onSize(nextSizes[0] || '');
                             }
@@ -178,7 +183,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
               <div className="font-sans text-[.68rem] font-bold uppercase tracking-[.12em] text-bubble-ink/60">Tamanho</div>
               <div className="mb-[18px] mt-2 flex flex-wrap gap-2">{availableSizes.map((size) => <button key={size} className={`size-[42px] border text-[.76rem] font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${selectedSize === size ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`} onClick={() => onSize(size)} disabled={out}>{size}</button>)}</div>
               <button className="inline-flex w-full items-center justify-center gap-2 border border-transparent bg-bubble-ink px-[30px] py-[15px] font-sans text-[.78rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-white hover:text-bubble-ink disabled:cursor-not-allowed disabled:opacity-45" disabled={out || !selectedSize || (product.colors?.length > 0 && !selectedColor)} onClick={() => onAdd(product, selectedSize, selectedColor?.n || '')}>
-                {out ? 'Esgotado' : `Adicionar à sacola · ${money.format(product.price)}`}
+                {out ? 'Esgotado' : `Adicionar à sacola · ${money.format(finalPrice)}`}
               </button>
             </div>
           </div>

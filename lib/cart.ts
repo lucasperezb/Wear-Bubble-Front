@@ -1,4 +1,6 @@
 import type { Product } from './api';
+import { isBottomCategory, isTopCategory } from './product-filters';
+import { productPrice } from './pricing';
 import { FREE_SHIPPING_ENABLED } from './store-config';
 
 export type CartItem = {
@@ -40,7 +42,7 @@ export function calculateCart(
     .map((item) => ({ item, product: products.find((product) => product.id === item.pid) }))
     .filter((line): line is { item: CartItem; product: Product } => Boolean(line.product));
 
-  const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.item.qty, 0);
+  const subtotal = lines.reduce((sum, line) => sum + productPrice(line.product) * line.item.qty, 0);
   const bundles = new Map<string, typeof lines>();
   for (const line of lines) {
     if (!line.item.bundle) continue;
@@ -53,11 +55,11 @@ export function calculateCart(
     if (grouped.length !== 2 || grouped[0].product.id === grouped[1].product.id) {
       return sum;
     }
-    const bottom = grouped.find((line) => line.product.cat === 'Parte de baixo');
-    const top = grouped.find((line) => line.product.cat === 'Top');
+    const bottom = grouped.find((line) => isBottomCategory(line.product.cat));
+    const top = grouped.find((line) => isTopCategory(line.product.cat));
     if (!bottom || !top) return sum;
     const matchedQuantity = Math.min(bottom.item.qty, top.item.qty);
-    return sum + (bottom.product.price + top.product.price) * matchedQuantity;
+    return sum + (productPrice(bottom.product) + productPrice(top.product)) * matchedQuantity;
   }, 0);
   const bundleDiscount = bundleSubtotal * 0.05;
   const afterBundle = subtotal - bundleDiscount;

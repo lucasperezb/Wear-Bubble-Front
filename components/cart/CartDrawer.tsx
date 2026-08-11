@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import type { Product } from '../../lib/api';
 import { calculateCart, type CartItem } from '../../lib/cart';
+import { productPrice } from '../../lib/pricing';
 import { FREE_SHIPPING_ENABLED } from '../../lib/store-config';
 import { useBodyScrollLock } from '../../lib/use-body-scroll-lock';
 import { ProductIcon } from '../shared/ProductIcon';
@@ -67,7 +68,7 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
                   <div className="flex flex-1 flex-col gap-[3px]">
                     {item.bundle ? <div className="text-[.64rem] font-bold uppercase tracking-[.06em] text-bubble-success">Conjunto · 5% OFF</div> : null}
                     <div className="text-[.85rem] font-medium">{product.name}</div>
-                    <div className="text-[.7rem] text-bubble-ink/50">{item.color ? `Cor ${item.color} · ` : ''}Tam. {item.size} · R$ {product.price.toFixed(2).replace('.', ',')} un.</div>
+                    <div className="text-[.7rem] text-bubble-ink/50">{item.color ? `Cor ${item.color} · ` : ''}Tam. {item.size} · R$ {productPrice(product).toFixed(2).replace('.', ',')} un.</div>
                     <div className="mt-1.5 flex items-center gap-2.5 [&_button]:size-[22px] [&_button]:border [&_button]:border-bubble-line [&_button]:bg-transparent [&_button]:text-[.8rem]">
                       <button onClick={() => onQty(item.pid, item.size, item.color, item.bundle, -1)}>−</button><span>{item.qty}</span><button onClick={() => onQty(item.pid, item.size, item.color, item.bundle, 1)}>+</button>
                     </div>
@@ -90,3 +91,4 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
     </>
   );
 }
+
