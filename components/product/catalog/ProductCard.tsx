@@ -1,7 +1,6 @@
 import { Product, money } from '../../../lib/api';
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from '../../../lib/pricing';
-import { useState } from 'react';
-import { ProductIcon, SizeGuideDialog } from '../../shared';
+import { ProductIcon } from '../../shared';
 
 type ProductCardProps = {
   product: Product;
@@ -9,14 +8,12 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, onOpen }: ProductCardProps) {
-  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const out = product.stock <= 0;
   const low = product.stock > 0 && product.stock <= 5;
   const finalPrice = productPrice(product);
   const promo = productHasPromotion(product);
 
   return (
-    <>
     <div className={`group relative flex cursor-pointer flex-col bg-bubble-white ${out ? 'opacity-55' : ''}`} onClick={() => onOpen(product)}>
       <div className="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#EAE2CC,#F3EDDD)] [&_svg]:w-[46%] [&_svg]:opacity-[.88] [&_svg]:transition-transform [&_svg]:duration-[400ms] group-hover:[&_svg]:scale-[1.06] group-hover:[&_svg]:-rotate-2">
         {out ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-ink/70 px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:text-[.5rem]">Esgotado</span> : promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:text-[.5rem]">{promotionPct(product)}% OFF</span> : product.tag ? <span className={`absolute left-3.5 top-3.5 z-[2] px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] max-[520px]:left-2 max-[520px]:top-2 max-[520px]:max-w-[calc(100%-16px)] max-[520px]:truncate max-[520px]:px-2 max-[520px]:text-[.5rem] ${product.tag.includes('Limitada') ? 'bg-bubble-ink text-bubble-candy' : 'bg-bubble-ink text-bubble-white'}`}>{product.tag}</span> : null}
@@ -44,26 +41,11 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
             <span className="text-[1.05rem] font-semibold text-bubble-ink max-[520px]:text-[.98rem]">{money.format(finalPrice)}</span>
             <span className="block text-[.66rem] font-semibold text-bubble-success max-[520px]:text-[.58rem]">{money.format(pixPrice(product))} no Pix</span>
           </div>
-          <div className="flex shrink-0 flex-col gap-1.5 max-[520px]:w-full">
-            <button
-              className="border-0 bg-transparent p-0 font-sans text-[.62rem] font-semibold uppercase tracking-[.08em] text-bubble-brown underline underline-offset-4 hover:text-bubble-ink max-[520px]:py-1"
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                setSizeGuideOpen(true);
-              }}
-            >
-              Medidas
-            </button>
+          <div className="flex shrink-0 max-[520px]:w-full">
             <button className="border border-bubble-ink bg-transparent px-3.5 py-2 font-sans text-[.64rem] font-bold uppercase tracking-[.1em] transition-all hover:bg-bubble-ink hover:text-bubble-white max-[520px]:w-full max-[520px]:py-2.5 max-[520px]:text-[.58rem]" type="button">Ver peça</button>
           </div>
         </div>
       </div>
     </div>
-    <SizeGuideDialog
-      open={sizeGuideOpen}
-      onClose={() => setSizeGuideOpen(false)}
-    />
-    </>
   );
 }

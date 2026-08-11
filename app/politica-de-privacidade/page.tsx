@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     'Como a Wear Bubble coleta, usa, compartilha e protege os seus dados pessoais, em conformidade com a LGPD (Lei nº 13.709/2018).',
 };
 
-const UPDATED_AT = '10 de agosto de 2026';
+const UPDATED_AT = '11 de agosto de 2026';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -171,6 +171,10 @@ export default function PrivacyPolicyPage() {
               atuando como operadores.
             </li>
             <li>
+              <strong>Google Ads</strong> — dados de navegação, atribuição e conversão, conforme a sua escolha de
+              cookies, para medir compras originadas por anúncios e avaliar o desempenho das campanhas.
+            </li>
+            <li>
               <strong>Autoridades públicas</strong> — quando houver ordem judicial ou obrigação legal.
             </li>
           </ul>
@@ -225,10 +229,17 @@ export default function PrivacyPolicyPage() {
               <strong>Funcionais:</strong> armazenamento local no seu navegador para lembrar o conteúdo da sacola entre
               visitas.
             </li>
+            <li>
+              <strong>Publicidade e medição:</strong> com a sua autorização, a tag do Google Ads usa identificadores e
+              cookies para atribuir visitas e compras às campanhas. A conversão informa ao Google somente o número do
+              pedido, o valor e a moeda, sem enviar nome, e-mail, CPF ou dados do cartão.
+            </li>
           </ul>
           <p>
-            Você pode bloquear ou apagar cookies nas configurações do navegador. Se bloquear os necessários, o login e o
-            checkout deixam de funcionar.
+            Os cookies de publicidade ficam negados até você fazer uma escolha no aviso exibido pela loja. Você pode
+            alterar essa decisão a qualquer momento pelo botão “Cookies”. Recusar os opcionais não afeta a navegação,
+            o login ou o checkout. Também é possível bloquear ou apagar cookies nas configurações do navegador; se
+            bloquear os necessários, o login e o checkout podem deixar de funcionar.
           </p>
         </Section>
 

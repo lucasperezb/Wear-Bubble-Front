@@ -34,6 +34,7 @@ import {
   type PaymentMethod,
 } from "../../lib/cart";
 import { FREE_SHIPPING_ENABLED } from "../../lib/store-config";
+import { trackGoogleAdsPurchase } from "../../lib/google-ads";
 
 export default function CartPage() {
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -249,8 +250,15 @@ export default function CartPage() {
         const status = await apiFetch<{
           status: Order["status"];
           number: string;
+          total: number;
         }>(`/payment/status/${pixPayment.orderId}`);
-        if (status.status === "paid") finishOnSiteCheckout(status.number);
+        if (status.status === "paid") {
+          trackGoogleAdsPurchase({
+            transactionId: status.number,
+            value: status.total,
+          });
+          finishOnSiteCheckout(status.number);
+        }
         if (status.status === "canceled")
           setMessage("O pagamento Pix foi cancelado.");
       } catch {
@@ -474,6 +482,12 @@ export default function CartPage() {
         ["DECLINED", "CANCELED", "CANCELLED"].includes(response.paymentStatus)
       ) {
         throw new Error(response.message || "Pagamento não autorizado.");
+      }
+      if (isConfirmedPaymentStatus(response.paymentStatus)) {
+        trackGoogleAdsPurchase({
+          transactionId: response.number,
+          value: response.total,
+        });
       }
       setCard(emptyCardPaymentForm);
       finishOnSiteCheckout(response.number);
@@ -848,4 +862,10 @@ function prepareCard(card: CardPaymentForm) {
     expiryYear: `20${shortYear}`,
     ccv: card.securityCode,
   };
+}
+
+function isConfirmedPaymentStatus(status: string) {
+  return ["RECEIVED", "RECEIVED_IN_CASH", "CONFIRMED"].includes(
+    status.toUpperCase(),
+  );
 }

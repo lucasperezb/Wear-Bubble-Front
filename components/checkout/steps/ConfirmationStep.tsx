@@ -1,9 +1,22 @@
+"use client";
+
 import Link from 'next/link';
+import { useEffect } from 'react';
 import type { Order } from '../../../lib/api';
 import { money } from '../../../lib/api';
+import { trackGoogleAdsPurchase } from '../../../lib/google-ads';
 
 export function ConfirmationStep({ order, orderNumber, email }: { order: Order | null; orderNumber?: string; email?: string }) {
   const loginHref = `/login?modo=código${email ? `&email=${encodeURIComponent(email)}` : ''}`;
+
+  useEffect(() => {
+    if (order?.status !== 'paid') return;
+    trackGoogleAdsPurchase({
+      transactionId: order.number,
+      value: order.total,
+    });
+  }, [order]);
+
   return (
     <section className="border border-bubble-line bg-bubble-white p-8 text-center">
       <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-bubble-success text-3xl text-bubble-white">✓</div>
