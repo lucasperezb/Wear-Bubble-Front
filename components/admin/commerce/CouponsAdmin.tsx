@@ -35,6 +35,10 @@ export function CouponsAdmin({
   });
 
   async function createCoupon() {
+    if (!isValidCouponPercentage(draft.pct)) {
+      notify("Informe um desconto entre 1% e 99%.");
+      return;
+    }
     try {
       await apiFetch("/coupons", {
         method: "POST",
@@ -104,7 +108,7 @@ export function CouponsAdmin({
               <input
                 type="number"
                 min="1"
-                max="90"
+                max="99"
                 value={draft.pct}
                 onChange={(event) =>
                   setDraft({ ...draft, pct: Number(event.target.value) })
@@ -324,7 +328,7 @@ function CouponRow({
           className="max-w-[58px]"
           type="number"
           min="1"
-          max="90"
+          max="99"
           value={draft.pct}
           onChange={(event) =>
             setDraft({ ...draft, pct: Number(event.target.value) })
@@ -388,20 +392,22 @@ function CouponRow({
           disabled={deleting}
           className={smallButton}
           onClick={() =>
-            patch(
-              {
-                pct: draft.pct,
-                assignedTo: draft.assignedTo,
-                expiresAt: draft.expiresAt
-                  ? new Date(`${draft.expiresAt}T23:59:59`).getTime()
-                  : null,
-                maxUses: draft.maxUses ? Number(draft.maxUses) : null,
-                maxUsesPerCustomer: draft.maxUsesPerCustomer
-                  ? Number(draft.maxUsesPerCustomer)
-                  : null,
-              },
-              `Cupom ${coupon.code} atualizado.`,
-            )
+            isValidCouponPercentage(draft.pct)
+              ? patch(
+                  {
+                    pct: draft.pct,
+                    assignedTo: draft.assignedTo,
+                    expiresAt: draft.expiresAt
+                      ? new Date(`${draft.expiresAt}T23:59:59`).getTime()
+                      : null,
+                    maxUses: draft.maxUses ? Number(draft.maxUses) : null,
+                    maxUsesPerCustomer: draft.maxUsesPerCustomer
+                      ? Number(draft.maxUsesPerCustomer)
+                      : null,
+                  },
+                  `Cupom ${coupon.code} atualizado.`,
+                )
+              : notify("Informe um desconto entre 1% e 99%.")
           }
         >
           Salvar
@@ -431,4 +437,8 @@ function CouponRow({
       </td>
     </tr>
   );
+}
+
+function isValidCouponPercentage(value: number) {
+  return Number.isFinite(value) && value >= 1 && value <= 99;
 }
