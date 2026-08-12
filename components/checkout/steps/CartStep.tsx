@@ -2,7 +2,11 @@ import type { Product } from "../../../lib/api";
 import { money } from "../../../lib/api";
 import type { AppliedCoupon, CartItem } from "../../../lib/cart";
 import { formatCoupon } from "../../../lib/input-formatters";
-import { productHasPromotion, productPrice, promotionPct } from "../../../lib/pricing";
+import {
+  productHasPromotion,
+  productPrice,
+  promotionPct,
+} from "../../../lib/pricing";
 import { ProductIcon } from "../../shared";
 
 type CartStepProps = {
@@ -40,7 +44,11 @@ export function CartStep({
             >
               <div className="flex h-[120px] w-24 shrink-0 items-center justify-center overflow-hidden bg-bubble-cream2 max-[620px]:h-[92px] max-[620px]:w-[72px] [&_svg]:w-3/5">
                 {product.image ? (
-                  <img className="size-full object-cover" src={product.image} alt="" />
+                  <img
+                    className="size-full object-cover"
+                    src={product.image}
+                    alt=""
+                  />
                 ) : (
                   <ProductIcon icon={product.icon} />
                 )}
@@ -58,7 +66,8 @@ export function CartStep({
                 ) : null}
                 <strong className="font-serif text-base">{product.name}</strong>
                 <span className="mt-1 text-[.75rem] text-bubble-ink/55">
-                  {item.color ? `Cor: ${item.color} · ` : ""}Tamanho: {item.size}
+                  {item.color ? `Cor: ${item.color} · ` : ""}Tamanho:{" "}
+                  {item.size}
                 </span>
                 <span className="mt-1 text-[.72rem] text-bubble-ink/55">
                   Unitário: {money.format(finalPrice)}
@@ -99,7 +108,9 @@ export function CartStep({
           <div className="border border-bubble-success/30 bg-bubble-success/10 p-4 text-[.8rem] font-semibold text-bubble-success">
             {coupon.type === "store_credit"
               ? `Crédito ${coupon.code} aplicado (${money.format(coupon.value)})`
-              : `Cupom ${coupon.code} aplicado (-${coupon.pct}%)`}{" "}
+              : coupon.minimumCharge
+                ? `Cupom ${coupon.code} aplicado (total final de R$ 5,00)`
+                : `Cupom ${coupon.code} aplicado (-${coupon.pct}%)`}{" "}
             ·{" "}
             <button
               className="border-0 bg-transparent text-inherit underline"
@@ -113,7 +124,9 @@ export function CartStep({
             <input
               className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-[.82rem] uppercase outline-none"
               value={couponCode}
-              onChange={(event) => onCouponCode(formatCoupon(event.target.value))}
+              onChange={(event) =>
+                onCouponCode(formatCoupon(event.target.value))
+              }
               autoCapitalize="characters"
               maxLength={30}
               placeholder="Digite o cupom"
@@ -126,7 +139,9 @@ export function CartStep({
             </button>
           </div>
         )}
-        {message ? <p className="mt-2 text-[.72rem] text-bubble-brown">{message}</p> : null}
+        {message ? (
+          <p className="mt-2 text-[.72rem] text-bubble-brown">{message}</p>
+        ) : null}
       </div>
     </section>
   );

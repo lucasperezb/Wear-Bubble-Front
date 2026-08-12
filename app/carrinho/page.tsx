@@ -276,7 +276,8 @@ export default function CartPage() {
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
   const freeShipping =
     FREE_SHIPPING_ENABLED ||
-    coupon?.type === 'store_credit' ||
+    coupon?.type === "store_credit" ||
+    (coupon?.type === "coupon" && coupon.minimumCharge) ||
     totals.total >= 299;
   const shippingPrice = selectedShipping
     ? freeShipping
@@ -313,21 +314,23 @@ export default function CartPage() {
   async function applyCoupon() {
     try {
       const code = couponCode.trim().toUpperCase();
-      if (code.startsWith('WB-')) {
+      if (code.startsWith("WB-")) {
         const credit = await apiFetch<{
           code: string;
           value: number;
           balance: number;
           expiresAt: number;
-          type: 'store_credit';
+          type: "store_credit";
         }>(`/credits/${encodeURIComponent(code)}`);
         setCoupon(credit);
         setMessage(`Crédito ${credit.code} aplicado com frete grátis.`);
       } else {
-        const applied = await apiFetch<{ code: string; pct: number }>(
-          `/coupons/${encodeURIComponent(code)}`,
-        );
-        setCoupon({ ...applied, type: 'coupon' });
+        const applied = await apiFetch<{
+          code: string;
+          pct: number;
+          minimumCharge: boolean;
+        }>(`/coupons/${encodeURIComponent(code)}`);
+        setCoupon({ ...applied, type: "coupon" });
         setMessage(`Cupom ${applied.code} aplicado.`);
       }
     } catch (error) {
@@ -461,9 +464,9 @@ export default function CartPage() {
           body: JSON.stringify({
             items: cart,
             method,
-            coupon: coupon?.type === 'coupon' ? coupon.code : undefined,
+            coupon: coupon?.type === "coupon" ? coupon.code : undefined,
             creditCode:
-              coupon?.type === 'store_credit' ? coupon.code : undefined,
+              coupon?.type === "store_credit" ? coupon.code : undefined,
             customer: profile,
             card: paymentCard,
             installments: card.installments,

@@ -27,6 +27,7 @@ export function CouponsAdmin({
   const [draft, setDraft] = useState({
     code: "",
     pct: 10,
+    minimumCharge: false,
     expiresAt: "",
     maxUses: "",
     maxUsesPerCustomer: "",
@@ -35,7 +36,7 @@ export function CouponsAdmin({
   });
 
   async function createCoupon() {
-    if (!isValidCouponPercentage(draft.pct)) {
+    if (!draft.minimumCharge && !isValidCouponPercentage(draft.pct)) {
       notify("Informe um desconto entre 1% e 99%.");
       return;
     }
@@ -44,7 +45,8 @@ export function CouponsAdmin({
         method: "POST",
         body: JSON.stringify({
           code: draft.code,
-          pct: Number(draft.pct),
+          pct: draft.minimumCharge ? 0 : Number(draft.pct),
+          minimumCharge: draft.minimumCharge,
           expiresAt: draft.expiresAt
             ? new Date(`${draft.expiresAt}T23:59:59`).getTime()
             : null,
@@ -60,6 +62,7 @@ export function CouponsAdmin({
       setDraft({
         code: "",
         pct: 10,
+        minimumCharge: false,
         expiresAt: "",
         maxUses: "",
         maxUsesPerCustomer: "",
@@ -109,11 +112,23 @@ export function CouponsAdmin({
                 type="number"
                 min="1"
                 max="99"
+                disabled={draft.minimumCharge}
                 value={draft.pct}
                 onChange={(event) =>
                   setDraft({ ...draft, pct: Number(event.target.value) })
                 }
               />
+              <label className="mt-2 !flex items-center gap-2 normal-case tracking-normal">
+                <input
+                  className="!size-4 !w-4 !border-0 !p-0"
+                  type="checkbox"
+                  checked={draft.minimumCharge}
+                  onChange={(event) =>
+                    setDraft({ ...draft, minimumCharge: event.target.checked })
+                  }
+                />
+                Cupom especial — total final de R$ 5,00
+              </label>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
@@ -187,7 +202,7 @@ export function CouponsAdmin({
           <thead>
             <tr>
               <th>Código</th>
-              <th className="w-[88px]">%</th>
+              <th className="w-[150px]">Tipo / %</th>
               <th>Atribuído a</th>
               <th>Validade</th>
               <th>Limite geral</th>
@@ -244,6 +259,7 @@ function CouponRow({
   const [deleting, setDeleting] = useState(false);
   const [draft, setDraft] = useState({
     pct: coupon.pct,
+    minimumCharge: coupon.minimumCharge === true,
     assignedTo: coupon.assignedTo || "",
     expiresAt: coupon.expiresAt
       ? new Date(coupon.expiresAt).toISOString().slice(0, 10)
@@ -323,17 +339,29 @@ function CouponRow({
   return (
     <tr>
       <td className="font-bold tracking-px">{coupon.code}</td>
-      <td className="w-[88px]">
+      <td className="w-[150px]">
         <input
           className="max-w-[58px]"
           type="number"
           min="1"
           max="99"
+          disabled={draft.minimumCharge}
           value={draft.pct}
           onChange={(event) =>
             setDraft({ ...draft, pct: Number(event.target.value) })
           }
         />
+        <label className="mt-1 flex items-center gap-1 text-[.6rem] normal-case tracking-normal">
+          <input
+            className="!size-4 !w-4 !border-0 !p-0"
+            type="checkbox"
+            checked={draft.minimumCharge}
+            onChange={(event) =>
+              setDraft({ ...draft, minimumCharge: event.target.checked })
+            }
+          />
+          Total R$ 5
+        </label>
       </td>
       <td>
         <input
@@ -392,10 +420,11 @@ function CouponRow({
           disabled={deleting}
           className={smallButton}
           onClick={() =>
-            isValidCouponPercentage(draft.pct)
+            draft.minimumCharge || isValidCouponPercentage(draft.pct)
               ? patch(
                   {
-                    pct: draft.pct,
+                    pct: draft.minimumCharge ? 0 : draft.pct,
+                    minimumCharge: draft.minimumCharge,
                     assignedTo: draft.assignedTo,
                     expiresAt: draft.expiresAt
                       ? new Date(`${draft.expiresAt}T23:59:59`).getTime()

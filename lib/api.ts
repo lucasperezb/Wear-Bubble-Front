@@ -192,6 +192,7 @@ export type StoreCredit = {
 export type Coupon = {
   code: string;
   pct: number;
+  minimumCharge: boolean;
   active: boolean;
   uses: number;
   expiresAt?: number | null;
