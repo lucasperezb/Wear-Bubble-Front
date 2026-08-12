@@ -13,6 +13,7 @@ import { Order, apiFetch, money } from "../../../lib/api";
 import { shippingStages } from "../shared/constants";
 import { adminNote, adminTable, saveButton } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
+import { OrderAddressEditor } from "../shared/OrderAddressEditor";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -57,6 +58,7 @@ export function ShipAdmin({
         order={selected}
         onBack={() => setSelectedId(null)}
         onSave={save}
+        onSaved={onSaved}
         notify={notify}
       />
     );
@@ -154,11 +156,13 @@ function ShipmentDetail({
   order,
   onBack,
   onSave,
+  onSaved,
   notify,
 }: {
   order: Order;
   onBack: () => void;
   onSave: (order: Order, shipStage: number, tracking: string) => Promise<void>;
+  onSaved: OnSaved;
   notify: Notify;
 }) {
   const [shipStage, setShipStage] = useState(order.shipStage || 0);
@@ -306,6 +310,11 @@ function ShipmentDetail({
                 Destino
               </div>
               <p className="mt-2">{formatAddress(order)}</p>
+              <OrderAddressEditor
+                order={order}
+                onSaved={onSaved}
+                notify={notify}
+              />
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {order.delivery?.email ? (
