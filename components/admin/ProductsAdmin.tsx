@@ -41,12 +41,14 @@ import type {
   ProductDraft,
 } from "./admin.types";
 import { productPayload, validateProductDraft } from "./admin.utils";
+import { deleteDemoProduct, saveDemoProduct } from "../../lib/demo-store";
 
 type ProductsAdminProps = {
   products: Product[];
   sports: string[];
   onSaved: OnSaved;
   notify: Notify;
+  demoMode?: boolean;
 };
 
 type ProductAdminFilters = {
@@ -63,7 +65,7 @@ const initialProductAdminFilters: ProductAdminFilters = {
   sort: "rel",
 };
 
-export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdminProps) {
+export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = false }: ProductsAdminProps) {
   const [editor, setEditor] = useState<"new" | number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [filters, setFilters] = useState<ProductAdminFilters>(
@@ -110,10 +112,11 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
 
   async function toggleVisibility(product: Product) {
     try {
-      await apiFetch(`/products/${product.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ active: !product.active }),
-      });
+      if (demoMode) saveDemoProduct({ active: !product.active }, product.id);
+      else await apiFetch(`/products/${product.id}`, {
+          method: "PATCH",
+          body: JSON.stringify({ active: !product.active }),
+        });
       await onSaved();
       notify(product.active ? "Produto ocultado da loja." : "Produto publicado.");
     } catch (error) {
@@ -175,6 +178,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
           onClose={() => setEditor(null)}
           onSaved={onSaved}
           notify={notify}
+          demoMode={demoMode}
         />
       ) : null}
       {deletingProduct ? (
@@ -186,6 +190,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify }: ProductsAdm
             setDeletingId(null);
           }}
           notify={notify}
+          demoMode={demoMode}
         />
       ) : null}
     </>
@@ -346,12 +351,14 @@ function ProductEditorModal({
   onClose,
   onSaved,
   notify,
+  demoMode = false,
 }: {
   product: Product | null;
   sports: string[];
   onClose: () => void;
   onSaved: OnSaved;
   notify: Notify;
+  demoMode?: boolean;
 }) {
   useBodyScrollLock(true);
   const editing = Boolean(product);
@@ -381,7 +388,9 @@ function ProductEditorModal({
     setError("");
     let created: Product | null = null;
     try {
-      if (product) {
+      if (demoMode) {
+        created = saveDemoProduct(productPayload(draft), product?.id);
+      } else if (product) {
         await apiFetch(`/products/${product.id}`, {
           method: "PATCH",
           body: JSON.stringify(productPayload(draft)),
@@ -407,7 +416,7 @@ function ProductEditorModal({
           : `Não foi possível ${editing ? "salvar" : "cadastrar"} o produto.`;
       setError(message);
       notify(message);
-      if (created) {
+      if (created && !demoMode) {
         await apiFetch(`/products/${created.id}`, { method: 'DELETE' }).catch(
           () => undefined,
         );
@@ -519,11 +528,13 @@ function DeleteProductModal({
   onClose,
   onDeleted,
   notify,
+  demoMode = false,
 }: {
   product: Product;
   onClose: () => void;
   onDeleted: OnSaved;
   notify: Notify;
+  demoMode?: boolean;
 }) {
   useBodyScrollLock(true);
   const [deleting, setDeleting] = useState(false);
@@ -531,7 +542,8 @@ function DeleteProductModal({
   async function remove() {
     setDeleting(true);
     try {
-      await apiFetch(`/products/${product.id}`, { method: "DELETE" });
+      if (demoMode) deleteDemoProduct(product.id);
+      else await apiFetch(`/products/${product.id}`, { method: "DELETE" });
       await onDeleted();
       notify("Produto excluído.");
     } catch (error) {
@@ -651,11 +663,12 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
         </div>
         <div><label className={productLabel}>Material</label><input className={productInput} value={draft.material || ''} onChange={(event) => update({ material: event.target.value })} placeholder="Ex: Suplex Power" /></div>
       </div>
-      <div className="grid grid-cols-3 gap-2.5 max-[520px]:grid-cols-2">
+      <div className="grid grid-cols-3 gap-2.5 max-[620px]:grid-cols-1">
         <div><label className={productLabel}>Preço (R$)</label><input className={productInput} type="number" step="0.10" min="0" value={draft.price} onChange={(event) => update({ price: Number(event.target.value) })} /></div>
         <div><label className={productLabel}>Estoque total</label><input className={productInput} type="number" min="0" value={totalStock} readOnly={hasVariantStock} onChange={(event) => update({ stock: Number(event.target.value) })} /></div>
-        <div><label className={productLabel}>Selo</label><input className={productInput} value={draft.tag || ''} onChange={(event) => update({ tag: event.target.value })} placeholder="Coleção 01" /></div>
+        <div><label className={productLabel}>Coleção</label><input className={productInput} value={draft.collectionName || ''} onChange={(event) => update({ collectionName: event.target.value })} placeholder="Ex: Core" /></div>
       </div>
+      <p className="mt-2 text-[.68rem] leading-relaxed text-bubble-ink/50">Digite um nome existente ou informe um nome novo para criar automaticamente uma coleção.</p>
       <label className={productLabel}>Esportes recomendados</label>
       <div className="flex flex-wrap gap-2">
         {selectableSports.map((sport) => (

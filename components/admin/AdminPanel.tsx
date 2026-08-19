@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   Package,
+  PanelsTopLeft,
   RefreshCw,
   RotateCcw,
   ShoppingBag,
@@ -35,6 +36,8 @@ import { Dashboard } from './Dashboard';
 import { OrdersAdmin } from './OrdersAdmin';
 import { ProductsAdmin } from './ProductsAdmin';
 import { PromotionsAdmin } from './PromotionsAdmin';
+import { ShowcasesAdmin } from './ShowcasesAdmin';
+import { readDemoProducts } from '../../lib/demo-store';
 import { ReturnsAdmin } from './ReturnsAdmin';
 import { ShipAdmin } from './ShipAdmin';
 
@@ -44,9 +47,10 @@ type AdminPanelProps = {
   onClose: () => void;
   onChanged: () => void | Promise<void>;
   notify: (message: string) => void;
+  demoMode?: boolean;
 };
 
-export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: AdminPanelProps) {
+export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, demoMode = false }: AdminPanelProps) {
   useBodyScrollLock(open);
   const [tab, setTab] = useState<AdminTab>('dash');
   const [dump, setDump] = useState<AdminDump>(emptyAdminDump);
@@ -60,6 +64,10 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
   async function refresh() {
     setLoading(true);
     try {
+      if (demoMode) {
+        setDump({ ...emptyAdminDump, products: readDemoProducts() });
+        return;
+      }
       const response = await apiFetch<unknown>('/admin/db');
       setDump(parseAdminDump(response));
     } catch (error) {
@@ -79,7 +87,10 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
     await onChanged();
   };
 
-  const currentLabel = adminTabs.find((item) => item.id === tab)?.label || 'Painel';
+  const visibleTabs = demoMode
+    ? adminTabs.filter((item) => item.id === 'dash' || item.id === 'products' || item.id === 'showcases')
+    : adminTabs;
+  const currentLabel = visibleTabs.find((item) => item.id === tab)?.label || 'Painel';
 
   return (
     <div className={`fixed inset-0 z-[700] overflow-hidden bg-bubble-cream transition-transform duration-[350ms] ${open ? 'translate-y-0' : 'translate-y-full'}`}>
@@ -111,7 +122,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
           </div>
 
           <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Navegação do painel">
-            {adminTabs.map((item) => {
+            {visibleTabs.map((item) => {
               const Icon = adminTabIcons[item.id];
               const active = tab === item.id;
               return (
@@ -160,7 +171,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
               </button>
               <div className="min-w-0">
                 <div className="font-sans text-[.58rem] font-bold uppercase tracking-[.14em] text-bubble-ink/40">
-                  Painel administrativo
+                  {demoMode ? 'Demonstração local' : 'Painel administrativo'}
                 </div>
                 <h2 className="truncate text-xl sm:text-2xl">{currentLabel}</h2>
               </div>
@@ -178,13 +189,14 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify }: A
           <main className="min-h-0 flex-1 overflow-y-auto">
             <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pt-8">
               {tab === 'dash' && <Dashboard dump={dump} />}
-              {tab === 'products' && <ProductsAdmin products={dump.products} sports={sports} onSaved={refreshProducts} notify={notify} />}
+              {tab === 'products' && <ProductsAdmin products={dump.products} sports={sports} onSaved={refreshProducts} notify={notify} demoMode={demoMode} />}
               {tab === 'orders' && <OrdersAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'ship' && <ShipAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'returns' && <ReturnsAdmin orders={dump.orders} notify={notify} />}
               {tab === 'customers' && <CustomersAdmin dump={dump} />}
               {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}
               {tab === 'promotions' && <PromotionsAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
+              {tab === 'showcases' && <ShowcasesAdmin products={dump.products} notify={notify} demoMode={demoMode} onSaved={onChanged} />}
               {tab === 'combos' && <CombosAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
               {tab === 'db' && <DatabaseAdmin dump={dump} />}
             </div>
@@ -204,6 +216,7 @@ const adminTabIcons: Record<AdminTab, LucideIcon> = {
   customers: Users,
   coupons: TicketPercent,
   promotions: BadgePercent,
+  showcases: PanelsTopLeft,
   combos: Layers3,
   db: Database,
 };

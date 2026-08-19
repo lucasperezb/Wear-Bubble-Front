@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import type { AccountAddress, User } from "../../lib/api";
-import { FREE_SHIPPING_ENABLED } from "../../lib/store-config";
 import {
   formatAddressText,
   formatHouseNumber,
@@ -19,6 +18,7 @@ type DeliveryStepProps = {
   shippingOptions: ShippingOption[];
   selectedShippingToken: string | null;
   shippingLoading: boolean;
+  freeShipping: boolean;
   profile: DeliveryProfile;
   message: string;
   onProfile: (patch: Partial<DeliveryProfile>) => void;
@@ -41,6 +41,7 @@ export function DeliveryStep({
   shippingOptions,
   selectedShippingToken,
   shippingLoading,
+  freeShipping,
   profile,
   message,
   onProfile,
@@ -323,7 +324,7 @@ export function DeliveryStep({
                       </span>
                     </span>
                     <strong className="text-base">
-                      {FREE_SHIPPING_ENABLED
+                      {freeShipping
                         ? "Grátis"
                         : new Intl.NumberFormat("pt-BR", {
                             style: "currency",

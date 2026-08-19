@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Product } from '../../lib/api';
 import { calculateCart, type CartItem } from '../../lib/cart';
 import { productPrice } from '../../lib/pricing';
-import { FREE_SHIPPING_ENABLED } from '../../lib/store-config';
+import { FREE_SHIPPING_MINIMUM } from '../../lib/store-config';
 import { useBodyScrollLock } from '../../lib/use-body-scroll-lock';
 import { ProductIcon } from '../shared/ProductIcon';
 
@@ -21,10 +21,8 @@ type CartDrawerProps = {
 export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerProps) {
   useBodyScrollLock(open);
   const router = useRouter();
-  const { lines, subtotal, freeShippingRemaining } = calculateCart(cart, products, null, 'Cartão de crédito');
-  const progress = FREE_SHIPPING_ENABLED
-    ? 100
-    : Math.min(100, (subtotal / 299) * 100);
+  const { lines, subtotal, freeShippingSubtotal, freeShippingRemaining } = calculateCart(cart, products, null, 'Cartão de crédito');
+  const progress = Math.min(100, (freeShippingSubtotal / FREE_SHIPPING_MINIMUM) * 100);
 
   function goToCart() {
     onClose();
@@ -46,9 +44,7 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
             <>
               <div className="mb-[18px]">
                 <div className={`mb-2 text-[.74rem] ${freeShippingRemaining <= 0 ? 'font-semibold text-bubble-success' : 'text-bubble-ink/70 [&_b]:text-bubble-brown'}`}>
-                  {FREE_SHIPPING_ENABLED ? (
-                    <>Lançamento Bubble: <b>FRETE GRÁTIS</b> em todos os pedidos!</>
-                  ) : freeShippingRemaining <= 0 ? (
+                  {freeShippingRemaining <= 0 ? (
                     <>Você ganhou <b>FRETE GRÁTIS</b>!</>
                   ) : (
                     <>Faltam <b>R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</b> para o frete grátis</>
