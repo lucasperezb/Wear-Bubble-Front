@@ -71,29 +71,33 @@ export default function Home() {
       setProducts(readDemoProducts());
       setShowcases(readDemoShowcases());
       setProductsLoading(false);
-      setUser({ uid: "demo-manager", email: "gerente@demo.local", role: "manager", name: "Gerente Demo", emailVerified: true });
+      setUser({
+        uid: "demo-manager",
+        email: "gerente@demo.local",
+        role: "manager",
+        name: "Gerente Demo",
+        emailVerified: true,
+      });
       setAdminOpen(search.get("admin") === "demo");
     } else {
       void refreshProducts();
       void refreshHero();
     }
-    if (!demo) apiFetch<User | null>("/auth/session")
-      .then((currentUser) => {
-        if (!currentUser) {
+    if (!demo)
+      apiFetch<User | null>("/auth/session")
+        .then((currentUser) => {
+          if (!currentUser) {
+            if (wantsAccount) window.location.assign("/login");
+            return;
+          }
+          setUser(currentUser);
+          if (wantsAccount) window.location.assign("/conta");
+          if (currentUser.role === "manager" && search.get("admin") === "1")
+            setAdminOpen(true);
+        })
+        .catch(() => {
           if (wantsAccount) window.location.assign("/login");
-          return;
-        }
-        setUser(currentUser);
-        if (wantsAccount) window.location.assign("/conta");
-        if (
-          currentUser.role === "manager" &&
-          search.get("admin") === "1"
-        )
-          setAdminOpen(true);
-      })
-      .catch(() => {
-        if (wantsAccount) window.location.assign("/login");
-      });
+        });
     setCart(readCart());
     setCartHydrated(true);
     return () => {
@@ -169,7 +173,9 @@ export default function Home() {
       (product) => product.active !== false,
     );
     if (filters.cat !== "all")
-      list = list.filter((product) => categoryMatches(product.cat, filters.cat));
+      list = list.filter((product) =>
+        categoryMatches(product.cat, filters.cat),
+      );
     if (filters.size)
       list = list.filter((product) =>
         sortProductSizes(product.sizes).includes(filters.size),
@@ -199,13 +205,14 @@ export default function Home() {
   const heroProduct = useMemo(() => {
     const selectedId = showcases?.hero?.[0]?.id;
     return (
-      products.find((product) => product.id === selectedId) ||
-      homeProducts[0]
+      products.find((product) => product.id === selectedId) || homeProducts[0]
     );
   }, [homeProducts, products, showcases]);
 
   function openProduct(product: Product) {
-    window.location.assign(`/produto/${product.id}${demoMode ? "?demo=1" : ""}`);
+    window.location.assign(
+      `/produto/${product.id}${demoMode ? "?demo=1" : ""}`,
+    );
   }
 
   function addToCart(
@@ -304,11 +311,23 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      <Hero config={heroConfig} />
+      <Hero
+        config={heroConfig}
+        product={heroProduct}
+        productHref={
+          heroProduct
+            ? `/produto/${heroProduct.id}${demoMode ? "?demo=1" : ""}`
+            : undefined
+        }
+      />
       {demoMode ? (
         <div className="flex flex-wrap items-center justify-center gap-3 border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.68rem] font-semibold uppercase tracking-[.1em]">
           Modo demonstração · escolhas salvas neste navegador
-          <button type="button" className="border border-bubble-ink bg-bubble-ink px-3 py-2 text-bubble-cream" onClick={() => setAdminOpen(true)}>
+          <button
+            type="button"
+            className="border border-bubble-ink bg-bubble-ink px-3 py-2 text-bubble-cream"
+            onClick={() => setAdminOpen(true)}
+          >
             Abrir painel
           </button>
         </div>
@@ -323,7 +342,9 @@ export default function Home() {
           setFilters((current) => ({ ...current, ...patch }))
         }
         onClear={() => setFilters(initialFilters)}
-        productHref={(product) => `/produto/${product.id}${demoMode ? "?demo=1" : ""}`}
+        productHref={(product) =>
+          `/produto/${product.id}${demoMode ? "?demo=1" : ""}`
+        }
         onRetry={refreshProducts}
         showFilters={false}
         eyebrow="Curadoria Bubble · 4 escolhas"
