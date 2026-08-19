@@ -1,5 +1,5 @@
-import { Footer } from "../home/StaticSections";
-import { Header } from "../layout/Header";
+import { Footer } from "../home";
+import { Header } from "../layout";
 
 export function EditorialPage({
   eyebrow,

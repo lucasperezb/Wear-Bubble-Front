@@ -115,6 +115,7 @@ function demoProduct(
     price,
     promoPct: 0,
     tag,
+    catalogPosition: id,
     collectionName: "Core",
     icon,
     rating: 4.8,

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CartStep } from "../../components/checkout/CartStep";
-import { CheckoutStepper } from "../../components/checkout/CheckoutStepper";
-import { ConfirmationStep } from "../../components/checkout/ConfirmationStep";
-import { DeliveryStep } from "../../components/checkout/DeliveryStep";
-import { OrderSummary } from "../../components/checkout/OrderSummary";
-import { PaymentStep } from "../../components/checkout/PaymentStep";
 import {
+  CartStep,
+  CheckoutStepper,
+  ConfirmationStep,
+  DeliveryStep,
+  OrderSummary,
+  PaymentStep,
   emptyCardPaymentForm,
   emptyDeliveryProfile,
   type CardPaymentForm,
@@ -16,7 +16,7 @@ import {
   type DeliveryProfile,
   type PixPayment,
   type ShippingOption,
-} from "../../components/checkout/checkout.types";
+} from "../../components/checkout";
 import {
   Order,
   Product,
@@ -34,6 +34,7 @@ import {
   type PaymentMethod,
 } from "../../lib/cart";
 import { FREE_SHIPPING_MINIMUM } from "../../lib/store-config";
+import { trackGoogleAdsPurchase } from "../../lib/google-ads";
 
 export default function CartPage() {
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -249,8 +250,15 @@ export default function CartPage() {
         const status = await apiFetch<{
           status: Order["status"];
           number: string;
+          total: number;
         }>(`/payment/status/${pixPayment.orderId}`);
-        if (status.status === "paid") finishOnSiteCheckout(status.number);
+        if (status.status === "paid") {
+          trackGoogleAdsPurchase({
+            transactionId: status.number,
+            value: status.total,
+          });
+          finishOnSiteCheckout(status.number);
+        }
         if (status.status === "canceled")
           setMessage("O pagamento Pix foi cancelado.");
       } catch {
@@ -267,7 +275,10 @@ export default function CartPage() {
   const displayedTotal =
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
   // O Pix não reduz a base do frete; preços promocionais, conjuntos e cupons reduzem.
-  const freeShipping = totals.freeShippingSubtotal >= FREE_SHIPPING_MINIMUM;
+  const freeShipping =
+    coupon?.type === "store_credit" ||
+    (coupon?.type === "coupon" && coupon.minimumCharge) ||
+    totals.freeShippingSubtotal >= FREE_SHIPPING_MINIMUM;
   const shippingPrice = selectedShipping
     ? freeShipping
       ? 0
@@ -303,21 +314,23 @@ export default function CartPage() {
   async function applyCoupon() {
     try {
       const code = couponCode.trim().toUpperCase();
-      if (code.startsWith('WB-')) {
+      if (code.startsWith("WB-")) {
         const credit = await apiFetch<{
           code: string;
           value: number;
           balance: number;
           expiresAt: number;
-          type: 'store_credit';
+          type: "store_credit";
         }>(`/credits/${encodeURIComponent(code)}`);
         setCoupon(credit);
         setMessage(`Crédito ${credit.code} aplicado.`);
       } else {
-        const applied = await apiFetch<{ code: string; pct: number }>(
-          `/coupons/${encodeURIComponent(code)}`,
-        );
-        setCoupon({ ...applied, type: 'coupon' });
+        const applied = await apiFetch<{
+          code: string;
+          pct: number;
+          minimumCharge: boolean;
+        }>(`/coupons/${encodeURIComponent(code)}`);
+        setCoupon({ ...applied, type: "coupon" });
         setMessage(`Cupom ${applied.code} aplicado.`);
       }
     } catch (error) {
@@ -451,9 +464,9 @@ export default function CartPage() {
           body: JSON.stringify({
             items: cart,
             method,
-            coupon: coupon?.type === 'coupon' ? coupon.code : undefined,
+            coupon: coupon?.type === "coupon" ? coupon.code : undefined,
             creditCode:
-              coupon?.type === 'store_credit' ? coupon.code : undefined,
+              coupon?.type === "store_credit" ? coupon.code : undefined,
             customer: profile,
             card: paymentCard,
             installments: card.installments,
@@ -472,6 +485,12 @@ export default function CartPage() {
         ["DECLINED", "CANCELED", "CANCELLED"].includes(response.paymentStatus)
       ) {
         throw new Error(response.message || "Pagamento não autorizado.");
+      }
+      if (isConfirmedPaymentStatus(response.paymentStatus)) {
+        trackGoogleAdsPurchase({
+          transactionId: response.number,
+          value: response.total,
+        });
       }
       setCard(emptyCardPaymentForm);
       finishOnSiteCheckout(response.number);
@@ -847,4 +866,10 @@ function prepareCard(card: CardPaymentForm) {
     expiryYear: `20${shortYear}`,
     ccv: card.securityCode,
   };
+}
+
+function isConfirmedPaymentStatus(status: string) {
+  return ["RECEIVED", "RECEIVED_IN_CASH", "CONFIRMED"].includes(
+    status.toUpperCase(),
+  );
 }

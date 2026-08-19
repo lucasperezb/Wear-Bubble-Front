@@ -1,19 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AdminPanel } from "../components/admin/AdminPanel";
-import { CartDrawer } from "../components/cart/CartDrawer";
-import { ComboBuilder } from "../components/home/ComboBuilder";
-import { Hero } from "../components/home/Hero";
+import { AdminPanel } from "../components/admin";
+import { CartDrawer } from "../components/cart";
 import {
   BrandSections,
+  ComboBuilder,
   ContactSection,
   Footer,
-} from "../components/home/StaticSections";
-import { Header } from "../components/layout/Header";
-import { ProductCatalog } from "../components/product/ProductCatalog";
-import { ProductModal } from "../components/product/ProductModal";
-import { Product, ShowcaseMap, User, apiFetch } from "../lib/api";
+  Hero,
+} from "../components/home";
+import { Header } from "../components/layout";
+import { ProductCatalog, ProductModal } from "../components/product";
+import { HeroConfig, Product, ShowcaseMap, User, apiFetch } from "../lib/api";
 import { readCart, writeCart, type CartItem } from "../lib/cart";
 import { categoryMatches } from "../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
@@ -36,6 +35,10 @@ const initialFilters: Filters = {
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [heroConfig, setHeroConfig] = useState<HeroConfig>({
+    enabled: false,
+    slides: [],
+  });
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
   const [showcases, setShowcases] = useState<ShowcaseMap | null>(null);
@@ -72,6 +75,7 @@ export default function Home() {
       setAdminOpen(search.get("admin") === "demo");
     } else {
       void refreshProducts();
+      void refreshHero();
     }
     if (!demo) apiFetch<User | null>("/auth/session")
       .then((currentUser) => {
@@ -135,6 +139,16 @@ export default function Home() {
       );
     } finally {
       setProductsLoading(false);
+    }
+  }
+
+  async function refreshHero() {
+    try {
+      const response = await apiFetch<HeroConfig>("/hero");
+      if (!response || !Array.isArray(response.slides)) return;
+      setHeroConfig(response);
+    } catch {
+      setHeroConfig({ enabled: false, slides: [] });
     }
   }
 
@@ -290,10 +304,7 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      <Hero
-        product={heroProduct}
-        productHref={heroProduct ? `/produto/${heroProduct.id}${demoMode ? "?demo=1" : ""}` : undefined}
-      />
+      <Hero config={heroConfig} />
       {demoMode ? (
         <div className="flex flex-wrap items-center justify-center gap-3 border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.68rem] font-semibold uppercase tracking-[.1em]">
           Modo demonstração · escolhas salvas neste navegador
@@ -402,7 +413,9 @@ export default function Home() {
           open={adminOpen}
           managerLabel={user.email}
           onClose={() => setAdminOpen(false)}
-          onChanged={refreshProducts}
+          onChanged={async () => {
+            await Promise.all([refreshProducts(), refreshHero()]);
+          }}
           notify={showToast}
           demoMode={demoMode}
         />

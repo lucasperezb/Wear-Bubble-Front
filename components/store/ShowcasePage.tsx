@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CartDrawer } from "../cart/CartDrawer";
-import { Footer } from "../home/StaticSections";
-import { Header } from "../layout/Header";
-import { ProductCatalog } from "../product/ProductCatalog";
-import { ProductModal } from "../product/ProductModal";
+import { CartDrawer } from "../cart";
+import { Footer } from "../home";
+import { Header } from "../layout";
+import { ProductCatalog } from "../product";
+import { ProductModal } from "../product";
 import { Product, User, apiFetch } from "../../lib/api";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { sortProductSizes } from "../../lib/product-sizes";

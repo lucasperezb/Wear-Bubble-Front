@@ -7,11 +7,11 @@ import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { readDemoProducts } from "../../lib/demo-store";
 import { availableVariantSizes, sortProductSizes } from "../../lib/product-sizes";
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from "../../lib/pricing";
-import { CartDrawer } from "../cart/CartDrawer";
-import { Footer } from "../home/StaticSections";
-import { Header } from "../layout/Header";
-import { ProductIcon } from "../shared/ProductIcon";
-import { ProductCard } from "./ProductCard";
+import { CartDrawer } from "../cart";
+import { Footer } from "../home";
+import { Header } from "../layout";
+import { ProductIcon } from "../shared";
+import { ProductCard } from "./catalog/ProductCard";
 
 export function ProductDetailPage({ productId }: { productId: number }) {
   const [products, setProducts] = useState<Product[]>([]);
