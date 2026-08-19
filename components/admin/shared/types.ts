@@ -23,6 +23,7 @@ export type AdminTab =
   | 'customers'
   | 'coupons'
   | 'promotions'
+  | 'showcases'
   | 'hero'
   | 'combos'
   | 'db';

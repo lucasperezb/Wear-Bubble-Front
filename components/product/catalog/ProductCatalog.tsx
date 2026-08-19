@@ -21,8 +21,12 @@ type ProductCatalogProps = {
   error: string;
   onFilter: (patch: Partial<Filters>) => void;
   onClear: () => void;
-  onOpen: (product: Product) => void;
+  productHref: (product: Product) => string;
   onRetry: () => void;
+  showFilters?: boolean;
+  eyebrow?: string;
+  title?: string;
+  description?: string;
 };
 
 export function ProductCatalog({
@@ -33,8 +37,12 @@ export function ProductCatalog({
   error,
   onFilter,
   onClear,
-  onOpen,
+  productHref,
   onRetry,
+  showFilters = true,
+  eyebrow = "Coleção Core · Linha feminina",
+  title = "Core Collection",
+  description = "Clique na peça para ver detalhes, tecido e sugestão de conjunto. Peças da coleção não voltam ao estoque.",
 }: ProductCatalogProps) {
   const [page, setPage] = useState(0);
   const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
@@ -58,19 +66,18 @@ export function ProductCatalog({
         <div className="mb-9 flex flex-wrap items-end justify-between gap-4 max-[520px]:mb-5">
           <div>
             <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown max-[520px]:text-[.6rem] max-[520px]:tracking-[.2em]">
-              Coleção 01 · Linha feminina
+              {eyebrow}
             </span>
             <h2 className="text-[2.6rem] max-[520px]:mt-1 max-[520px]:text-[2rem]">
-              Performance Line
+              {title}
             </h2>
           </div>
           <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60 max-[520px]:hidden">
-            Clique na peça para ver detalhes, tecido e sugestão de conjunto.
-            Peças da coleção não voltam ao estoque.
+            {description}
           </p>
         </div>
 
-        <div className="mb-[26px] flex flex-wrap items-center gap-2.5 max-[520px]:mb-4 max-[520px]:max-h-[88px] max-[520px]:overflow-y-auto">
+        {showFilters ? <div className="mb-[26px] flex flex-wrap items-center gap-2.5 max-[520px]:mb-4 max-[520px]:max-h-[88px] max-[520px]:overflow-y-auto">
           {categoryFilterOptions.map(({ value, label }) => (
             <button
               key={value}
@@ -120,7 +127,7 @@ export function ProductCatalog({
           <span className="ml-auto text-[.7rem] text-bubble-ink/50">
             {products.length} peça{products.length !== 1 ? "s" : ""}
           </span>
-        </div>
+        </div> : null}
 
         <div className="grid grid-cols-4 gap-0.5 border border-bubble-ink bg-bubble-cream2 max-[980px]:grid-cols-2 max-[350px]:grid-cols-1">
           {loading ? (
@@ -147,7 +154,7 @@ export function ProductCatalog({
           ) : null}
           {!loading && !error
             ? paginatedProducts.map((product) => (
-                <ProductCard key={product.id} product={product} onOpen={onOpen} />
+                <ProductCard key={product.id} product={product} href={productHref(product)} />
               ))
             : null}
         </div>

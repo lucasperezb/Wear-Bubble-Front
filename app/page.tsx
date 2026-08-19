@@ -12,11 +12,12 @@ import {
 } from "../components/home";
 import { Header } from "../components/layout";
 import { ProductCatalog, ProductModal } from "../components/product";
-import { HeroConfig, Product, User, apiFetch } from "../lib/api";
+import { HeroConfig, Product, ShowcaseMap, User, apiFetch } from "../lib/api";
 import { readCart, writeCart, type CartItem } from "../lib/cart";
 import { categoryMatches } from "../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
 import { productPrice } from "../lib/pricing";
+import { readDemoProducts, readDemoShowcases } from "../lib/demo-store";
 
 type Filters = {
   cat: string;
@@ -40,11 +41,13 @@ export default function Home() {
   });
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState("");
+  const [showcases, setShowcases] = useState<ShowcaseMap | null>(null);
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState("");
   const [user, setUser] = useState<User | null>(null);
@@ -60,11 +63,21 @@ export default function Home() {
   });
 
   useEffect(() => {
-    void refreshProducts();
-    void refreshHero();
-    const wantsAccount =
-      new URLSearchParams(window.location.search).get("conta") === "1";
-    apiFetch<User | null>("/auth/session")
+    const search = new URLSearchParams(window.location.search);
+    const demo = search.get("admin") === "demo" || search.get("demo") === "1";
+    const wantsAccount = search.get("conta") === "1";
+    setDemoMode(demo);
+    if (demo) {
+      setProducts(readDemoProducts());
+      setShowcases(readDemoShowcases());
+      setProductsLoading(false);
+      setUser({ uid: "demo-manager", email: "gerente@demo.local", role: "manager", name: "Gerente Demo", emailVerified: true });
+      setAdminOpen(search.get("admin") === "demo");
+    } else {
+      void refreshProducts();
+      void refreshHero();
+    }
+    if (!demo) apiFetch<User | null>("/auth/session")
       .then((currentUser) => {
         if (!currentUser) {
           if (wantsAccount) window.location.assign("/login");
@@ -74,7 +87,7 @@ export default function Home() {
         if (wantsAccount) window.location.assign("/conta");
         if (
           currentUser.role === "manager" &&
-          new URLSearchParams(window.location.search).get("admin") === "1"
+          search.get("admin") === "1"
         )
           setAdminOpen(true);
       })
@@ -98,15 +111,26 @@ export default function Home() {
     toastTimer.current = window.setTimeout(() => setToast(""), 3000);
   }
 
-  async function refreshProducts() {
+  async function refreshProducts(useDemo = demoMode) {
     setProductsLoading(true);
     setProductsError("");
+    if (useDemo) {
+      setProducts(readDemoProducts());
+      setShowcases(readDemoShowcases());
+      setProductsLoading(false);
+      return;
+    }
     try {
       const response = await apiFetch<unknown>("/products");
       if (!Array.isArray(response)) {
         throw new Error("A API retornou uma lista de produtos inválida.");
       }
       setProducts(response as Product[]);
+      try {
+        setShowcases(await apiFetch<ShowcaseMap>("/products/showcases"));
+      } catch {
+        setShowcases(null);
+      }
     } catch (error) {
       setProductsError(
         error instanceof Error
@@ -163,9 +187,25 @@ export default function Home() {
     return list;
   }, [filters, products]);
 
+  const homeProducts = useMemo(() => {
+    const selected = (showcases?.home || [])
+      .map((showcaseProduct) =>
+        products.find((product) => product.id === showcaseProduct.id),
+      )
+      .filter((product): product is Product => Boolean(product));
+    return (selected.length ? selected : visibleProducts).slice(0, 4);
+  }, [products, showcases, visibleProducts]);
+
+  const heroProduct = useMemo(() => {
+    const selectedId = showcases?.hero?.[0]?.id;
+    return (
+      products.find((product) => product.id === selectedId) ||
+      homeProducts[0]
+    );
+  }, [homeProducts, products, showcases]);
+
   function openProduct(product: Product) {
-    setSelectedProduct(product);
-    setSelectedSize(sortProductSizes(product.sizes)[0] || "");
+    window.location.assign(`/produto/${product.id}${demoMode ? "?demo=1" : ""}`);
   }
 
   function addToCart(
@@ -265,18 +305,30 @@ export default function Home() {
         }}
       />
       <Hero config={heroConfig} />
+      {demoMode ? (
+        <div className="flex flex-wrap items-center justify-center gap-3 border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.68rem] font-semibold uppercase tracking-[.1em]">
+          Modo demonstração · escolhas salvas neste navegador
+          <button type="button" className="border border-bubble-ink bg-bubble-ink px-3 py-2 text-bubble-cream" onClick={() => setAdminOpen(true)}>
+            Abrir painel
+          </button>
+        </div>
+      ) : null}
       <ProductCatalog
         filters={filters}
         sports={sports}
-        products={visibleProducts}
+        products={homeProducts}
         loading={productsLoading}
         error={productsError}
         onFilter={(patch) =>
           setFilters((current) => ({ ...current, ...patch }))
         }
         onClear={() => setFilters(initialFilters)}
-        onOpen={openProduct}
+        productHref={(product) => `/produto/${product.id}${demoMode ? "?demo=1" : ""}`}
         onRetry={refreshProducts}
+        showFilters={false}
+        eyebrow="Curadoria Bubble · 4 escolhas"
+        title="Em destaque"
+        description="Clique na peça para ver detalhes, tecido e sugestão de conjunto."
       />
       <ComboBuilder
         products={products}
@@ -365,6 +417,7 @@ export default function Home() {
             await Promise.all([refreshProducts(), refreshHero()]);
           }}
           notify={showToast}
+          demoMode={demoMode}
         />
       ) : null}
       <ProductModal

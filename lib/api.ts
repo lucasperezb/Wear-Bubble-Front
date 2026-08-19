@@ -8,6 +8,7 @@ export type Product = {
   price: number;
   promoPct: number;
   tag: string;
+  collectionName?: string;
   icon: string;
   rating: number;
   reviews: number;
@@ -28,6 +29,9 @@ export type Product = {
   image?: string | null;
   images?: ProductImage[];
 };
+
+export type ShowcaseKey = "hero" | "home" | "core" | "tops" | "bottoms" | "sets";
+export type ShowcaseMap = Record<ShowcaseKey, Product[]>;
 
 export type ProductImage = {
   id: string;

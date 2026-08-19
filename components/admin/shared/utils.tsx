@@ -53,6 +53,7 @@ export function productPayload(draft: ProductDraft) {
     promoPct: Math.min(90, Math.max(0, Number(draft.promoPct) || 0)),
     stock,
     tag: draft.tag || '',
+    collectionName: draft.collectionName?.trim() || '',
     active: draft.active !== false,
     sizes,
     sports,

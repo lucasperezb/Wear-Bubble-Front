@@ -121,9 +121,9 @@ export function Footer() {
             <div>
               <h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4>
               <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy">
-                <li><a href="#colecao">Coleção</a></li>
-                <li><a href="#conjunto">Monte seu Conjunto</a></li>
-                <li><a href="#contato">Contato</a></li>
+                <li><a href="/colecoes/core">Coleção Core</a></li>
+                <li><a href="/#conjunto">Monte seu Conjunto</a></li>
+                <li><a href="/contato">Contato</a></li>
               </ul>
             </div>
             <div>

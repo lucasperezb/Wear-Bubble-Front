@@ -33,7 +33,7 @@ import {
   type CartItem,
   type PaymentMethod,
 } from "../../lib/cart";
-import { FREE_SHIPPING_ENABLED } from "../../lib/store-config";
+import { FREE_SHIPPING_MINIMUM } from "../../lib/store-config";
 import { trackGoogleAdsPurchase } from "../../lib/google-ads";
 
 export default function CartPage() {
@@ -274,11 +274,11 @@ export default function CartPage() {
   const ready = cartHydrated && productsLoaded;
   const displayedTotal =
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
+  // O Pix não reduz a base do frete; preços promocionais, conjuntos e cupons reduzem.
   const freeShipping =
-    FREE_SHIPPING_ENABLED ||
     coupon?.type === "store_credit" ||
     (coupon?.type === "coupon" && coupon.minimumCharge) ||
-    totals.total >= 299;
+    totals.freeShippingSubtotal >= FREE_SHIPPING_MINIMUM;
   const shippingPrice = selectedShipping
     ? freeShipping
       ? 0
@@ -323,7 +323,7 @@ export default function CartPage() {
           type: "store_credit";
         }>(`/credits/${encodeURIComponent(code)}`);
         setCoupon(credit);
-        setMessage(`Crédito ${credit.code} aplicado com frete grátis.`);
+        setMessage(`Crédito ${credit.code} aplicado.`);
       } else {
         const applied = await apiFetch<{
           code: string;
@@ -676,6 +676,7 @@ export default function CartPage() {
                 shippingOptions={shippingOptions}
                 selectedShippingToken={selectedShipping?.quoteToken || null}
                 shippingLoading={shippingLoading}
+                freeShipping={freeShipping}
                 profile={profile}
                 message={message}
                 onProfile={updateProfile}

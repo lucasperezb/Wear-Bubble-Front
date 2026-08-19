@@ -98,7 +98,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
           <div className="grid grid-cols-2 gap-[30px] max-[980px]:grid-cols-1">
             <div>
               <div className="relative flex min-h-[430px] items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#EAE2CC,#F3EDDD)] max-[620px]:aspect-[4/5] max-[620px]:min-h-0 [&_svg]:w-[52%] [&_svg]:opacity-90">
-                {promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{promotionPct(product)}% OFF</span> : product.tag ? <span className={`absolute left-3.5 top-3.5 z-[2] px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] ${product.tag.includes('Limitada') ? 'bg-bubble-ink text-bubble-candy' : 'bg-bubble-ink text-bubble-white'}`}>{product.tag}</span> : null}
+                {promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{promotionPct(product)}% OFF</span> : product.collectionName ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-ink px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{product.collectionName}</span> : null}
                 {selectedImage ? (
                   <img
                     className="absolute inset-0 size-full object-cover"

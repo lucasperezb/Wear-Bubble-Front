@@ -1,7 +1,7 @@
-import type { Product } from "./api";
-import { isBottomCategory, isTopCategory } from "./product-filters";
-import { productPrice } from "./pricing";
-import { FREE_SHIPPING_ENABLED } from "./store-config";
+import type { Product } from './api';
+import { isBottomCategory, isTopCategory } from './product-filters';
+import { productPrice } from './pricing';
+import { FREE_SHIPPING_MINIMUM } from './store-config';
 
 export type CartItem = {
   pid: number;
@@ -127,7 +127,10 @@ export function calculateCart(
     couponDiscount,
     pixDiscount,
     total,
-    freeShippingRemaining: FREE_SHIPPING_ENABLED ? 0 : Math.max(0, 299 - total),
+    // Considera preços vigentes, conjunto e cupom. Apenas o desconto Pix
+    // não reduz a base usada para conquistar o frete grátis.
+    freeShippingSubtotal: beforePayment,
+    freeShippingRemaining: Math.max(0, FREE_SHIPPING_MINIMUM - beforePayment),
   };
 }
 
