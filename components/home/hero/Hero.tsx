@@ -223,7 +223,7 @@ function StaticHero({
                 <img
                   src={product.image}
                   alt={product.name}
-                  className="size-full object-contain p-3 sm:p-4"
+                  className="size-full object-cover"
                 />
               ) : (
                 <ProductIcon icon={product?.icon} />
