@@ -5,6 +5,7 @@ import { apiFetch, money, type Order } from "../../../lib/api";
 import { shippingStages } from "../shared/constants";
 import type { Notify, OnSaved } from "../shared/types";
 import { OrderAddressEditor } from "../shared/OrderAddressEditor";
+import { DeleteOrderButton } from "../shared/DeleteOrderButton";
 
 type StatusFilter = "all" | Order["status"];
 
@@ -307,6 +308,13 @@ export function OrdersAdmin({
                         : "Cancelar e estornar"}
                     </button>
                   ) : null}
+                  <div className="mt-2">
+                    <DeleteOrderButton
+                      order={order}
+                      onSaved={onSaved}
+                      notify={notify}
+                    />
+                  </div>
                 </div>
               </header>
 

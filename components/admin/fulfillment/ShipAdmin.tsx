@@ -14,6 +14,7 @@ import { shippingStages } from "../shared/constants";
 import { adminNote, adminTable, saveButton } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
 import { OrderAddressEditor } from "../shared/OrderAddressEditor";
+import { DeleteOrderButton } from "../shared/DeleteOrderButton";
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
@@ -128,16 +129,24 @@ export function ShipAdmin({
                   <td>
                     <StageBadge order={order} />
                   </td>
-                  <td>
-                    <button
-                      className="inline-flex items-center gap-1 font-sans text-[.62rem] font-bold uppercase tracking-[.08em]"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedId(order.id);
-                      }}
-                    >
-                      Abrir <ChevronRight size={14} />
-                    </button>
+                  <td className="whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <button
+                        className="inline-flex items-center gap-1 font-sans text-[.62rem] font-bold uppercase tracking-[.08em]"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedId(order.id);
+                        }}
+                      >
+                        Abrir <ChevronRight size={14} />
+                      </button>
+                      <DeleteOrderButton
+                        order={order}
+                        onSaved={onSaved}
+                        notify={notify}
+                        compact
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -220,11 +229,16 @@ function ShipmentDetail({
             {order.items.reduce((sum, item) => sum + item.qty, 0)} peça(s)
           </p>
         </div>
-        <div className="md:text-right">
+        <div className="space-y-3 md:text-right">
           <div className="font-sans text-[.58rem] font-bold uppercase tracking-[.12em] text-bubble-ink/45">
             Total do pedido
           </div>
           <strong className="text-2xl">{money.format(order.total)}</strong>
+          <DeleteOrderButton
+            order={order}
+            onSaved={onSaved}
+            notify={notify}
+          />
         </div>
       </header>
 
