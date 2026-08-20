@@ -118,7 +118,7 @@ function demoProduct(
     catalogPosition: id,
     collectionName: "Core",
     icon,
-    rating: 4.8,
+    rating: [4.8, 4.9, 5][(id - 1) % 3],
     reviews: 48 + id * 7,
     stock: 24,
     active: true,

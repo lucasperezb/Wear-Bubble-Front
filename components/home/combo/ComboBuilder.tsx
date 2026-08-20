@@ -2,22 +2,17 @@ import { Product, money } from "../../../lib/api";
 import { isBottomCategory, isTopCategory } from "../../../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../../../lib/product-sizes";
 import { productPrice } from "../../../lib/pricing";
+import { productImageUrlForColor } from "../../../lib/product-images";
 import { ProductIcon } from "../../shared";
 
 type ComboBuilderProps = {
   products: Product[];
   bottomId: number | null;
   topId: number | null;
-  bottomColor: string;
-  topColor: string;
-  bottomSize: string;
-  topSize: string;
+  variantSelections: Record<number, { color: string; size: string }>;
   onSelectBottom: (product: Product) => void;
   onSelectTop: (product: Product) => void;
-  onBottomColor: (color: string, size: string) => void;
-  onTopColor: (color: string, size: string) => void;
-  onBottomSize: (size: string) => void;
-  onTopSize: (size: string) => void;
+  onVariantChange: (productId: number, color: string, size: string) => void;
   onAdd: () => void;
 };
 
@@ -25,16 +20,10 @@ export function ComboBuilder({
   products,
   bottomId,
   topId,
-  bottomColor,
-  topColor,
-  bottomSize,
-  topSize,
+  variantSelections,
   onSelectBottom,
   onSelectTop,
-  onBottomColor,
-  onTopColor,
-  onBottomSize,
-  onTopSize,
+  onVariantChange,
   onAdd,
 }: ComboBuilderProps) {
   const featured = products
@@ -54,15 +43,15 @@ export function ComboBuilder({
   const option = (product: Product, kind: "bottom" | "top") => {
     const selected =
       kind === "bottom" ? bottomId === product.id : topId === product.id;
-    const color = kind === "bottom" ? bottomColor : topColor;
-    const size = kind === "bottom" ? bottomSize : topSize;
-    const onColor = kind === "bottom" ? onBottomColor : onTopColor;
-    const onSize = kind === "bottom" ? onBottomSize : onTopSize;
+    const variant = variantSelections[product.id];
     const colors = availableColors(product);
     const selectedColor =
-      colors.find((item) => item.n === color)?.n || colors[0]?.n || "";
+      colors.find((item) => item.n === variant?.color)?.n || colors[0]?.n || "";
     const sizes = availableSizes(product, selectedColor);
-    const selectedSize = sizes.includes(size) ? size : sizes[0] || "";
+    const selectedSize = sizes.includes(variant?.size || "")
+      ? variant.size
+      : sizes[0] || "";
+    const selectedImage = productImageUrlForColor(product, selectedColor);
     return (
       <div
         className={`mb-2.5 flex cursor-pointer items-center gap-3.5 border p-[12px_14px] transition-all max-[620px]:flex-wrap ${selected ? "border-bubble-ink bg-bubble-ink/[.07]" : "border-bubble-line bg-bubble-cream"}`}
@@ -72,10 +61,10 @@ export function ComboBuilder({
         }
       >
         <div className="flex h-[64px] w-[54px] shrink-0 items-center justify-center overflow-hidden bg-bubble-white [&_svg]:w-3/5">
-          {product.image ? (
+          {selectedImage ? (
             <img
               className="size-full object-cover"
-              src={product.image}
+              src={selectedImage}
               alt={product.name}
             />
           ) : (
@@ -93,17 +82,21 @@ export function ComboBuilder({
             </div>
           ) : null}
         </div>
-        <div className="ml-auto flex gap-2 max-[620px]:ml-[68px] max-[620px]:w-[calc(100%-68px)]">
-          <label className="flex-1 font-sans text-[.56rem] font-bold uppercase tracking-[.08em] text-bubble-ink/50">
+        <div className="ml-auto grid w-[236px] shrink-0 grid-cols-2 gap-2 max-[620px]:ml-[68px] max-[620px]:w-[calc(100%-68px)]">
+          <label className="min-w-0 font-sans text-[.56rem] font-bold uppercase tracking-[.08em] text-bubble-ink/50">
             Cor
             <select
-              className="mt-1 w-full border border-bubble-line bg-bubble-white px-2 py-[7px] font-serif text-[.72rem] normal-case tracking-normal text-bubble-ink"
+              className="mt-1 h-9 w-full border border-bubble-line bg-bubble-white px-2 font-serif text-[.72rem] normal-case tracking-normal text-bubble-ink disabled:cursor-not-allowed disabled:opacity-60"
               value={selectedColor}
               disabled={!selected}
               onClick={(event) => event.stopPropagation()}
               onChange={(event) => {
                 const nextColor = event.target.value;
-                onColor(nextColor, availableSizes(product, nextColor)[0] || "");
+                onVariantChange(
+                  product.id,
+                  nextColor,
+                  availableSizes(product, nextColor)[0] || "",
+                );
               }}
             >
               {colors.map((item) => (
@@ -113,14 +106,16 @@ export function ComboBuilder({
               ))}
             </select>
           </label>
-          <label className="w-[88px] font-sans text-[.56rem] font-bold uppercase tracking-[.08em] text-bubble-ink/50">
+          <label className="min-w-0 font-sans text-[.56rem] font-bold uppercase tracking-[.08em] text-bubble-ink/50">
             Tamanho
             <select
-              className="mt-1 w-full border border-bubble-line bg-bubble-white px-2 py-[7px] font-serif text-[.72rem] normal-case tracking-normal text-bubble-ink"
+              className="mt-1 h-9 w-full border border-bubble-line bg-bubble-white px-2 font-serif text-[.72rem] normal-case tracking-normal text-bubble-ink disabled:cursor-not-allowed disabled:opacity-60"
               value={selectedSize}
               disabled={!selected}
               onClick={(event) => event.stopPropagation()}
-              onChange={(event) => onSize(event.target.value)}
+              onChange={(event) =>
+                onVariantChange(product.id, selectedColor, event.target.value)
+              }
             >
               {sizes.map((item) => (
                 <option key={item}>{item}</option>

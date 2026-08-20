@@ -2,13 +2,20 @@
 
 import {
   ChevronDown,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  MapPin,
   Menu,
+  PackageCheck,
+  RotateCcw,
   ShoppingBag,
+  UserPlus,
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { apiFetch } from "../../../lib/api";
+import { useEffect, useRef, useState } from "react";
+import { apiFetch, type User } from "../../../lib/api";
 import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
 
@@ -71,6 +78,9 @@ export function Header({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collections, setCollections] = useState<string[]>(["Core"]);
   const [demoMode, setDemoMode] = useState(false);
+  const [sessionUser, setSessionUser] = useState<User | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const loadCollections = () => {
@@ -78,10 +88,20 @@ export function Header({
       const demo = search.get("demo") === "1" || search.get("admin") === "demo";
       setDemoMode(demo);
       if (demo) {
+        setSessionUser({
+          uid: "demo-manager",
+          email: "gerente@demo.local",
+          role: "manager",
+          name: "Gerente Demo",
+          emailVerified: true,
+        });
         const names = Array.from(new Set(readDemoProducts().map((product) => product.collectionName?.trim()).filter((name): name is string => Boolean(name))));
         setCollections(names.length ? names.sort((a, b) => a.localeCompare(b, "pt-BR")) : ["Core"]);
         return;
       }
+      apiFetch<User | null>("/auth/session")
+        .then(setSessionUser)
+        .catch(() => setSessionUser(null));
       apiFetch<string[]>("/products/collections")
         .then((names) => setCollections(names.length ? names : ["Core"]))
         .catch(() => undefined);
@@ -107,6 +127,33 @@ export function Header({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [mobileOpen]);
 
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      )
+        setAccountMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setAccountMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [accountMenuOpen]);
+
+  async function logout() {
+    setAccountMenuOpen(false);
+    await apiFetch("/auth/logout", { method: "POST" }).catch(() => undefined);
+    setSessionUser(null);
+    window.location.assign("/");
+  }
+
   return (
     <>
       <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
@@ -115,8 +162,8 @@ export function Header({
       <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream/95 backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-8 py-[15px] max-[520px]:px-4">
           <a
-            href="#top"
-            className="flex cursor-pointer items-center gap-[11px]"
+            href={demoMode ? "/?demo=1" : "/"}
+            className="flex cursor-pointer items-center gap-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bubble-ink"
             aria-label="Wear Bubble — início"
             onClick={() => setMobileOpen(false)}
           >
@@ -244,15 +291,152 @@ export function Header({
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-3.5">
-            <button
-              type="button"
-              className="relative flex size-[38px] cursor-pointer items-center justify-center border-0 bg-transparent text-bubble-ink [&_svg]:size-5"
-              aria-label="Minha conta"
-              title="Minha conta"
-              onClick={onAccount}
+            <div
+              className="relative"
+              ref={accountMenuRef}
+              onMouseEnter={() => setAccountMenuOpen(true)}
+              onMouseLeave={() => setAccountMenuOpen(false)}
             >
-              <UserRound />
-            </button>
+              <button
+                type="button"
+                className={`relative flex size-[38px] cursor-pointer items-center justify-center border bg-transparent text-bubble-ink transition-colors [&_svg]:size-5 ${accountMenuOpen ? "border-bubble-ink bg-bubble-white" : "border-transparent"}`}
+                aria-label="Abrir atividades da conta"
+                title="Minha conta"
+                aria-haspopup="menu"
+                aria-expanded={accountMenuOpen}
+                aria-controls="account-activities-menu"
+                onClick={() => {
+                  setMobileOpen(false);
+                  setAccountMenuOpen((current) => !current);
+                }}
+              >
+                <UserRound />
+              </button>
+              {accountMenuOpen ? (
+                <div
+                  id="account-activities-menu"
+                  role="menu"
+                  className="absolute right-0 top-[calc(100%+12px)] z-50 w-[310px] border border-bubble-ink bg-bubble-white p-2 text-bubble-ink shadow-bubble before:absolute before:-top-[13px] before:inset-x-0 before:h-[13px] before:content-['']"
+                >
+                  <div className="border-b border-bubble-line px-3 pb-3 pt-2">
+                    <span className="font-sans text-[.56rem] font-bold uppercase tracking-[.16em] text-bubble-brown">
+                      {demoMode
+                        ? "Modo demonstração"
+                        : sessionUser
+                          ? "Sua conta Bubble"
+                          : "Bem-vinda à Bubble"}
+                    </span>
+                    <strong className="mt-1 block truncate font-serif text-[.86rem]">
+                      {sessionUser?.name || sessionUser?.email || "O que você deseja fazer?"}
+                    </strong>
+                  </div>
+
+                  {demoMode ? (
+                    <div className="py-1">
+                      <AccountMenuLink
+                        href="/?admin=demo"
+                        icon={<LayoutDashboard />}
+                        label="Abrir painel"
+                        description="Gerencie a vitrine demonstrativa"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/produtos?demo=1"
+                        icon={<ShoppingBag />}
+                        label="Ver todas as peças"
+                        description="Explore o catálogo completo"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/?demo=1#conjunto"
+                        icon={<PackageCheck />}
+                        label="Montar conjunto"
+                        description="Combine duas peças com desconto"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                    </div>
+                  ) : sessionUser ? (
+                    <div className="py-1">
+                      <AccountMenuLink
+                        href="/conta?tab=orders"
+                        icon={<PackageCheck />}
+                        label="Meus pedidos"
+                        description="Acompanhe compras e entregas"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/conta?tab=returns"
+                        icon={<RotateCcw />}
+                        label="Trocas e devoluções"
+                        description="Solicite e acompanhe atendimentos"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/conta?tab=addresses"
+                        icon={<MapPin />}
+                        label="Meus endereços"
+                        description="Gerencie seus locais de entrega"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/conta?tab=profile"
+                        icon={<UserRound />}
+                        label="Meus dados"
+                        description="Atualize suas informações pessoais"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-3 border-t border-bubble-line px-3 py-3 text-left text-bubble-danger transition-colors hover:bg-bubble-cream"
+                        onClick={() => void logout()}
+                      >
+                        <LogOut className="size-4 shrink-0" />
+                        <span className="font-sans text-[.65rem] font-semibold uppercase tracking-[.08em]">
+                          Sair da conta
+                        </span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="py-1">
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-bubble-cream"
+                        onClick={() => {
+                          setAccountMenuOpen(false);
+                          onAccount();
+                        }}
+                      >
+                        <LogIn className="size-4 shrink-0" />
+                        <span>
+                          <strong className="block font-sans text-[.65rem] uppercase tracking-[.08em]">
+                            Entrar
+                          </strong>
+                          <span className="mt-0.5 block text-[.68rem] text-bubble-ink/55">
+                            Acesse pedidos e dados da conta
+                          </span>
+                        </span>
+                      </button>
+                      <AccountMenuLink
+                        href="/cadastro"
+                        icon={<UserPlus />}
+                        label="Criar uma conta"
+                        description="Agilize suas próximas compras"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                      <AccountMenuLink
+                        href="/produtos"
+                        icon={<ShoppingBag />}
+                        label="Ver todas as peças"
+                        description="Explore o catálogo completo"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
             <button
               type="button"
               className="relative flex size-[38px] cursor-pointer items-center justify-center border-0 bg-transparent text-bubble-ink [&_svg]:size-5"
@@ -272,7 +456,10 @@ export function Header({
               className="hidden size-[38px] cursor-pointer items-center justify-center border border-bubble-ink bg-transparent text-bubble-ink max-[980px]:flex"
               aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
               aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen((current) => !current)}
+              onClick={() => {
+                setAccountMenuOpen(false);
+                setMobileOpen((current) => !current);
+              }}
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -381,6 +568,41 @@ export function Header({
         ) : null}
       </header>
     </>
+  );
+}
+
+function AccountMenuLink({
+  href,
+  icon,
+  label,
+  description,
+  onNavigate,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  onNavigate: () => void;
+}) {
+  return (
+    <a
+      href={href}
+      role="menuitem"
+      className="flex items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-bubble-cream focus-visible:bg-bubble-cream focus-visible:outline-none"
+      onClick={onNavigate}
+    >
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-bubble-line [&_svg]:size-4">
+        {icon}
+      </span>
+      <span className="min-w-0">
+        <strong className="block font-sans text-[.65rem] uppercase tracking-[.08em]">
+          {label}
+        </strong>
+        <span className="mt-0.5 block text-[.68rem] leading-snug text-bubble-ink/55">
+          {description}
+        </span>
+      </span>
+    </a>
   );
 }
 

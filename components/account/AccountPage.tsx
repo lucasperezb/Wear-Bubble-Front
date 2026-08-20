@@ -556,7 +556,7 @@ function OrdersPanel({ orders }: { orders: Order[] }) {
             Quando você fizer uma compra, o acompanhamento aparecerá aqui.
           </p>
           <Link
-            href="/#coleção"
+            href="/produtos"
             className="mt-6 bg-bubble-ink px-6 py-3.5 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em] text-bubble-white"
           >
             Conhecer a coleção

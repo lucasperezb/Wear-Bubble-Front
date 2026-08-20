@@ -37,6 +37,7 @@ export type ProductImage = {
   id: string;
   url: string;
   altText: string;
+  colorName?: string | null;
   position: number;
   isPrimary: boolean;
 };

@@ -26,6 +26,11 @@ type Filters = {
   sort: string;
 };
 
+type ComboVariantSelection = {
+  color: string;
+  size: string;
+};
+
 const initialFilters: Filters = {
   cat: "all",
   size: "",
@@ -56,10 +61,7 @@ export default function Home() {
   const [combo, setCombo] = useState({
     bottomId: null as number | null,
     topId: null as number | null,
-    bottomColor: "",
-    topColor: "",
-    bottomSize: "",
-    topSize: "",
+    variants: {} as Record<number, ComboVariantSelection>,
   });
 
   useEffect(() => {
@@ -269,15 +271,17 @@ export default function Home() {
     if (!bottom || !top)
       return showToast("Escolha uma parte de baixo e um top.");
     const bundle = crypto.randomUUID().slice(0, 8);
+    const bottomSelection = combo.variants[bottom.id];
+    const topSelection = combo.variants[top.id];
     const bottomVariant = firstAvailableVariant(
       bottom,
-      combo.bottomSize,
-      combo.bottomColor,
+      bottomSelection?.size,
+      bottomSelection?.color,
     );
     const topVariant = firstAvailableVariant(
       top,
-      combo.topSize,
-      combo.topColor,
+      topSelection?.size,
+      topSelection?.color,
     );
     if (!bottomVariant || !topVariant)
       return showToast("Uma das peças do conjunto está sem estoque.");
@@ -314,6 +318,7 @@ export default function Home() {
       <Hero
         config={heroConfig}
         product={heroProduct}
+        collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
         productHref={
           heroProduct
             ? `/produto/${heroProduct.id}${demoMode ? "?demo=1" : ""}`
@@ -355,67 +360,69 @@ export default function Home() {
         products={products}
         bottomId={combo.bottomId}
         topId={combo.topId}
-        bottomColor={combo.bottomColor}
-        topColor={combo.topColor}
-        bottomSize={combo.bottomSize}
-        topSize={combo.topSize}
+        variantSelections={combo.variants}
         onSelectBottom={(product) => {
-          const variant = firstAvailableVariant(product);
           setCombo((current) => {
             if (current.bottomId === product.id) {
               return {
                 ...current,
                 bottomId: null,
-                bottomColor: "",
-                bottomSize: "",
               };
             }
+            const saved = current.variants[product.id];
+            const variant = firstAvailableVariant(
+              product,
+              saved?.size,
+              saved?.color,
+            );
             return {
               ...current,
               bottomId: product.id,
-              bottomColor: variant?.color || "",
-              bottomSize: variant?.size || "",
+              variants: {
+                ...current.variants,
+                [product.id]: {
+                  color: variant?.color || "",
+                  size: variant?.size || "",
+                },
+              },
             };
           });
         }}
         onSelectTop={(product) => {
-          const variant = firstAvailableVariant(product);
           setCombo((current) => {
             if (current.topId === product.id) {
               return {
                 ...current,
                 topId: null,
-                topColor: "",
-                topSize: "",
               };
             }
+            const saved = current.variants[product.id];
+            const variant = firstAvailableVariant(
+              product,
+              saved?.size,
+              saved?.color,
+            );
             return {
               ...current,
               topId: product.id,
-              topColor: variant?.color || "",
-              topSize: variant?.size || "",
+              variants: {
+                ...current.variants,
+                [product.id]: {
+                  color: variant?.color || "",
+                  size: variant?.size || "",
+                },
+              },
             };
           });
         }}
-        onBottomColor={(color, size) =>
+        onVariantChange={(productId, color, size) =>
           setCombo((current) => ({
             ...current,
-            bottomColor: color,
-            bottomSize: size,
+            variants: {
+              ...current.variants,
+              [productId]: { color, size },
+            },
           }))
-        }
-        onTopColor={(color, size) =>
-          setCombo((current) => ({
-            ...current,
-            topColor: color,
-            topSize: size,
-          }))
-        }
-        onBottomSize={(size) =>
-          setCombo((current) => ({ ...current, bottomSize: size }))
-        }
-        onTopSize={(size) =>
-          setCombo((current) => ({ ...current, topSize: size }))
         }
         onAdd={addCombo}
       />

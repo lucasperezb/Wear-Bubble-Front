@@ -7,6 +7,7 @@ import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { readDemoProducts } from "../../lib/demo-store";
 import { availableVariantSizes, sortProductSizes } from "../../lib/product-sizes";
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from "../../lib/pricing";
+import { productImagesForColor } from "../../lib/product-images";
 import { CartDrawer } from "../cart";
 import { Footer } from "../home";
 import { Header } from "../layout";
@@ -51,6 +52,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       const found = list.find((item) => item.id === productId) || null;
       setProducts(list);
       setProduct(found);
+      setActiveImage(0);
       setSuggestions(randomSuggestions(list, productId));
       if (!found) throw new Error("Esta peça não foi encontrada.");
       const firstColor = found.colors?.[0];
@@ -65,9 +67,8 @@ export function ProductDetailPage({ productId }: { productId: number }) {
 
   const images = useMemo(() => {
     if (!product) return [];
-    const urls = [product.image, ...(product.images || []).map((image) => image.url)].filter((url): url is string => Boolean(url));
-    return Array.from(new Set(urls));
-  }, [product]);
+    return productImagesForColor(product, color);
+  }, [color, product]);
 
   const selectedColor = product?.colors?.find((item) => item.n === color);
   const availableSizes = selectedColor?.sizes?.length
@@ -76,6 +77,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
 
   function selectColor(nextColor: string) {
     setColor(nextColor);
+    setActiveImage(0);
     const variant = product?.colors?.find((item) => item.n === nextColor);
     setSize(availableVariantSizes(variant?.sizes || [])[0] || sortProductSizes(product?.sizes || [])[0] || "");
   }
@@ -120,15 +122,15 @@ export function ProductDetailPage({ productId }: { productId: number }) {
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,.9fr)] lg:gap-14">
           <div className="grid min-w-0 gap-3 sm:grid-cols-[76px_minmax(0,1fr)]">
             <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
-              {(images.length ? images : [""]).map((image, index) => (
-                <button key={`${image}-${index}`} type="button" onClick={() => setActiveImage(index)} className={`${activeImage === index ? "border-bubble-ink" : "border-bubble-line opacity-60"} flex aspect-[3/4] w-[68px] shrink-0 items-center justify-center overflow-hidden border bg-bubble-cream2 transition-opacity hover:opacity-100`}>
-                  {image ? <img src={image} alt="" className="size-full object-cover" /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
+              {(images.length ? images : [null]).map((image, index) => (
+                <button key={image?.id || `empty-${index}`} type="button" onClick={() => setActiveImage(index)} className={`${activeImage === index ? "border-bubble-ink" : "border-bubble-line opacity-60"} flex aspect-[3/4] w-[68px] shrink-0 items-center justify-center overflow-hidden border bg-bubble-cream2 transition-opacity hover:opacity-100`}>
+                  {image ? <img src={image.url} alt="" className="size-full object-cover" /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
                 </button>
               ))}
             </div>
             <div onMouseMove={moveMedia} onMouseLeave={() => { if (mediaRef.current) mediaRef.current.style.transform = ""; }} className="order-1 relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_42%,#FAF6E9_0%,#EAE2CC_70%)] sm:order-2">
               <div ref={mediaRef} className="flex size-full items-center justify-center transition-transform duration-500 ease-out will-change-transform [&_svg]:w-[44%] [&_svg]:opacity-90">
-                {images[activeImage] ? <img src={images[activeImage]} alt={product.name} className="size-full object-cover" /> : <ProductIcon icon={product.icon} />}
+                {images[activeImage] ? <img src={images[activeImage].url} alt={images[activeImage].altText || product.name} className="size-full object-cover" /> : <ProductIcon icon={product.icon} />}
               </div>
               <span className="absolute bottom-5 left-5 rounded-full bg-bubble-white/90 px-3 py-2 font-sans text-[.56rem] uppercase tracking-[.12em] text-bubble-ink/60"><Sparkles className="mr-1 inline size-3" /> Mova para aproximar</span>
             </div>
@@ -137,7 +139,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
           <section className="self-start lg:sticky lg:top-[100px]">
             <div className="font-sans text-[.64rem] font-semibold uppercase tracking-[.2em] text-bubble-brown">{product.collectionName || "Wear Bubble"} · {product.sub}</div>
             <h1 className="mt-3 text-[clamp(2.1rem,4vw,3.8rem)] leading-[.98]">{product.name}</h1>
-            <div className="mt-5 flex items-center gap-3 border-b border-bubble-line pb-5 text-[.76rem] text-bubble-ink/55"><span className="text-bubble-brown">{"★".repeat(Math.round(product.rating))}</span><span>{product.rating} · {product.reviews} avaliações</span></div>
+            <div className="mt-5 flex items-center gap-3 border-b border-bubble-line pb-5 text-[.76rem] text-bubble-ink/55"><span className="text-bubble-brown">{"★".repeat(Math.round(product.rating))}</span><span>{product.rating.toFixed(1)} · {product.reviews} avaliações</span></div>
             <div className="mt-6">
               {promo ? <div className="text-sm text-bubble-ink/40 line-through">{money.format(product.price)}</div> : null}
               <div className="font-display text-[2rem]">{money.format(productPrice(product))}</div>

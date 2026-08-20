@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useBodyScrollLock } from '../../../lib/use-body-scroll-lock';
 import { availableVariantSizes, sortProductSizes } from '../../../lib/product-sizes';
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from '../../../lib/pricing';
+import { productImagesForColor } from '../../../lib/product-images';
 
 type ProductModalProps = {
   product: Product | null;
@@ -21,11 +22,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
 
   useEffect(() => {
     setSizeGuideOpen(false);
-    const primary =
-      product?.images?.find((image) => image.isPrimary) ||
-      product?.images?.[0];
-    setSelectedImageId(primary?.id || 'legacy');
-  }, [product?.id, product?.images]);
+  }, [product?.id]);
 
   useEffect(() => {
     if (!product) {
@@ -41,7 +38,11 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
             color.sizes?.some((item) => Number(item.q) > 0),
           )
         : product.colors?.[0]) || product.colors?.[0];
-    setSelectedColorName(firstColor?.n || '');
+    const firstColorName = firstColor?.n || '';
+    setSelectedColorName(firstColorName);
+    setSelectedImageId(
+      productImagesForColor(product, firstColorName)[0]?.id || '',
+    );
     const firstSize = configured
       ? availableVariantSizes(firstColor?.sizes || [])[0] || ''
       : sortProductSizes(product.sizes)[0] || '';
@@ -71,23 +72,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
   const out = selectedStock <= 0;
   const finalPrice = productPrice(product);
   const promo = productHasPromotion(product);
-  const gallery = product.images?.length
-    ? [...product.images].sort(
-        (a, b) =>
-          Number(b.isPrimary) - Number(a.isPrimary) ||
-          a.position - b.position,
-      )
-    : product.image
-      ? [
-          {
-            id: 'legacy',
-            url: product.image,
-            altText: product.name,
-            position: 0,
-            isPrimary: true,
-          },
-        ]
-      : [];
+  const gallery = productImagesForColor(product, selectedColor?.n || '');
   const selectedImage =
     gallery.find((image) => image.id === selectedImageId) || gallery[0];
   return (
@@ -132,7 +117,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
             <div>
               <div className="mb-2 text-[.68rem] uppercase tracking-[.12em] text-bubble-ink/50">{product.cat} · {product.sub}</div>
               <h3 className="text-[1.6rem] leading-[1.2]">{product.name}</h3>
-              <div className="mt-2 flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} · {product.reviews} avaliações</div>
+              <div className="mt-2 flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating.toFixed(1)} · {product.reviews} avaliações</div>
               {promo ? <div className="mt-4 text-[.84rem] text-bubble-ink/45 line-through">{money.format(product.price)}</div> : null}
               <div className={`${promo ? 'mt-1' : 'mt-4'} font-display text-[1.8rem] text-bubble-ink`}>{money.format(finalPrice)}</div>
               <div className="mt-0.5 text-[.72rem] font-semibold text-bubble-success">{money.format(pixPrice(product))} no Pix (5% OFF)</div>
@@ -161,6 +146,9 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
                           className={`flex items-center gap-2 border px-3 py-2 text-[.72rem] font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'border-bubble-ink bg-bubble-ink text-bubble-white' : 'border-bubble-line bg-bubble-cream'}`}
                           onClick={() => {
                             setSelectedColorName(color.n);
+                            setSelectedImageId(
+                              productImagesForColor(product, color.n)[0]?.id || '',
+                            );
                             const nextSizes = hasVariantStock
                               ? availableVariantSizes(color.sizes || [])
                               : sortProductSizes(product.sizes);

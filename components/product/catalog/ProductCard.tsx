@@ -53,7 +53,7 @@ export function ProductCard({ product, href }: ProductCardProps) {
           <div className="my-[5px] flex flex-wrap gap-[5px] max-[520px]:hidden">{product.sports.map((sport) => <span className="rounded-[20px] border border-bubble-line bg-bubble-ink/10 px-[9px] py-[3px] font-sans text-[.6rem] font-bold uppercase tracking-[.05em] text-bubble-brown" key={sport}>{sport}</span>)}</div>
         ) : null}
         <div className="font-serif text-base font-semibold leading-[1.35] max-[520px]:min-h-[2.55rem] max-[520px]:overflow-hidden max-[520px]:text-[.92rem] max-[520px]:leading-[1.35] max-[520px]:[display:-webkit-box] max-[520px]:[-webkit-box-orient:vertical] max-[520px]:[-webkit-line-clamp:2]">{product.name}</div>
-        <div className="flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55 max-[520px]:hidden"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating} ({product.reviews})</div>
+        <div className="flex items-center gap-1.5 text-[.7rem] text-bubble-ink/55 max-[520px]:hidden"><span className="text-[.78rem] tracking-px text-bubble-candy">{'★'.repeat(Math.round(product.rating))}</span> {product.rating.toFixed(1)} ({product.reviews})</div>
         {low ? <div className="mt-1 text-[.66rem] font-bold text-bubble-danger">Últimas {product.stock} unidades</div> : null}
         <div className="mt-auto flex items-center justify-between gap-2.5 pt-[18px] max-[520px]:flex-col max-[520px]:items-stretch max-[520px]:gap-2 max-[520px]:pt-2.5">
           <div>

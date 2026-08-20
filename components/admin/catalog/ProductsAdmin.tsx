@@ -959,7 +959,7 @@ function ProductImagesManager({
             Galeria ({images.length}/8)
           </div>
           <div className="mt-1 text-[.62rem] text-bubble-ink/50">
-            Defina a capa e use as setas para organizar.
+            Defina a capa, associe cada foto à cor e use as setas para organizar.
           </div>
         </div>
         <label
@@ -999,7 +999,43 @@ function ProductImagesManager({
                     Principal
                   </span>
                 ) : null}
+                {image.colorName ? (
+                  <span className="absolute bottom-1.5 left-1.5 bg-bubble-white/90 px-1.5 py-1 font-sans text-[.5rem] font-bold uppercase text-bubble-ink">
+                    {image.colorName}
+                  </span>
+                ) : null}
               </div>
+              <label className="block border-t border-bubble-line p-2 font-sans text-[.54rem] font-bold uppercase tracking-[.08em] text-bubble-ink/55">
+                Cor da foto
+                <select
+                  className="mt-1 h-8 w-full border border-bubble-line bg-bubble-white px-2 font-serif text-[.7rem] font-normal normal-case tracking-normal text-bubble-ink"
+                  value={image.colorName || ""}
+                  disabled={busy}
+                  onChange={(event) => {
+                    const colorName = event.target.value;
+                    void act(
+                      () =>
+                        apiFetch(
+                          `/products/${product.id}/images/${image.id}`,
+                          {
+                            method: "PATCH",
+                            body: JSON.stringify({ colorName }),
+                          },
+                        ),
+                      colorName
+                        ? `Imagem associada à cor ${colorName}.`
+                        : "Imagem definida para todas as cores.",
+                    );
+                  }}
+                >
+                  <option value="">Todas as cores</option>
+                  {product.colors.map((color) => (
+                    <option key={color.n} value={color.n}>
+                      {color.n}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="grid grid-cols-4 border-t border-bubble-line [&_button]:min-h-8 [&_button]:border-r [&_button]:border-bubble-line [&_button]:text-[.66rem] last:[&_button]:border-r-0">
                 <button
                   type="button"

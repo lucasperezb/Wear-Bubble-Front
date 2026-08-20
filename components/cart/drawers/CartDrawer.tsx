@@ -39,7 +39,7 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
         </div>
         <div className="flex-1 overflow-y-auto px-[26px] py-5">
           {!lines.length ? (
-            <div className="px-2.5 py-[60px] text-center text-[.86rem] leading-[1.7] text-bubble-ink/50">Sua sacola está vazia.<br />A Coleção 01 tem estoque limitado — garanta suas peças.</div>
+            <div className="px-2.5 py-[60px] text-center text-[.86rem] leading-[1.7] text-bubble-ink/50">Sua sacola está vazia.<br />A Coleção Core tem estoque limitado — garanta suas peças.</div>
           ) : (
             <>
               <div className="mb-[18px]">
