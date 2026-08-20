@@ -154,6 +154,12 @@ export function Header({
     window.location.assign("/");
   }
 
+  const accountHref = demoMode
+    ? "/?admin=demo"
+    : sessionUser
+      ? "/conta"
+      : "/login";
+
   return (
     <>
       <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
@@ -296,22 +302,24 @@ export function Header({
               ref={accountMenuRef}
               onMouseEnter={() => setAccountMenuOpen(true)}
               onMouseLeave={() => setAccountMenuOpen(false)}
+              onFocusCapture={() => setAccountMenuOpen(true)}
+              onBlurCapture={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node))
+                  setAccountMenuOpen(false);
+              }}
             >
-              <button
-                type="button"
+              <a
+                href={accountHref}
                 className={`relative flex size-[38px] cursor-pointer items-center justify-center border bg-transparent text-bubble-ink transition-colors [&_svg]:size-5 ${accountMenuOpen ? "border-bubble-ink bg-bubble-white" : "border-transparent"}`}
-                aria-label="Abrir atividades da conta"
+                aria-label={sessionUser ? "Ir para minha conta" : "Entrar na conta"}
                 title="Minha conta"
-                aria-haspopup="menu"
-                aria-expanded={accountMenuOpen}
-                aria-controls="account-activities-menu"
                 onClick={() => {
                   setMobileOpen(false);
-                  setAccountMenuOpen((current) => !current);
+                  setAccountMenuOpen(false);
                 }}
               >
                 <UserRound />
-              </button>
+              </a>
               {accountMenuOpen ? (
                 <div
                   id="account-activities-menu"
@@ -333,6 +341,13 @@ export function Header({
 
                   {demoMode ? (
                     <div className="py-1">
+                      <AccountMenuLink
+                        href="/?admin=demo"
+                        icon={<UserRound />}
+                        label="Minha conta"
+                        description="Acesse sua área demonstrativa"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
                       <AccountMenuLink
                         href="/?admin=demo"
                         icon={<LayoutDashboard />}
@@ -357,6 +372,13 @@ export function Header({
                     </div>
                   ) : sessionUser ? (
                     <div className="py-1">
+                      <AccountMenuLink
+                        href="/conta"
+                        icon={<UserRound />}
+                        label="Minha conta"
+                        description="Veja o resumo da sua área pessoal"
+                        onNavigate={() => setAccountMenuOpen(false)}
+                      />
                       <AccountMenuLink
                         href="/conta?tab=orders"
                         icon={<PackageCheck />}
