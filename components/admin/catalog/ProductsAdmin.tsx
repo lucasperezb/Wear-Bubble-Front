@@ -746,6 +746,15 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
         <div><label className={productLabel}>Coleção</label><input className={productInput} value={draft.collectionName || ''} onChange={(event) => update({ collectionName: event.target.value })} placeholder="Ex: Core" /></div>
       </div>
       <p className="mt-2 text-[.68rem] leading-relaxed text-bubble-ink/50">Digite um nome existente ou informe um nome novo para criar automaticamente uma coleção.</p>
+      <div className="mt-3 border border-bubble-line bg-bubble-cream/60 p-3">
+        <div className="font-sans text-[.62rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">Dados para PAC e SEDEX</div>
+        <div className="grid grid-cols-4 gap-2.5 max-[620px]:grid-cols-2">
+          <div><label className={productLabel}>Peso (kg)</label><input className={productInput} type="number" step="0.001" min="0.001" value={draft.weight} onChange={(event) => update({ weight: Number(event.target.value) })} /></div>
+          <div><label className={productLabel}>Largura (cm)</label><input className={productInput} type="number" min="1" value={draft.width} onChange={(event) => update({ width: Number(event.target.value) })} /></div>
+          <div><label className={productLabel}>Altura (cm)</label><input className={productInput} type="number" min="1" value={draft.height} onChange={(event) => update({ height: Number(event.target.value) })} /></div>
+          <div><label className={productLabel}>Comprimento (cm)</label><input className={productInput} type="number" min="1" value={draft.length} onChange={(event) => update({ length: Number(event.target.value) })} /></div>
+        </div>
+      </div>
       <label className={productLabel}>Esportes recomendados</label>
       <div className="flex flex-wrap gap-2">
         {selectableSports.map((sport) => (

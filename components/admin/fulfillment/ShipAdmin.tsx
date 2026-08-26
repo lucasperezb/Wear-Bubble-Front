@@ -9,7 +9,7 @@ import {
   PackageCheck,
   Phone,
 } from "lucide-react";
-import { Order, apiFetch, money } from "../../../lib/api";
+import { Order, OrderShipment, apiFetch, money } from "../../../lib/api";
 import { shippingStages } from "../shared/constants";
 import { adminNote, adminTable, saveButton } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
@@ -177,12 +177,65 @@ function ShipmentDetail({
   const [shipStage, setShipStage] = useState(order.shipStage || 0);
   const [tracking, setTracking] = useState(order.tracking || "");
   const [saving, setSaving] = useState(false);
+  const [invoiceKey, setInvoiceKey] = useState("");
+  const [shipments, setShipments] = useState<OrderShipment[]>([]);
+  const [labelBusy, setLabelBusy] = useState(false);
   const canceled = order.status === "canceled";
 
   useEffect(() => {
     setShipStage(order.shipStage || 0);
     setTracking(order.tracking || "");
   }, [order.shipStage, order.tracking]);
+
+  useEffect(() => {
+    void loadShipments();
+  }, [order.id]);
+
+  async function loadShipments() {
+    try {
+      setShipments(
+        await apiFetch<OrderShipment[]>(
+          `/integrations/melhor-envio/orders/${order.id}/shipments`,
+        ),
+      );
+    } catch {
+      setShipments([]);
+    }
+  }
+
+  async function generateLabel() {
+    const normalizedInvoice = invoiceKey.replace(/\D/g, "");
+    if (normalizedInvoice && normalizedInvoice.length !== 44) {
+      notify("A chave da NF-e deve conter 44 dígitos.");
+      return;
+    }
+    setLabelBusy(true);
+    try {
+      const rows = await apiFetch<OrderShipment[]>(
+        `/integrations/melhor-envio/orders/${order.id}/shipments`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            ...(normalizedInvoice ? { invoiceKey: normalizedInvoice } : {}),
+          }),
+        },
+      );
+      setShipments(rows);
+      notify(
+        rows.some((row) => row.printUrl)
+          ? "Etiqueta dos Correios gerada."
+          : "Etiqueta enviada para processamento no Melhor Envio.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível gerar a etiqueta.",
+      );
+    } finally {
+      setLabelBusy(false);
+    }
+  }
 
   async function submit(stage = shipStage) {
     if (canceled) return;
@@ -354,6 +407,74 @@ function ShipmentDetail({
         </div>
 
         <div className="space-y-5">
+          <DetailCard title="Etiqueta PAC/SEDEX">
+            <div className="space-y-3 text-sm">
+              <Info
+                label="Serviço selecionado"
+                value={
+                  order.shipping
+                    ? `${order.shipping.name} · ${order.shipping.company}`
+                    : "Não informado"
+                }
+              />
+              <Info
+                label="Custo estimado da loja"
+                value={money.format(order.shipping?.carrierPrice || 0)}
+              />
+            </div>
+            {!shipments.length ? (
+              <>
+                <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
+                  Chave da NF-e
+                  <input
+                    className="mt-2 w-full border border-bubble-line bg-bubble-cream px-3 py-3 font-serif text-sm normal-case tracking-normal"
+                    value={invoiceKey}
+                    maxLength={54}
+                    onChange={(event) => setInvoiceKey(event.target.value)}
+                    placeholder="44 dígitos; opcional somente no sandbox"
+                  />
+                </label>
+                <button
+                  className={`${saveButton} mt-4 w-full py-3 disabled:cursor-not-allowed disabled:opacity-45`}
+                  disabled={canceled || order.status !== "paid" || labelBusy}
+                  onClick={() => void generateLabel()}
+                >
+                  {labelBusy ? "Processando..." : "Gerar etiqueta dos Correios"}
+                </button>
+              </>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {shipments.map((shipment) => (
+                  <div className="border border-bubble-line bg-bubble-cream p-3" key={shipment.id}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <strong>{shipment.serviceName}</strong>
+                        <div className="mt-1 text-xs text-bubble-ink/55">
+                          Volume {shipment.packageIndex + 1} · {shipment.status}
+                        </div>
+                      </div>
+                      <span className="font-semibold">{money.format(shipment.carrierPrice)}</span>
+                    </div>
+                    {shipment.tracking ? <div className="mt-2 text-xs">Rastreio: {shipment.tracking}</div> : null}
+                    {shipment.lastError ? <div className="mt-2 text-xs text-bubble-danger">{shipment.lastError}</div> : null}
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {shipment.printUrl ? (
+                        <a className="border border-bubble-ink px-3 py-2 text-xs font-bold uppercase" href={shipment.printUrl} target="_blank" rel="noreferrer">Imprimir etiqueta</a>
+                      ) : null}
+                      {shipment.trackingUrl ? (
+                        <a className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase" href={shipment.trackingUrl} target="_blank" rel="noreferrer">Acompanhar</a>
+                      ) : null}
+                      {!shipment.printUrl ? (
+                        <button className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase disabled:opacity-45" disabled={labelBusy} onClick={() => void generateLabel()}>Tentar novamente</button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className={adminNote}>A compra da etiqueta debita o saldo da Melhor Carteira. Em produção, informe a NF-e antes de gerar.</p>
+          </DetailCard>
+
           <DetailCard title="Ações do envio">
             <label className="block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
               Etapa atual

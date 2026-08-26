@@ -16,6 +16,10 @@ export type Product = {
   active: boolean;
   sizes: string[];
   material: string;
+  weight?: number;
+  width?: number;
+  height?: number;
+  length?: number;
   pair: number;
   bundlePosition: number;
   catalogPosition: number;
@@ -125,7 +129,9 @@ export type Order = {
     name: string;
     company: string;
     price: number;
+    carrierPrice?: number;
     deliveryTime: number;
+    packages?: Array<Record<string, unknown>>;
   };
   items: Array<{
     id?: number;
@@ -136,6 +142,27 @@ export type Order = {
     qty: number;
     price: number;
   }>;
+};
+
+export type OrderShipment = {
+  id: string;
+  packageIndex: number;
+  providerOrderId: string | null;
+  status: string;
+  serviceId: number;
+  serviceName: string;
+  carrier: string;
+  carrierPrice: number;
+  protocol: string | null;
+  authorizationCode: string | null;
+  tracking: string | null;
+  trackingUrl: string | null;
+  printUrl: string | null;
+  lastError: string | null;
+  attempts: number;
+  generatedAt: string | null;
+  postedAt: string | null;
+  deliveredAt: string | null;
 };
 
 export type ReturnRequest = {

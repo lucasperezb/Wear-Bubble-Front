@@ -49,6 +49,10 @@ export function productPayload(draft: ProductDraft) {
     sub: draft.sub || draft.cat,
     icon: draft.icon,
     material: draft.material,
+    weight: Math.max(0.001, Number(draft.weight) || 0.3),
+    width: Math.max(1, Number(draft.width) || 20),
+    height: Math.max(1, Number(draft.height) || 4),
+    length: Math.max(1, Number(draft.length) || 25),
     price: Math.max(0, Number(draft.price) || 0),
     promoPct: Math.min(90, Math.max(0, Number(draft.promoPct) || 0)),
     stock,
@@ -68,6 +72,8 @@ export function validateProductDraft(draft: ProductDraft) {
   if (!draft.name.trim()) return 'Informe o nome do produto.';
   if (!Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0) return 'Informe um preço maior que zero.';
   if (!Number.isFinite(Number(draft.stock)) || Number(draft.stock) < 0) return 'Informe um estoque válido.';
+  if (!Number.isFinite(Number(draft.weight)) || Number(draft.weight) <= 0) return 'Informe um peso válido.';
+  if ([draft.width, draft.height, draft.length].some((value) => !Number.isFinite(Number(value)) || Number(value) <= 0)) return 'Informe dimensões válidas.';
   const sizes = Array.from(
     new Set(
       (draft.colors || [])
