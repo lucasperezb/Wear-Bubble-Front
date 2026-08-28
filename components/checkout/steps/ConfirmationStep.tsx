@@ -6,7 +6,19 @@ import type { Order } from '../../../lib/api';
 import { money } from '../../../lib/api';
 import { trackGoogleAdsPurchase } from '../../../lib/google-ads';
 
-export function ConfirmationStep({ order, orderNumber, email }: { order: Order | null; orderNumber?: string; email?: string }) {
+export function ConfirmationStep({
+  order,
+  orderNumber,
+  email,
+  authenticated,
+  sessionChecked,
+}: {
+  order: Order | null;
+  orderNumber?: string;
+  email?: string;
+  authenticated: boolean;
+  sessionChecked: boolean;
+}) {
   const loginHref = `/login?modo=código${email ? `&email=${encodeURIComponent(email)}` : ''}`;
 
   useEffect(() => {
@@ -34,7 +46,18 @@ export function ConfirmationStep({ order, orderNumber, email }: { order: Order |
       )}
       <div className="mt-7 flex flex-wrap justify-center gap-3">
         <Link href="/" className="cursor-pointer bg-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em] text-bubble-white">Voltar para a loja</Link>
-        <Link href={order ? '/?conta=1' : loginHref} className="cursor-pointer border border-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em]">Ver meus pedidos</Link>
+        {sessionChecked ? (
+          <Link
+            href={authenticated ? "/conta" : loginHref}
+            className="cursor-pointer border border-bubble-ink px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em]"
+          >
+            Ver meus pedidos
+          </Link>
+        ) : (
+          <span className="cursor-wait border border-bubble-line px-6 py-3 font-sans text-[.72rem] font-semibold uppercase tracking-[.1em] text-bubble-ink/45">
+            Verificando sessão...
+          </span>
+        )}
       </div>
     </section>
   );

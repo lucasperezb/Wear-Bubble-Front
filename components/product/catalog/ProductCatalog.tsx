@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
 import { Product } from "../../../lib/api";
 import { categoryFilterOptions } from "../../../lib/product-filters";
 import { standardProductSizes } from "../../../lib/product-sizes";
 import { ProductCard } from "./ProductCard";
-
-const PRODUCTS_PER_PAGE = 8;
 
 type Filters = {
   cat: string;
@@ -24,6 +21,7 @@ type ProductCatalogProps = {
   productHref: (product: Product) => string;
   onRetry: () => void;
   showFilters?: boolean;
+  showCategoryFilter?: boolean;
   eyebrow?: string;
   title?: string;
   description?: string;
@@ -40,26 +38,11 @@ export function ProductCatalog({
   productHref,
   onRetry,
   showFilters = true,
+  showCategoryFilter = true,
   eyebrow = "Coleção Core · Linha feminina",
   title = "Core Collection",
   description = "Clique na peça para ver detalhes, tecido e sugestão de conjunto. Peças da coleção não voltam ao estoque.",
 }: ProductCatalogProps) {
-  const [page, setPage] = useState(0);
-  const totalPages = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE));
-  const currentPage = Math.min(page, totalPages - 1);
-  const paginatedProducts = products.slice(
-    currentPage * PRODUCTS_PER_PAGE,
-    (currentPage + 1) * PRODUCTS_PER_PAGE,
-  );
-
-  useEffect(() => {
-    setPage(0);
-  }, [filters.cat, filters.size, filters.sport, filters.sort]);
-
-  useEffect(() => {
-    setPage((current) => Math.min(current, totalPages - 1));
-  }, [totalPages]);
-
   return (
     <section id="colecao" className="py-[85px] max-[520px]:py-10">
       <div className="mx-auto max-w-[1200px] px-8 max-[520px]:px-3.5">
@@ -78,15 +61,17 @@ export function ProductCatalog({
         </div>
 
         {showFilters ? <div className="mb-[26px] flex flex-wrap items-center gap-2.5 max-[520px]:mb-4 max-[520px]:max-h-[88px] max-[520px]:overflow-y-auto">
-          {categoryFilterOptions.map(({ value, label }) => (
-            <button
-              key={value}
-              className={`${filters.cat === value ? "border-bubble-ink bg-bubble-ink text-bubble-white" : "border-bubble-line bg-bubble-white text-bubble-ink/60"} border px-[18px] py-[9px] font-sans text-[.7rem] font-semibold uppercase tracking-[.1em]`}
-              onClick={() => onFilter({ cat: value })}
-            >
-              {label}
-            </button>
-          ))}
+          {showCategoryFilter
+            ? categoryFilterOptions.map(({ value, label }) => (
+                <button
+                  key={value}
+                  className={`${filters.cat === value ? "border-bubble-ink bg-bubble-ink text-bubble-white" : "border-bubble-line bg-bubble-white text-bubble-ink/60"} border px-[18px] py-[9px] font-sans text-[.7rem] font-semibold uppercase tracking-[.1em]`}
+                  onClick={() => onFilter({ cat: value })}
+                >
+                  {label}
+                </button>
+              ))
+            : null}
           <select
             className="cursor-pointer border border-bubble-line bg-bubble-white px-3 py-[9px] font-sans text-[.72rem] font-semibold tracking-[.04em] text-bubble-ink/70"
             value={filters.size}
@@ -153,39 +138,11 @@ export function ProductCatalog({
             </div>
           ) : null}
           {!loading && !error
-            ? paginatedProducts.map((product) => (
+            ? products.map((product) => (
                 <ProductCard key={product.id} product={product} href={productHref(product)} />
               ))
             : null}
         </div>
-
-        {!loading && !error && totalPages > 1 ? (
-          <div className="mt-5 flex items-center justify-center gap-4">
-            <button
-              type="button"
-              aria-label="Ver peças anteriores"
-              disabled={currentPage === 0}
-              className="flex h-11 w-11 items-center justify-center border border-bubble-ink bg-bubble-white font-sans text-xl text-bubble-ink transition-colors hover:bg-bubble-ink hover:text-bubble-white disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25 disabled:hover:bg-bubble-white"
-              onClick={() => setPage((current) => Math.max(0, current - 1))}
-            >
-              ←
-            </button>
-            <span className="min-w-[62px] text-center font-sans text-[.68rem] font-semibold uppercase tracking-[.14em] text-bubble-ink/60">
-              {currentPage + 1} / {totalPages}
-            </span>
-            <button
-              type="button"
-              aria-label="Ver próximas peças"
-              disabled={currentPage === totalPages - 1}
-              className="flex h-11 w-11 items-center justify-center border border-bubble-ink bg-bubble-white font-sans text-xl text-bubble-ink transition-colors hover:bg-bubble-ink hover:text-bubble-white disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25 disabled:hover:bg-bubble-white"
-              onClick={() =>
-                setPage((current) => Math.min(totalPages - 1, current + 1))
-              }
-            >
-              →
-            </button>
-          </div>
-        ) : null}
       </div>
     </section>
   );

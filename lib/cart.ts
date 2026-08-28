@@ -13,13 +13,12 @@ export type CartItem = {
 
 export type PaymentMethod = "Pix" | "Cartão de crédito";
 export type AppliedCoupon =
-  | { code: string; type: "coupon"; pct: number; minimumCharge: boolean }
   | {
       code: string;
-      type: "store_credit";
-      value: number;
-      balance: number;
-      expiresAt: number;
+      type: "coupon";
+      pct: number;
+      minimumCharge: boolean;
+      freeShipping: boolean;
     }
   | null;
 
@@ -106,19 +105,8 @@ export function calculateCart(
         )
       : 0;
   const beforeCredit = beforePayment - pixDiscount;
-  const creditDiscount =
-    coupon?.type === "store_credit"
-      ? method === "Pix"
-        ? coupon.value >= beforeCredit
-          ? beforeCredit
-          : Math.min(
-              coupon.value,
-              Math.max(0, beforeCredit - MINIMUM_PIX_CHARGE),
-            )
-        : Math.min(beforeCredit, coupon.value)
-      : 0;
-  const couponDiscount = percentDiscount + creditDiscount;
-  const total = beforeCredit - creditDiscount;
+  const couponDiscount = percentDiscount;
+  const total = beforeCredit;
 
   return {
     lines,
@@ -132,6 +120,17 @@ export function calculateCart(
     freeShippingSubtotal: beforePayment,
     freeShippingRemaining: Math.max(0, FREE_SHIPPING_MINIMUM - beforePayment),
   };
+}
+
+export function calculateAccountCreditDiscount(
+  balance: number,
+  amount: number,
+  method: PaymentMethod,
+) {
+  const available = Math.max(0, balance);
+  const due = Math.max(0, amount);
+  if (method !== "Pix" || available >= due) return Math.min(available, due);
+  return Math.min(available, Math.max(0, due - MINIMUM_PIX_CHARGE));
 }
 
 function isCartItem(value: unknown): value is CartItem {

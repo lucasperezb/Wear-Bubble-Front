@@ -9,6 +9,7 @@ import { ProductModal } from "../product";
 import { Product, User, apiFetch } from "../../lib/api";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { sortProductSizes } from "../../lib/product-sizes";
+import { productPrice } from "../../lib/pricing";
 import { readDemoProducts } from "../../lib/demo-store";
 import { categoryMatches } from "../../lib/product-filters";
 import { collectionSlug as slugForCollection } from "../../lib/collections";
@@ -23,7 +24,14 @@ type ShowcasePageProps = {
   showAll?: boolean;
 };
 
-const emptyFilters = { cat: "all", size: "", sport: "", sort: "rel" };
+type Filters = {
+  cat: string;
+  size: string;
+  sport: string;
+  sort: string;
+};
+
+const initialFilters: Filters = { cat: "all", size: "", sport: "", sort: "rel" };
 
 export function ShowcasePage({
   category,
@@ -45,6 +53,7 @@ export function ShowcasePage({
   const [user, setUser] = useState<User | null>(null);
   const [toast, setToast] = useState("");
   const [demoMode, setDemoMode] = useState(false);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -81,15 +90,36 @@ export function ShowcasePage({
     }
   }
 
-  const visibleProducts = useMemo(() => {
-    if (showAll) return products;
-    if (category) return products.filter((product) => categoryMatches(product.cat, category));
+  const scopedProducts = useMemo(() => {
+    const active = products.filter((product) => product.active !== false);
+    if (showAll) return active;
+    if (category) return active.filter((product) => categoryMatches(product.cat, category));
     if (collectionSlug || collectionName) {
       const wanted = collectionSlug || slugForCollection(collectionName || "");
-      return products.filter((product) => slugForCollection(product.collectionName || "") === wanted);
+      return active.filter((product) => slugForCollection(product.collectionName || "") === wanted);
     }
-    return products;
+    return active;
   }, [category, collectionName, collectionSlug, products, showAll]);
+
+  const sports = useMemo(
+    () => [...new Set(scopedProducts.flatMap((product) => product.sports || []))].sort(),
+    [scopedProducts],
+  );
+
+  const visibleProducts = useMemo(() => {
+    let list = scopedProducts;
+    if (showAll && filters.cat !== "all")
+      list = list.filter((product) => categoryMatches(product.cat, filters.cat));
+    if (filters.size)
+      list = list.filter((product) => sortProductSizes(product.sizes).includes(filters.size));
+    if (filters.sport)
+      list = list.filter((product) => product.sports?.includes(filters.sport));
+    if (filters.sort === "price-asc") list = [...list].sort((a, b) => productPrice(a) - productPrice(b));
+    if (filters.sort === "price-desc") list = [...list].sort((a, b) => productPrice(b) - productPrice(a));
+    if (filters.sort === "stock-asc") list = [...list].sort((a, b) => a.stock - b.stock);
+    if (filters.sort === "stock-desc") list = [...list].sort((a, b) => b.stock - a.stock);
+    return list;
+  }, [filters, scopedProducts, showAll]);
 
   function openProduct(product: Product) {
     window.location.assign(`/produto/${product.id}${demoMode ? "?demo=1" : ""}`);
@@ -130,16 +160,17 @@ export function ShowcasePage({
       </section>
       {demoMode ? <div className="border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.66rem] font-semibold uppercase tracking-[.1em]">Modo demonstração · dados locais</div> : null}
       <ProductCatalog
-        filters={emptyFilters}
-        sports={[]}
+        filters={filters}
+        sports={sports}
         products={visibleProducts}
         loading={loading}
         error={error}
-        onFilter={() => undefined}
-        onClear={() => undefined}
+        onFilter={(patch) => setFilters((current) => ({ ...current, ...patch }))}
+        onClear={() => setFilters(initialFilters)}
         productHref={(product) => `/produto/${product.id}${demoMode ? "?demo=1" : ""}`}
         onRetry={() => void load(demoMode)}
-        showFilters={false}
+        showFilters
+        showCategoryFilter={showAll}
         eyebrow={collectionName ? `Coleção ${collectionName}` : showAll ? "Wear Bubble · Todas as linhas" : "Seleção por categoria"}
         title={showAll ? "Todas as peças" : collectionName ? `Todas as peças ${collectionName}` : "Todas as peças"}
         description={showAll ? "Explore toda a coleção e encontre as peças que combinam com o seu movimento." : collectionName ? `Todas as peças cadastradas na coleção ${collectionName}.` : "Todas as peças publicadas nesta categoria."}

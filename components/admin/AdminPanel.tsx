@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
-  Database,
   LayoutDashboard,
   Layers3,
   Images,
@@ -11,8 +10,6 @@ import {
   Package,
   PanelsTopLeft,
   RefreshCw,
-  RotateCcw,
-  ShoppingBag,
   TicketPercent,
   BadgePercent,
   Truck,
@@ -20,29 +17,18 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api';
 import { useBodyScrollLock } from '../../lib/use-body-scroll-lock';
-import {
-  adminTabs,
-  defaultSports,
-  emptyAdminDump,
-  parseAdminDump,
-} from './shared/constants';
-import type { AdminDump, AdminTab } from './shared/types';
+import { adminTabs } from './shared/constants';
+import type { AdminTab } from './shared/types';
 import { CombosAdmin } from './catalog/CombosAdmin';
 import { HeroCarouselAdmin } from './catalog/HeroCarouselAdmin';
 import { ProductsAdmin } from './catalog/ProductsAdmin';
 import { PromotionsAdmin } from './catalog/PromotionsAdmin';
 import { ShowcasesAdmin } from './catalog/ShowcasesAdmin';
 import { CouponsAdmin } from './commerce/CouponsAdmin';
-import { OrdersAdmin } from './commerce/OrdersAdmin';
 import { CustomersAdmin } from './customers/CustomersAdmin';
 import { Dashboard } from './dashboard/Dashboard';
-import { DatabaseAdmin } from './data/DatabaseAdmin';
-import { ReturnsAdmin } from './fulfillment/ReturnsAdmin';
 import { ShipAdmin } from './fulfillment/ShipAdmin';
-import { readDemoProducts } from '../../lib/demo-store';
-import type { HeroConfig } from '../../lib/api';
 
 type AdminPanelProps = {
   open: boolean;
@@ -56,47 +42,12 @@ type AdminPanelProps = {
 export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, demoMode = false }: AdminPanelProps) {
   useBodyScrollLock(open);
   const [tab, setTab] = useState<AdminTab>('dash');
-  const [dump, setDump] = useState<AdminDump>(emptyAdminDump);
-  const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [heroConfig, setHeroConfig] = useState<HeroConfig>({
-    enabled: false,
-    slides: [],
-  });
+  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    if (open) void refresh();
-  }, [open]);
-
-  async function refresh() {
-    setLoading(true);
-    try {
-      if (demoMode) {
-        setDump({ ...emptyAdminDump, products: readDemoProducts() });
-        return;
-      }
-      const [response, hero] = await Promise.all([
-        apiFetch<unknown>('/admin/db'),
-        apiFetch<HeroConfig>('/hero/admin'),
-      ]);
-      setDump(parseAdminDump(response));
-      setHeroConfig(hero);
-    } catch (error) {
-      notify(error instanceof Error ? error.message : 'Não foi possível carregar o painel.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const sports = useMemo(() => {
-    const used = dump.products.flatMap((product) => product.sports || []);
-    return Array.from(new Set([...defaultSports, ...used])).filter(Boolean);
-  }, [dump.products]);
-
-  const refreshProducts = async () => {
-    await refresh();
+  async function handleChanged() {
     await onChanged();
-  };
+  }
 
   const visibleTabs = demoMode
     ? adminTabs.filter((item) => item.id === 'dash' || item.id === 'products' || item.id === 'showcases')
@@ -189,28 +140,24 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, dem
             </div>
             <button
               className="flex items-center gap-2 border border-bubble-line bg-bubble-white px-3 py-2.5 font-sans text-[.63rem] font-bold uppercase tracking-[.1em] text-bubble-ink/60 hover:border-bubble-ink hover:text-bubble-ink sm:px-4"
-              onClick={refresh}
-              disabled={loading}
+              onClick={() => setReloadKey((n) => n + 1)}
             >
-              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-              <span className="hidden sm:inline">{loading ? 'Atualizando' : 'Atualizar dados'}</span>
+              <RefreshCw size={15} />
+              <span className="hidden sm:inline">Atualizar dados</span>
             </button>
           </header>
 
           <main className="min-h-0 flex-1 overflow-y-auto">
-            <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pt-8">
-              {tab === 'dash' && <Dashboard dump={dump} />}
-              {tab === 'products' && <ProductsAdmin products={dump.products} sports={sports} onSaved={refreshProducts} notify={notify} demoMode={demoMode} />}
-              {tab === 'orders' && <OrdersAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
-              {tab === 'ship' && <ShipAdmin orders={dump.orders} onSaved={refresh} notify={notify} />}
-              {tab === 'returns' && <ReturnsAdmin orders={dump.orders} notify={notify} />}
-              {tab === 'customers' && <CustomersAdmin dump={dump} />}
-              {tab === 'coupons' && <CouponsAdmin coupons={dump.coupons} orders={dump.orders} onSaved={refresh} notify={notify} />}
-              {tab === 'promotions' && <PromotionsAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
-              {tab === 'showcases' && <ShowcasesAdmin products={dump.products} notify={notify} demoMode={demoMode} onSaved={onChanged} />}
-              {tab === 'hero' && <HeroCarouselAdmin config={heroConfig} onConfig={setHeroConfig} onPublished={onChanged} notify={notify} />}
-              {tab === 'combos' && <CombosAdmin products={dump.products} onSaved={refreshProducts} notify={notify} />}
-              {tab === 'db' && <DatabaseAdmin dump={dump} />}
+            <div className="mx-auto max-w-[1440px] px-4 pb-16 pt-5 sm:px-6 sm:pt-7 lg:px-8 lg:pt-8" key={`${tab}-${reloadKey}`}>
+              {tab === 'dash' && <Dashboard />}
+              {tab === 'products' && <ProductsAdmin onSaved={handleChanged} notify={notify} demoMode={demoMode} />}
+              {tab === 'ship' && <ShipAdmin onSaved={handleChanged} notify={notify} />}
+              {tab === 'customers' && <CustomersAdmin />}
+              {tab === 'coupons' && <CouponsAdmin onSaved={handleChanged} notify={notify} />}
+              {tab === 'promotions' && <PromotionsAdmin onSaved={handleChanged} notify={notify} />}
+              {tab === 'showcases' && <ShowcasesAdmin notify={notify} demoMode={demoMode} onSaved={handleChanged} />}
+              {tab === 'hero' && <HeroCarouselAdmin onPublished={onChanged} notify={notify} />}
+              {tab === 'combos' && <CombosAdmin onSaved={handleChanged} notify={notify} />}
             </div>
           </main>
         </div>
@@ -222,14 +169,11 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, dem
 const adminTabIcons: Record<AdminTab, LucideIcon> = {
   dash: LayoutDashboard,
   products: Package,
-  orders: ShoppingBag,
   ship: Truck,
-  returns: RotateCcw,
   customers: Users,
   coupons: TicketPercent,
   promotions: BadgePercent,
   showcases: PanelsTopLeft,
   hero: Images,
   combos: Layers3,
-  db: Database,
 };

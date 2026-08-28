@@ -11,29 +11,34 @@ import {
 import { ProductIcon } from "../../shared";
 import { saveButton } from "../shared/styles";
 import type { Notify } from "../shared/types";
-import { readDemoShowcases, writeDemoShowcase } from "../../../lib/demo-store";
+import {
+  readDemoProducts,
+  readDemoShowcases,
+  writeDemoShowcase,
+} from "../../../lib/demo-store";
 
 const pages: Array<{ key: ShowcaseKey; label: string; path: string }> = [
   { key: "home", label: "Página principal", path: "/" },
 ];
 
 export function ShowcasesAdmin({
-  products,
   notify,
   demoMode = false,
   onSaved,
 }: {
-  products: Product[];
   notify: Notify;
   demoMode?: boolean;
   onSaved?: () => void | Promise<void>;
 }) {
   const [pageKey, setPageKey] = useState<ShowcaseKey>("home");
   const [showcases, setShowcases] = useState<ShowcaseMap | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [heroId, setHeroId] = useState(0);
   const [ids, setIds] = useState<number[]>([0, 0, 0, 0]);
-  const [loading, setLoading] = useState(true);
+  const [showcasesLoading, setShowcasesLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const loading = showcasesLoading || productsLoading;
   const available = useMemo(
     () => products.filter((product) => product.active && product.stock > 0),
     [products],
@@ -42,16 +47,31 @@ export function ShowcasesAdmin({
   useEffect(() => {
     if (demoMode) {
       setShowcases(readDemoShowcases());
-      setLoading(false);
+      setShowcasesLoading(false);
       return;
     }
-    setLoading(true);
+    setShowcasesLoading(true);
     apiFetch<ShowcaseMap>("/products/showcases")
       .then((response) => setShowcases(response))
       .catch((error) =>
         notify(error instanceof Error ? error.message : "Não foi possível carregar as vitrines."),
       )
-      .finally(() => setLoading(false));
+      .finally(() => setShowcasesLoading(false));
+  }, [demoMode, notify]);
+
+  useEffect(() => {
+    if (demoMode) {
+      setProducts(readDemoProducts());
+      setProductsLoading(false);
+      return;
+    }
+    setProductsLoading(true);
+    apiFetch<Product[]>("/products/admin")
+      .then((response) => setProducts(response))
+      .catch((error) =>
+        notify(error instanceof Error ? error.message : "Não foi possível carregar os produtos."),
+      )
+      .finally(() => setProductsLoading(false));
   }, [demoMode, notify]);
 
   useEffect(() => {

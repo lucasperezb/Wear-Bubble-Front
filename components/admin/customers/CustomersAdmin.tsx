@@ -1,27 +1,67 @@
-import { Order, money } from "../../../lib/api";
-import { adminNote, adminTable, stockBadge } from "../shared/styles";
-import type { AdminDump } from "../shared/types";
-import { addressLine, maskId } from "../shared/utils";
+"use client";
 
-export function CustomersAdmin({ dump }: { dump: AdminDump }) {
-  const vault = dump.pii_vault || [];
-  const rows = dump.users.map((user) => {
-    const uid = String(user.uid || user.id || "");
-    const profile =
-      vault.find((item) => String(item.uid || item.id) === uid) || {};
-    const orders = dump.orders.filter(
-      (order) => (order as Order & { customerId?: string }).customerId === uid,
-    );
+import { useEffect, useState } from "react";
+import { apiFetch, money, type Order } from "../../../lib/api";
+import { adminNote, adminTable, stockBadge } from "../shared/styles";
+import type { AdminCustomers } from "../shared/types";
+import { addressLine, maskId } from "../shared/utils";
+import { usePagination } from "../shared/usePagination";
+import { PaginationControls } from "../shared/PaginationControls";
+
+const emptyCustomers: AdminCustomers = { users: [], profiles: [] };
+
+export function CustomersAdmin() {
+  const [customers, setCustomers] = useState<AdminCustomers>(emptyCustomers);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      apiFetch<AdminCustomers>("/admin/customers"),
+      apiFetch<Order[]>("/orders"),
+    ])
+      .then(([customersRes, ordersRes]) => {
+        if (cancelled) return;
+        setCustomers(customersRes);
+        setOrders(ordersRes);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const vault = customers.profiles;
+  const rows = customers.users.map((user) => {
+    const uid = user.uid;
+    const profile = vault.find((item) => item.uid === uid) || null;
+    const customerOrders = orders.filter((order) => order.customerId === uid);
     return {
       uid,
       user,
       profile,
-      orders,
-      spent: orders
+      orders: customerOrders,
+      spent: customerOrders
         .filter((order) => order.status === "paid")
         .reduce((sum, order) => sum + order.total, 0),
     };
   });
+
+  const {
+    pageItems: paginatedRows,
+    pageSize,
+    setPageSize,
+    page,
+    setPage,
+    totalPages,
+    pageStart,
+  } = usePagination(rows, []);
+
+  if (loading) return <p className={adminNote}>Carregando clientes...</p>;
 
   return (
     <>
@@ -52,11 +92,11 @@ export function CustomersAdmin({ dump }: { dump: AdminDump }) {
               </td>
             </tr>
           ) : null}
-          {rows.map((row) => (
+          {paginatedRows.map((row) => (
             <tr key={row.uid}>
               <td className="min-w-[190px]">
                 <div className="font-semibold">
-                  {String(row.profile.name || "(cofre não encontrado)")}{" "}
+                  {row.profile?.name || "(cofre não encontrado)"}{" "}
                   {row.user.role === "manager" ? (
                     <span className="ml-[7px] inline-block rounded-[10px] bg-bubble-ink px-[7px] py-0.5 align-middle font-sans text-[.58rem] uppercase tracking-[.08em] text-bubble-candy">
                       Gerente
@@ -68,10 +108,10 @@ export function CustomersAdmin({ dump }: { dump: AdminDump }) {
                 </div>
               </td>
               <td className="min-w-[190px] text-[.78rem]">
-                {String(row.profile.email || "-")}
+                {row.profile?.email || "-"}
               </td>
               <td className="min-w-[190px] text-[.74rem] leading-[1.5]">
-                {addressLine(row.profile)}
+                {addressLine(row.profile || {})}
               </td>
               <td>
                 {row.user.marketingOptIn ? (
@@ -95,6 +135,18 @@ export function CustomersAdmin({ dump }: { dump: AdminDump }) {
           ))}
         </tbody>
       </table>
+      <div className="mt-3">
+        <PaginationControls
+          page={page}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          onPageChange={setPage}
+          totalPages={totalPages}
+          pageStart={pageStart}
+          count={rows.length}
+          ariaLabel="Paginação dos clientes"
+        />
+      </div>
       <p className={adminNote}>
         O cadastro cria o cliente automaticamente. O endereço aparece quando a
         cliente preenche Minha Conta {">"} Dados.

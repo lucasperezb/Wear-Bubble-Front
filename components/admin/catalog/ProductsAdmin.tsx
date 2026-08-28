@@ -42,11 +42,15 @@ import type {
   ProductDraft,
 } from "../shared/types";
 import { productPayload, validateProductDraft } from "../shared/utils";
-import { deleteDemoProduct, saveDemoProduct } from "../../../lib/demo-store";
+import { usePagination } from "../shared/usePagination";
+import { PaginationControls } from "../shared/PaginationControls";
+import {
+  deleteDemoProduct,
+  readDemoProducts,
+  saveDemoProduct,
+} from "../../../lib/demo-store";
 
 type ProductsAdminProps = {
-  products: Product[];
-  sports: string[];
   onSaved: OnSaved;
   notify: Notify;
   demoMode?: boolean;
@@ -66,13 +70,55 @@ const initialProductAdminFilters: ProductAdminFilters = {
   sort: "rel",
 };
 
-export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = false }: ProductsAdminProps) {
+export function ProductsAdmin({ onSaved, notify, demoMode = false }: ProductsAdminProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [editor, setEditor] = useState<"new" | number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [reordering, setReordering] = useState(false);
   const [filters, setFilters] = useState<ProductAdminFilters>(
     initialProductAdminFilters,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    load()
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os produtos.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    async function load() {
+      const data = demoMode
+        ? readDemoProducts()
+        : await apiFetch<Product[]>("/products/admin");
+      if (!cancelled) setProducts(data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoMode]);
+
+  const sports = useMemo(() => {
+    const used = products.flatMap((product) => product.sports || []);
+    return Array.from(new Set([...defaultSports, ...used])).filter(Boolean);
+  }, [products]);
+
+  async function handleSaved() {
+    const data = demoMode
+      ? readDemoProducts()
+      : await apiFetch<Product[]>("/products/admin");
+    setProducts(data);
+    await onSaved();
+  }
+
   const editingProduct =
     typeof editor === "number"
       ? products.find((product) => product.id === editor) || null
@@ -109,6 +155,16 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
     return list;
   }, [filters, products]);
 
+  const {
+    pageItems: paginatedProducts,
+    pageSize,
+    setPageSize,
+    page,
+    setPage,
+    totalPages,
+    pageStart,
+  } = usePagination(filteredProducts, [filters]);
+
   const updateFilters = (patch: Partial<ProductAdminFilters>) =>
     setFilters((current) => ({ ...current, ...patch }));
 
@@ -133,7 +189,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
         method: "PATCH",
         body: JSON.stringify({ productIds }),
       });
-      await onSaved();
+      await handleSaved();
       notify("Ordem dos produtos atualizada na loja.");
     } catch (error) {
       notify(
@@ -153,7 +209,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
           method: "PATCH",
           body: JSON.stringify({ active: !product.active }),
         });
-      await onSaved();
+      await handleSaved();
       notify(product.active ? "Produto ocultado da loja." : "Produto publicado.");
     } catch (error) {
       notify(
@@ -163,6 +219,8 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
       );
     }
   }
+
+  if (loading) return <p className={adminNote}>Carregando produtos...</p>;
 
   return (
     <>
@@ -193,25 +251,40 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
         </p>
       ) : null}
       <div className="overflow-hidden border border-bubble-line bg-bubble-white">
-        {filteredProducts.map((product, index) => (
-          <ProductAdminRow
-            key={product.id}
-            product={product}
-            onEdit={() => setEditor(product.id)}
-            onDelete={() => setDeletingId(product.id)}
-            onToggle={() => void toggleVisibility(product)}
-            onMoveUp={() => void moveProduct(index, -1)}
-            onMoveDown={() => void moveProduct(index, 1)}
-            canMoveUp={canReorder && index > 0}
-            canMoveDown={canReorder && index < products.length - 1}
-            reordering={reordering}
-          />
-        ))}
+        {paginatedProducts.map((product, localIndex) => {
+          const index = pageStart + localIndex;
+          return (
+            <ProductAdminRow
+              key={product.id}
+              product={product}
+              onEdit={() => setEditor(product.id)}
+              onDelete={() => setDeletingId(product.id)}
+              onToggle={() => void toggleVisibility(product)}
+              onMoveUp={() => void moveProduct(index, -1)}
+              onMoveDown={() => void moveProduct(index, 1)}
+              canMoveUp={canReorder && index > 0}
+              canMoveDown={canReorder && index < products.length - 1}
+              reordering={reordering}
+            />
+          );
+        })}
         {!filteredProducts.length ? (
           <div className="p-6 text-center text-[.8rem] text-bubble-ink/55">
             Nenhum produto encontrado com estes filtros.
           </div>
         ) : null}
+      </div>
+      <div className="mt-3">
+        <PaginationControls
+          page={page}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          onPageChange={setPage}
+          totalPages={totalPages}
+          pageStart={pageStart}
+          count={filteredProducts.length}
+          ariaLabel="Paginação dos produtos"
+        />
       </div>
       <p className={adminNote}>
         Use as setas para definir a sequência da vitrine. Edite detalhes e
@@ -223,7 +296,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
           product={editingProduct}
           sports={sports}
           onClose={() => setEditor(null)}
-          onSaved={onSaved}
+          onSaved={handleSaved}
           notify={notify}
           demoMode={demoMode}
         />
@@ -233,7 +306,7 @@ export function ProductsAdmin({ products, sports, onSaved, notify, demoMode = fa
           product={deletingProduct}
           onClose={() => setDeletingId(null)}
           onDeleted={async () => {
-            await onSaved();
+            await handleSaved();
             setDeletingId(null);
           }}
           notify={notify}

@@ -1,208 +1,127 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Coupon, Order, apiFetch, money } from "../../../lib/api";
+import { useBodyScrollLock } from "../../../lib/use-body-scroll-lock";
 import {
   adminNote,
   adminTable,
   field,
+  outlineButton,
   primaryButton,
   smallButton,
   stockBadge,
 } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
+import { useActionDialog } from "../../shared/overlays/ActionDialog";
+import { usePagination } from "../shared/usePagination";
+import { PaginationControls } from "../shared/PaginationControls";
+
+type CouponMode = "percentage" | "minimumCharge";
+
+type CouponLimitsDraft = {
+  expiresAt: string;
+  maxUses: string;
+  maxUsesPerCustomer: string;
+  minSubtotal: string;
+  assignedTo: string;
+};
 
 export function CouponsAdmin({
-  coupons,
-  orders,
   onSaved,
   notify,
 }: {
-  coupons: Coupon[];
-  orders: Order[];
   onSaved: OnSaved;
   notify: Notify;
 }) {
-  const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({
-    code: "",
-    pct: 10,
-    minimumCharge: false,
-    expiresAt: "",
-    maxUses: "",
-    maxUsesPerCustomer: "",
-    minSubtotal: "",
-    assignedTo: "",
-  });
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Coupon | null>(null);
 
-  async function createCoupon() {
-    if (!draft.minimumCharge && !isValidCouponPercentage(draft.pct)) {
-      notify("Informe um desconto entre 1% e 99%.");
-      return;
-    }
-    try {
-      await apiFetch("/coupons", {
-        method: "POST",
-        body: JSON.stringify({
-          code: draft.code,
-          pct: draft.minimumCharge ? 0 : Number(draft.pct),
-          minimumCharge: draft.minimumCharge,
-          expiresAt: draft.expiresAt
-            ? new Date(`${draft.expiresAt}T23:59:59`).getTime()
-            : null,
-          maxUses: draft.maxUses ? Number(draft.maxUses) : null,
-          maxUsesPerCustomer: draft.maxUsesPerCustomer
-            ? Number(draft.maxUsesPerCustomer)
-            : null,
-          minSubtotal: draft.minSubtotal ? Number(draft.minSubtotal) : 0,
-          assignedTo: draft.assignedTo,
-        }),
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      apiFetch<Coupon[]>("/coupons"),
+      apiFetch<Order[]>("/orders"),
+    ])
+      .then(([couponsRes, ordersRes]) => {
+        if (cancelled) return;
+        setCoupons(couponsRes);
+        setOrders(ordersRes);
+      })
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os cupons.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-      setAdding(false);
-      setDraft({
-        code: "",
-        pct: 10,
-        minimumCharge: false,
-        expiresAt: "",
-        maxUses: "",
-        maxUsesPerCustomer: "",
-        minSubtotal: "",
-        assignedTo: "",
-      });
-      await onSaved();
-      notify("Cupom criado.");
-    } catch (error) {
-      notify(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível criar cupom.",
-      );
-    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSaved() {
+    const [couponsRes, ordersRes] = await Promise.all([
+      apiFetch<Coupon[]>("/coupons"),
+      apiFetch<Order[]>("/orders"),
+    ]);
+    setCoupons(couponsRes);
+    setOrders(ordersRes);
+    await onSaved();
   }
+
+  const {
+    pageItems: paginatedCoupons,
+    pageSize,
+    setPageSize,
+    page,
+    setPage,
+    totalPages,
+    pageStart,
+  } = usePagination(coupons, []);
+
+  if (loading) return <p className={adminNote}>Carregando cupons...</p>;
 
   return (
     <>
       <div className="mb-3.5 flex justify-end">
         <button
           className={`${primaryButton} px-4 py-[9px] text-[.68rem]`}
-          onClick={() => setAdding((current) => !current)}
+          onClick={() => setCreating(true)}
         >
           Criar cupom
         </button>
       </div>
-      {adding ? (
-        <div className="mb-5 border border-bubble-line bg-bubble-white p-5">
-          <h4 className="mb-4 font-sans text-[.78rem] font-bold uppercase tracking-[.1em] text-bubble-ink">
-            Novo cupom
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div className={field}>
-              <label>Código</label>
-              <input
-                value={draft.code}
-                onChange={(event) =>
-                  setDraft({ ...draft, code: event.target.value.toUpperCase() })
-                }
-                placeholder="EX: JULIA10"
-              />
-            </div>
-            <div className={field}>
-              <label>Desconto (%)</label>
-              <input
-                type="number"
-                min="1"
-                max="99"
-                disabled={draft.minimumCharge}
-                value={draft.pct}
-                onChange={(event) =>
-                  setDraft({ ...draft, pct: Number(event.target.value) })
-                }
-              />
-              <label className="mt-2 !flex items-center gap-2 normal-case tracking-normal">
-                <input
-                  className="!size-4 !w-4 !border-0 !p-0"
-                  type="checkbox"
-                  checked={draft.minimumCharge}
-                  onChange={(event) =>
-                    setDraft({ ...draft, minimumCharge: event.target.checked })
-                  }
-                />
-                Cupom especial — total final de R$ 5,00
-              </label>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
-            <div className={field}>
-              <label>Validade</label>
-              <input
-                type="date"
-                value={draft.expiresAt}
-                onChange={(event) =>
-                  setDraft({ ...draft, expiresAt: event.target.value })
-                }
-              />
-            </div>
-            <div className={field}>
-              <label>Limite geral do cupom</label>
-              <input
-                type="number"
-                min="1"
-                value={draft.maxUses}
-                onChange={(event) =>
-                  setDraft({ ...draft, maxUses: event.target.value })
-                }
-                placeholder="Ilimitado"
-              />
-            </div>
-            <div className={field}>
-              <label>Limite por cliente</label>
-              <input
-                type="number"
-                min="1"
-                value={draft.maxUsesPerCustomer}
-                onChange={(event) =>
-                  setDraft({ ...draft, maxUsesPerCustomer: event.target.value })
-                }
-                placeholder="Ilimitado"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className={field}>
-              <label>Compra mínima (R$)</label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={draft.minSubtotal}
-                onChange={(event) =>
-                  setDraft({ ...draft, minSubtotal: event.target.value })
-                }
-                placeholder="0"
-              />
-            </div>
-            <div className={field}>
-              <label>Atribuído a</label>
-              <input
-                value={draft.assignedTo}
-                onChange={(event) =>
-                  setDraft({ ...draft, assignedTo: event.target.value })
-                }
-                placeholder="Ex: Julia"
-              />
-            </div>
-          </div>
-          <button className={primaryButton} onClick={createCoupon}>
-            Criar cupom
-          </button>
-        </div>
+      {creating ? (
+        <CreateCouponModal
+          onClose={() => setCreating(false)}
+          onSaved={handleSaved}
+          notify={notify}
+        />
+      ) : null}
+      {editing ? (
+        <EditCouponModal
+          coupon={editing}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+          notify={notify}
+        />
       ) : null}
       <div className="overflow-x-auto">
         <table className={adminTable}>
           <thead>
             <tr>
               <th>Código</th>
-              <th className="w-[150px]">Tipo / %</th>
+              <th>Tipo</th>
               <th>Atribuído a</th>
               <th>Validade</th>
               <th>Limite geral</th>
@@ -224,17 +143,30 @@ export function CouponsAdmin({
                 </td>
               </tr>
             ) : null}
-            {coupons.map((coupon) => (
+            {paginatedCoupons.map((coupon) => (
               <CouponRow
                 key={coupon.code}
                 coupon={coupon}
                 orders={orders}
-                onSaved={onSaved}
+                onSaved={handleSaved}
                 notify={notify}
+                onEdit={() => setEditing(coupon)}
               />
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="mt-3">
+        <PaginationControls
+          page={page}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          onPageChange={setPage}
+          totalPages={totalPages}
+          pageStart={pageStart}
+          count={coupons.length}
+          ariaLabel="Paginação dos cupons"
+        />
       </div>
       <p className={adminNote}>
         O limite geral controla quantas vezes o código pode ser usado no total.
@@ -245,22 +177,331 @@ export function CouponsAdmin({
   );
 }
 
-function CouponRow({
+function CouponModeAndPctFields({
+  mode,
+  pct,
+  freeShipping,
+  onModeChange,
+  onPctChange,
+  onFreeShippingChange,
+}: {
+  mode: CouponMode;
+  pct: number;
+  freeShipping: boolean;
+  onModeChange: (mode: CouponMode) => void;
+  onPctChange: (pct: number) => void;
+  onFreeShippingChange: (freeShipping: boolean) => void;
+}) {
+  return (
+    <>
+      <div className="mb-[15px] flex flex-col gap-2.5">
+        <label className="flex cursor-pointer items-start gap-2.5 border border-bubble-line p-3 text-[.72rem] normal-case leading-[1.5] tracking-normal text-bubble-ink/70 has-[:checked]:border-bubble-ink has-[:checked]:bg-bubble-cream has-[:checked]:text-bubble-ink">
+          <input
+            className="mt-0.5 size-4 shrink-0"
+            type="radio"
+            name="couponMode"
+            checked={mode === "percentage"}
+            onChange={() => onModeChange("percentage")}
+          />
+          <span>
+            <strong className="block text-[.7rem] font-bold uppercase tracking-[.06em] text-bubble-ink">
+              Desconto percentual
+            </strong>
+            Aplica um percentual de desconto sobre os produtos. Pode ser
+            combinado com frete grátis abaixo.
+          </span>
+        </label>
+        <label className="flex cursor-pointer items-start gap-2.5 border border-bubble-line p-3 text-[.72rem] normal-case leading-[1.5] tracking-normal text-bubble-ink/70 has-[:checked]:border-bubble-ink has-[:checked]:bg-bubble-cream has-[:checked]:text-bubble-ink">
+          <input
+            className="mt-0.5 size-4 shrink-0"
+            type="radio"
+            name="couponMode"
+            checked={mode === "minimumCharge"}
+            onChange={() => onModeChange("minimumCharge")}
+          />
+          <span>
+            <strong className="block text-[.7rem] font-bold uppercase tracking-[.06em] text-bubble-ink">
+              Cupom especial
+            </strong>
+            Total final fixo de R$ 5,00 (frete já incluso), sem aplicar
+            percentual de desconto.
+          </span>
+        </label>
+      </div>
+
+      {mode === "percentage" ? (
+        <div className={field}>
+          <label>Desconto (%)</label>
+          <input
+            type="number"
+            min="0"
+            max="99"
+            value={pct}
+            onChange={(event) => onPctChange(Number(event.target.value))}
+          />
+        </div>
+      ) : null}
+
+      {mode === "percentage" ? (
+        <label className="mb-[15px] flex cursor-pointer items-start gap-2.5 border border-bubble-line p-3 text-[.72rem] normal-case leading-[1.5] tracking-normal text-bubble-ink/70 has-[:checked]:border-bubble-ink has-[:checked]:bg-bubble-cream has-[:checked]:text-bubble-ink">
+          <input
+            className="mt-0.5 size-4 shrink-0"
+            type="checkbox"
+            checked={freeShipping}
+            onChange={(event) => onFreeShippingChange(event.target.checked)}
+          />
+          <span>
+            <strong className="block text-[.7rem] font-bold uppercase tracking-[.06em] text-bubble-ink">
+              Frete grátis
+            </strong>
+            Zera o frete. Deixe o desconto em 0% para um cupom só de frete
+            grátis, ou combine com um percentual acima.
+          </span>
+        </label>
+      ) : null}
+    </>
+  );
+}
+
+function CouponLimitFields({
+  draft,
+  onChange,
+}: {
+  draft: CouponLimitsDraft;
+  onChange: (patch: Partial<CouponLimitsDraft>) => void;
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-3 max-[760px]:grid-cols-1">
+        <div className={field}>
+          <label>Validade</label>
+          <input
+            type="date"
+            value={draft.expiresAt}
+            onChange={(event) => onChange({ expiresAt: event.target.value })}
+          />
+        </div>
+        <div className={field}>
+          <label>Limite geral do cupom</label>
+          <input
+            type="number"
+            min="1"
+            value={draft.maxUses}
+            onChange={(event) => onChange({ maxUses: event.target.value })}
+            placeholder="Ilimitado"
+          />
+        </div>
+        <div className={field}>
+          <label>Limite por cliente</label>
+          <input
+            type="number"
+            min="1"
+            value={draft.maxUsesPerCustomer}
+            onChange={(event) =>
+              onChange({ maxUsesPerCustomer: event.target.value })
+            }
+            placeholder="Ilimitado"
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 max-[760px]:grid-cols-1">
+        <div className={field}>
+          <label>Compra mínima (R$)</label>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={draft.minSubtotal}
+            onChange={(event) => onChange({ minSubtotal: event.target.value })}
+            placeholder="0"
+          />
+        </div>
+        <div className={field}>
+          <label>Atribuído a</label>
+          <input
+            value={draft.assignedTo}
+            onChange={(event) => onChange({ assignedTo: event.target.value })}
+            placeholder="Ex: Julia"
+          />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ModalShell({
+  title,
+  onClose,
+  footer,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  useBodyScrollLock(true);
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[900] flex items-center justify-center bg-bubble-ink/70 p-5 max-[760px]:p-0"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
+      <div className="flex max-h-[94vh] w-[560px] max-w-[96vw] flex-col overflow-hidden bg-bubble-white shadow-bubble max-[760px]:h-[100dvh] max-[760px]:max-h-none max-[760px]:max-w-none">
+        <div className="flex shrink-0 items-center justify-between border-b border-bubble-ink px-6 py-4">
+          <h3 className="text-xl">{title}</h3>
+          <button
+            type="button"
+            className="flex size-10 items-center justify-center border border-bubble-ink text-2xl"
+            onClick={onClose}
+            aria-label="Fechar modal"
+          >
+            ×
+          </button>
+        </div>
+        <div className="overflow-y-auto p-6 max-[760px]:p-4">{children}</div>
+        <div className="flex shrink-0 justify-end gap-2.5 border-t border-bubble-line bg-bubble-white px-6 py-4">
+          {footer}
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+function CreateCouponModal({
+  onClose,
+  onSaved,
+  notify,
+}: {
+  onClose: () => void;
+  onSaved: OnSaved;
+  notify: Notify;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [code, setCode] = useState("");
+  const [mode, setMode] = useState<CouponMode>("percentage");
+  const [pct, setPct] = useState(10);
+  const [freeShipping, setFreeShipping] = useState(false);
+  const [limits, setLimits] = useState<CouponLimitsDraft>({
+    expiresAt: "",
+    maxUses: "",
+    maxUsesPerCustomer: "",
+    minSubtotal: "",
+    assignedTo: "",
+  });
+
+  async function createCoupon() {
+    if (
+      mode === "percentage" &&
+      pct > 0 &&
+      !isValidCouponPercentage(pct)
+    ) {
+      notify("Informe um desconto entre 1% e 99%.");
+      return;
+    }
+    if (mode === "percentage" && pct <= 0 && !freeShipping) {
+      notify("Informe um desconto ou marque frete grátis.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch("/coupons", {
+        method: "POST",
+        body: JSON.stringify({
+          code,
+          pct: mode === "percentage" ? Number(pct) : 0,
+          minimumCharge: mode === "minimumCharge",
+          freeShipping: mode === "percentage" && freeShipping,
+          expiresAt: limits.expiresAt
+            ? new Date(`${limits.expiresAt}T23:59:59`).getTime()
+            : null,
+          maxUses: limits.maxUses ? Number(limits.maxUses) : null,
+          maxUsesPerCustomer: limits.maxUsesPerCustomer
+            ? Number(limits.maxUsesPerCustomer)
+            : null,
+          minSubtotal: limits.minSubtotal ? Number(limits.minSubtotal) : 0,
+          assignedTo: limits.assignedTo,
+        }),
+      });
+      onClose();
+      await onSaved();
+      notify("Cupom criado.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível criar cupom.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell
+      title="Novo cupom"
+      onClose={onClose}
+      footer={
+        <>
+          <button className={outlineButton} onClick={onClose} disabled={saving}>
+            Cancelar
+          </button>
+          <button
+            className={primaryButton}
+            onClick={createCoupon}
+            disabled={saving}
+          >
+            {saving ? "Criando..." : "Criar cupom"}
+          </button>
+        </>
+      }
+    >
+      <div className={field}>
+        <label>Código</label>
+        <input
+          value={code}
+          onChange={(event) => setCode(event.target.value.toUpperCase())}
+          placeholder="EX: JULIA10"
+        />
+      </div>
+      <CouponModeAndPctFields
+        mode={mode}
+        pct={pct}
+        freeShipping={freeShipping}
+        onModeChange={setMode}
+        onPctChange={setPct}
+        onFreeShippingChange={setFreeShipping}
+      />
+      <CouponLimitFields
+        draft={limits}
+        onChange={(patch) => setLimits((current) => ({ ...current, ...patch }))}
+      />
+    </ModalShell>
+  );
+}
+
+function EditCouponModal({
   coupon,
-  orders,
+  onClose,
   onSaved,
   notify,
 }: {
   coupon: Coupon;
-  orders: Order[];
+  onClose: () => void;
   onSaved: OnSaved;
   notify: Notify;
 }) {
-  const [deleting, setDeleting] = useState(false);
-  const [draft, setDraft] = useState({
-    pct: coupon.pct,
-    minimumCharge: coupon.minimumCharge === true,
-    assignedTo: coupon.assignedTo || "",
+  const [saving, setSaving] = useState(false);
+  const [mode, setMode] = useState<CouponMode>(
+    coupon.minimumCharge ? "minimumCharge" : "percentage",
+  );
+  const [pct, setPct] = useState(coupon.pct || 0);
+  const [freeShipping, setFreeShipping] = useState(
+    coupon.freeShipping === true,
+  );
+  const [limits, setLimits] = useState<CouponLimitsDraft>({
     expiresAt: coupon.expiresAt
       ? new Date(coupon.expiresAt).toISOString().slice(0, 10)
       : "",
@@ -268,7 +509,114 @@ function CouponRow({
     maxUsesPerCustomer: coupon.maxUsesPerCustomer
       ? String(coupon.maxUsesPerCustomer)
       : "",
+    minSubtotal: coupon.minSubtotal ? String(coupon.minSubtotal) : "",
+    assignedTo: coupon.assignedTo || "",
   });
+
+  async function saveCoupon() {
+    if (
+      mode === "percentage" &&
+      pct > 0 &&
+      !isValidCouponPercentage(pct)
+    ) {
+      notify("Informe um desconto entre 1% e 99%.");
+      return;
+    }
+    if (mode === "percentage" && pct <= 0 && !freeShipping) {
+      notify("Informe um desconto ou marque frete grátis.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch(`/coupons/${coupon.code}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          pct: mode === "percentage" ? Number(pct) : 0,
+          minimumCharge: mode === "minimumCharge",
+          freeShipping: mode === "percentage" && freeShipping,
+          expiresAt: limits.expiresAt
+            ? new Date(`${limits.expiresAt}T23:59:59`).getTime()
+            : null,
+          maxUses: limits.maxUses ? Number(limits.maxUses) : null,
+          maxUsesPerCustomer: limits.maxUsesPerCustomer
+            ? Number(limits.maxUsesPerCustomer)
+            : null,
+          minSubtotal: limits.minSubtotal ? Number(limits.minSubtotal) : 0,
+          assignedTo: limits.assignedTo,
+        }),
+      });
+      onClose();
+      await onSaved();
+      notify(`Cupom ${coupon.code} atualizado.`);
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar cupom.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ModalShell
+      title={`Editar cupom ${coupon.code}`}
+      onClose={onClose}
+      footer={
+        <>
+          <button className={outlineButton} onClick={onClose} disabled={saving}>
+            Cancelar
+          </button>
+          <button
+            className={primaryButton}
+            onClick={saveCoupon}
+            disabled={saving}
+          >
+            {saving ? "Salvando..." : "Salvar alterações"}
+          </button>
+        </>
+      }
+    >
+      <CouponModeAndPctFields
+        mode={mode}
+        pct={pct}
+        freeShipping={freeShipping}
+        onModeChange={setMode}
+        onPctChange={setPct}
+        onFreeShippingChange={setFreeShipping}
+      />
+      <CouponLimitFields
+        draft={limits}
+        onChange={(patch) => setLimits((current) => ({ ...current, ...patch }))}
+      />
+    </ModalShell>
+  );
+}
+
+function couponTypeLabel(coupon: Coupon) {
+  if (coupon.minimumCharge) return "Cupom especial (R$ 5,00)";
+  const parts: string[] = [];
+  if (coupon.pct > 0) parts.push(`${coupon.pct}% de desconto`);
+  if (coupon.freeShipping) parts.push("frete grátis");
+  return parts.length ? parts.join(" + ") : "Sem benefício";
+}
+
+function CouponRow({
+  coupon,
+  orders,
+  onSaved,
+  notify,
+  onEdit,
+}: {
+  coupon: Coupon;
+  orders: Order[];
+  onSaved: OnSaved;
+  notify: Notify;
+  onEdit: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+  const actionDialog = useActionDialog();
   const usedOrders = orders.filter(
     (order) => order.coupon === coupon.code && order.status !== "canceled",
   );
@@ -310,12 +658,13 @@ function CouponRow({
       usedOrders.length > 0
         ? ` Ele já foi usado em ${usedOrders.length} pedido${usedOrders.length === 1 ? "" : "s"}; os pedidos realizados não serão apagados.`
         : "";
-    if (
-      !window.confirm(
-        `Excluir definitivamente o cupom ${coupon.code}?${usageWarning}`,
-      )
-    )
-      return;
+    const confirmed = await actionDialog.confirm({
+      title: `Excluir cupom ${coupon.code}`,
+      description: `O cupom será excluído definitivamente.${usageWarning}`,
+      confirmLabel: "Excluir cupom",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setDeleting(true);
     try {
@@ -337,134 +686,64 @@ function CouponRow({
   }
 
   return (
-    <tr>
-      <td className="font-bold tracking-px">{coupon.code}</td>
-      <td className="w-[150px]">
-        <input
-          className="max-w-[58px]"
-          type="number"
-          min="1"
-          max="99"
-          disabled={draft.minimumCharge}
-          value={draft.pct}
-          onChange={(event) =>
-            setDraft({ ...draft, pct: Number(event.target.value) })
-          }
-        />
-        <label className="mt-1 flex items-center gap-1 text-[.6rem] normal-case tracking-normal">
-          <input
-            className="!size-4 !w-4 !border-0 !p-0"
-            type="checkbox"
-            checked={draft.minimumCharge}
-            onChange={(event) =>
-              setDraft({ ...draft, minimumCharge: event.target.checked })
+    <>
+      {actionDialog.dialog}
+      <tr>
+        <td className="font-bold tracking-px">{coupon.code}</td>
+        <td>{couponTypeLabel(coupon)}</td>
+        <td>{coupon.assignedTo || "—"}</td>
+        <td>
+          {coupon.expiresAt
+            ? new Date(coupon.expiresAt).toLocaleDateString("pt-BR")
+            : "—"}
+        </td>
+        <td className="min-w-[120px]">
+          <div className="text-[.65rem] text-bubble-ink/55">
+            {usedOrders.length} utilizados
+          </div>
+          {coupon.maxUses ? `Limite: ${coupon.maxUses}` : "Ilimitado"}
+        </td>
+        <td>
+          {coupon.maxUsesPerCustomer
+            ? `${coupon.maxUsesPerCustomer} por cliente`
+            : "Ilimitado"}
+        </td>
+        <td className="w-[88px]">{usedOrders.length}</td>
+        <td className="w-[88px] font-semibold text-bubble-ink">
+          {money.format(revenue)}
+        </td>
+        <td>
+          <span className={stockBadge(statusKind)}>{statusLabel}</span>
+        </td>
+        <td className="whitespace-nowrap">
+          <button disabled={deleting} className={smallButton} onClick={onEdit}>
+            Editar
+          </button>
+          <button
+            disabled={deleting}
+            className={smallButton}
+            onClick={() =>
+              patch(
+                { active: coupon.active === false },
+                coupon.active === false
+                  ? `Cupom ${coupon.code} ativado.`
+                  : `Cupom ${coupon.code} pausado.`,
+              )
             }
-          />
-          Total R$ 5
-        </label>
-      </td>
-      <td>
-        <input
-          className="min-w-[140px]"
-          value={draft.assignedTo}
-          onChange={(event) =>
-            setDraft({ ...draft, assignedTo: event.target.value })
-          }
-        />
-      </td>
-      <td>
-        <input
-          type="date"
-          value={draft.expiresAt}
-          onChange={(event) =>
-            setDraft({ ...draft, expiresAt: event.target.value })
-          }
-        />
-      </td>
-      <td className="min-w-[120px]">
-        <div className="mb-1 text-[.65rem] text-bubble-ink/55">
-          {usedOrders.length} utilizados
-        </div>
-        <input
-          className="max-w-[82px]"
-          type="number"
-          min="1"
-          value={draft.maxUses}
-          onChange={(event) =>
-            setDraft({ ...draft, maxUses: event.target.value })
-          }
-          placeholder="Ilimitado"
-        />
-      </td>
-      <td className="min-w-[120px]">
-        <input
-          className="max-w-[82px]"
-          type="number"
-          min="1"
-          value={draft.maxUsesPerCustomer}
-          onChange={(event) =>
-            setDraft({ ...draft, maxUsesPerCustomer: event.target.value })
-          }
-          placeholder="Ilimitado"
-        />
-      </td>
-      <td className="w-[88px]">{usedOrders.length}</td>
-      <td className="w-[88px] font-semibold text-bubble-ink">
-        {money.format(revenue)}
-      </td>
-      <td>
-        <span className={stockBadge(statusKind)}>{statusLabel}</span>
-      </td>
-      <td className="whitespace-nowrap">
-        <button
-          disabled={deleting}
-          className={smallButton}
-          onClick={() =>
-            draft.minimumCharge || isValidCouponPercentage(draft.pct)
-              ? patch(
-                  {
-                    pct: draft.minimumCharge ? 0 : draft.pct,
-                    minimumCharge: draft.minimumCharge,
-                    assignedTo: draft.assignedTo,
-                    expiresAt: draft.expiresAt
-                      ? new Date(`${draft.expiresAt}T23:59:59`).getTime()
-                      : null,
-                    maxUses: draft.maxUses ? Number(draft.maxUses) : null,
-                    maxUsesPerCustomer: draft.maxUsesPerCustomer
-                      ? Number(draft.maxUsesPerCustomer)
-                      : null,
-                  },
-                  `Cupom ${coupon.code} atualizado.`,
-                )
-              : notify("Informe um desconto entre 1% e 99%.")
-          }
-        >
-          Salvar
-        </button>
-        <button
-          disabled={deleting}
-          className={smallButton}
-          onClick={() =>
-            patch(
-              { active: coupon.active === false },
-              coupon.active === false
-                ? `Cupom ${coupon.code} ativado.`
-                : `Cupom ${coupon.code} pausado.`,
-            )
-          }
-        >
-          {coupon.active === false ? "Ativar" : "Pausar"}
-        </button>
-        <button
-          type="button"
-          disabled={deleting}
-          className={`${smallButton} border-bubble-danger text-bubble-danger hover:bg-bubble-danger hover:text-white disabled:cursor-wait disabled:opacity-50`}
-          onClick={removeCoupon}
-        >
-          {deleting ? "Excluindo..." : "Excluir"}
-        </button>
-      </td>
-    </tr>
+          >
+            {coupon.active === false ? "Ativar" : "Pausar"}
+          </button>
+          <button
+            type="button"
+            disabled={deleting}
+            className={`${smallButton} border-bubble-danger text-bubble-danger hover:bg-bubble-danger hover:text-white disabled:cursor-wait disabled:opacity-50`}
+            onClick={removeCoupon}
+          >
+            {deleting ? "Excluindo..." : "Excluir"}
+          </button>
+        </td>
+      </tr>
+    </>
   );
 }
 

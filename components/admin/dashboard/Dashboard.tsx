@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   DollarSign,
   MousePointerClick,
@@ -19,9 +20,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { money } from "../../../lib/api";
+import { apiFetch, money, type Order, type Product } from "../../../lib/api";
 import { adminNote } from "../shared/styles";
-import type { AdminDump } from "../shared/types";
+import type { AdminCustomers, AdminEvent } from "../shared/types";
 import { dayKey, lastNDays } from "../shared/utils";
 
 const chartTooltipStyle = {
@@ -32,31 +33,63 @@ const chartTooltipStyle = {
   fontSize: 12,
 };
 
-export function Dashboard({ dump }: { dump: AdminDump }) {
-  const paidOrders = dump.orders.filter((order) => order.status === "paid");
+export function Dashboard() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customerCount, setCustomerCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      apiFetch<Order[]>("/orders"),
+      apiFetch<AdminEvent[]>("/events"),
+      apiFetch<Product[]>("/products/admin"),
+      apiFetch<AdminCustomers>("/admin/customers"),
+    ])
+      .then(([ordersRes, eventsRes, productsRes, customersRes]) => {
+        if (cancelled) return;
+        setOrders(ordersRes);
+        setEvents(eventsRes);
+        setProducts(productsRes);
+        setCustomerCount(
+          customersRes.users.filter((user) => user.role !== "manager").length,
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const paidOrders = orders.filter((order) => order.status === "paid");
   const revenue = paidOrders.reduce(
     (sum, order) => sum + (Number(order.total) || 0),
     0,
   );
   const ticket = paidOrders.length ? revenue / paidOrders.length : 0;
-  const clicks = dump.events.filter((event) =>
+  const clicks = events.filter((event) =>
     ["click", "add", "view"].includes(String(event.type)),
   ).length;
   const buys = paidOrders.length;
   const conversion = clicks ? (buys / clicks) * 100 : 0;
-  const customers = dump.users.filter((user) => user.role !== "manager").length;
+  const customers = customerCount;
 
   const chartData = lastNDays(14).map((day) => ({
     day: formatDay(day),
     vendas: paidOrders
       .filter((order) => dayKey(order.date) === day)
       .reduce((sum, order) => sum + Number(order.total || 0), 0),
-    interacoes: dump.events.filter(
+    interacoes: events.filter(
       (event) => event.type !== "buy" && dayKey(Number(event.ts || 0)) === day,
     ).length,
   }));
 
-  const productData = dump.products
+  const productData = products
     .map((product) => ({
       name: product.name,
       shortName:
@@ -75,12 +108,14 @@ export function Dashboard({ dump }: { dump: AdminDump }) {
             ),
         0,
       ),
-      interacoes: dump.events.filter(
+      interacoes: events.filter(
         (event) => event.pid === product.id && event.type !== "buy",
       ).length,
     }))
     .sort((a, b) => b.receita - a.receita)
     .slice(0, 5);
+
+  if (loading) return <p className={adminNote}>Carregando dashboard...</p>;
 
   return (
     <>

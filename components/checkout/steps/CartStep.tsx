@@ -106,11 +106,14 @@ export function CartStep({
         <h2 className="mb-3 text-lg">Cupom de desconto</h2>
         {coupon ? (
           <div className="border border-bubble-success/30 bg-bubble-success/10 p-4 text-[.8rem] font-semibold text-bubble-success">
-            {coupon.type === "store_credit"
-              ? `Crédito ${coupon.code} aplicado (${money.format(coupon.value)})`
-              : coupon.minimumCharge
-                ? `Cupom ${coupon.code} aplicado (total final de R$ 5,00)`
-                : `Cupom ${coupon.code} aplicado (-${coupon.pct}%)`}{" "}
+            {coupon.minimumCharge
+              ? `Cupom ${coupon.code} aplicado (total final de R$ 5,00)`
+              : `Cupom ${coupon.code} aplicado (${[
+                  coupon.pct > 0 ? `-${coupon.pct}%` : null,
+                  coupon.freeShipping ? "frete grátis" : null,
+                ]
+                  .filter(Boolean)
+                  .join(" + ")})`}{" "}
             ·{" "}
             <button
               className="border-0 bg-transparent text-inherit underline"

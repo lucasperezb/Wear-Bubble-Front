@@ -23,9 +23,11 @@ import {
   User,
   apiFetch,
   type AccountAddress,
+  type AccountCreditBalance,
   type AccountProfile,
 } from "../../lib/api";
 import {
+  calculateAccountCreditDiscount,
   calculateCart,
   readCart,
   writeCart,
@@ -43,6 +45,7 @@ export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const [addresses, setAddresses] = useState<AccountAddress[]>([]);
   const [addressId, setAddressId] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(true);
@@ -54,6 +57,7 @@ export default function CartPage() {
   const [profile, setProfile] = useState<DeliveryProfile>(emptyDeliveryProfile);
   const [couponCode, setCouponCode] = useState("");
   const [coupon, setCoupon] = useState<AppliedCoupon>(null);
+  const [accountCreditBalance, setAccountCreditBalance] = useState(0);
   const [method, setMethod] = useState<PaymentMethod>("Pix");
   const [card, setCard] = useState<CardPaymentForm>(emptyCardPaymentForm);
   const [pixPayment, setPixPayment] = useState<PixPayment | null>(null);
@@ -88,6 +92,7 @@ export default function CartPage() {
 
     apiFetch<User | null>("/auth/session")
       .then(async (currentUser) => {
+        setSessionChecked(true);
         if (!currentUser) {
           setUser(null);
           setAddresses([]);
@@ -103,6 +108,9 @@ export default function CartPage() {
           return;
         }
         setUser(currentUser);
+        void apiFetch<AccountCreditBalance>("/credits/balance")
+          .then((credit) => setAccountCreditBalance(credit.balance))
+          .catch(() => setAccountCreditBalance(0));
         const [account, addressResult] = await Promise.all([
           apiFetch<Partial<AccountProfile>>("/account"),
           apiFetch<AccountAddress[] | null>("/account/addresses"),
@@ -136,7 +144,9 @@ export default function CartPage() {
         }
       })
       .catch(() => {
+        setSessionChecked(true);
         setUser(null);
+        setAccountCreditBalance(0);
         setAddresses([]);
         setShowAddressForm(true);
         if (requestedStep === "payment") {
@@ -276,16 +286,23 @@ export default function CartPage() {
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
   // O Pix não reduz a base do frete; preços promocionais, conjuntos e cupons reduzem.
   const freeShipping =
-    coupon?.type === "store_credit" ||
-    (coupon?.type === "coupon" && coupon.minimumCharge) ||
+    Boolean(coupon && (coupon.minimumCharge || coupon.freeShipping)) ||
     totals.freeShippingSubtotal >= FREE_SHIPPING_MINIMUM;
   const shippingPrice = selectedShipping
     ? freeShipping
       ? 0
       : selectedShipping.price
     : 0;
-  const totalWithShipping =
+  const beforeAccountCredit =
     displayedTotal + (step === "cart" ? 0 : shippingPrice);
+  const accountCreditDiscount = coupon?.minimumCharge
+    ? 0
+    : calculateAccountCreditDiscount(
+        accountCreditBalance,
+        beforeAccountCredit,
+        step === "payment" ? method : "Cartão de crédito",
+      );
+  const totalWithShipping = beforeAccountCredit - accountCreditDiscount;
 
   function goToStep(nextStep: CheckoutStep) {
     setMessage("");
@@ -314,25 +331,14 @@ export default function CartPage() {
   async function applyCoupon() {
     try {
       const code = couponCode.trim().toUpperCase();
-      if (code.startsWith("WB-")) {
-        const credit = await apiFetch<{
-          code: string;
-          value: number;
-          balance: number;
-          expiresAt: number;
-          type: "store_credit";
-        }>(`/credits/${encodeURIComponent(code)}`);
-        setCoupon(credit);
-        setMessage(`Crédito ${credit.code} aplicado.`);
-      } else {
-        const applied = await apiFetch<{
-          code: string;
-          pct: number;
-          minimumCharge: boolean;
-        }>(`/coupons/${encodeURIComponent(code)}`);
-        setCoupon({ ...applied, type: "coupon" });
-        setMessage(`Cupom ${applied.code} aplicado.`);
-      }
+      const applied = await apiFetch<{
+        code: string;
+        pct: number;
+        minimumCharge: boolean;
+        freeShipping: boolean;
+      }>(`/coupons/${encodeURIComponent(code)}`);
+      setCoupon({ ...applied, type: "coupon" });
+      setMessage(`Cupom ${applied.code} aplicado.`);
     } catch (error) {
       setCoupon(null);
       setMessage(error instanceof Error ? error.message : "Cupom inválido.");
@@ -454,7 +460,9 @@ export default function CartPage() {
         saveCheckoutProfile(savedProfile);
       }
       let paymentCard: ReturnType<typeof prepareCard> | undefined;
-      if (method === "Cartão de crédito") {
+      const checkoutMethod =
+        totalWithShipping === 0 ? "Pix" : method;
+      if (checkoutMethod === "Cartão de crédito") {
         paymentCard = prepareCard(card);
       }
       const response = await apiFetch<TransparentPaymentResponse>(
@@ -463,10 +471,8 @@ export default function CartPage() {
           method: "POST",
           body: JSON.stringify({
             items: cart,
-            method,
+            method: checkoutMethod,
             coupon: coupon?.type === "coupon" ? coupon.code : undefined,
-            creditCode:
-              coupon?.type === "store_credit" ? coupon.code : undefined,
             customer: profile,
             card: paymentCard,
             installments: card.installments,
@@ -588,7 +594,9 @@ export default function CartPage() {
     ) : (
       <ActionButton
         label={
-          pixPayment && method === "Pix"
+          totalWithShipping === 0
+            ? "Finalizar com saldo"
+            : pixPayment && method === "Pix"
             ? "Pix gerado · aguardando pagamento"
             : busy
               ? "Processando..."
@@ -647,6 +655,8 @@ export default function CartPage() {
             order={order}
             orderNumber={confirmationNumber}
             email={profile.email}
+            authenticated={Boolean(user)}
+            sessionChecked={sessionChecked}
           />
         ) : null}
 
@@ -693,7 +703,7 @@ export default function CartPage() {
               <PaymentStep
                 method={method}
                 message={message}
-                total={totals.total}
+                total={totalWithShipping}
                 card={card}
                 pix={pixPayment}
                 user={user}
@@ -713,6 +723,7 @@ export default function CartPage() {
               subtotal={totals.subtotal}
               bundleDiscount={totals.bundleDiscount}
               couponDiscount={totals.couponDiscount}
+              accountCreditDiscount={accountCreditDiscount}
               pixDiscount={step === "payment" ? totals.pixDiscount : 0}
               total={totalWithShipping}
               freeShipping={freeShipping}

@@ -10,6 +10,7 @@ import {
   formatPersonName,
   formatState,
 } from "../../../lib/input-formatters";
+import { useActionDialog } from "../../shared/overlays/ActionDialog";
 
 type AddressForm = Omit<AccountAddress, "id">;
 
@@ -38,6 +39,7 @@ export function AddressesPanel() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [cepStatus, setCepStatus] = useState("");
+  const actionDialog = useActionDialog();
   const safeAddresses = Array.isArray(addresses) ? addresses : [];
 
   useEffect(() => {
@@ -123,7 +125,13 @@ export function AddressesPanel() {
   }
 
   async function deleteAddress(address: AccountAddress) {
-    if (!window.confirm(`Excluir o endereço "${address.label}"?`)) return;
+    const confirmed = await actionDialog.confirm({
+      title: "Excluir endereço",
+      description: `O endereço “${address.label}” será removido da sua conta.`,
+      confirmLabel: "Excluir endereço",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     try {
       await apiFetch(`/account/addresses/${address.id}`, { method: "DELETE" });
       await loadAddresses();
@@ -345,6 +353,7 @@ export function AddressesPanel() {
 
   return (
     <div className="border border-bubble-ink bg-bubble-white p-7 max-[620px]:p-5">
+      {actionDialog.dialog}
       <div className="mb-7 flex items-start justify-between gap-4 border-b border-bubble-line pb-5">
         <div>
           <h2 className="text-2xl">Meus endereços</h2>

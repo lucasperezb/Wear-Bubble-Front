@@ -5,23 +5,22 @@ import {
   ChevronRight,
   LogOut,
   MapPin,
-  PackageCheck,
-  RotateCcw,
   Save,
   ShieldCheck,
   ShoppingBag,
   Trash2,
   UserRound,
+  WalletCards,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import {
   apiFetch,
   money,
+  type AccountCreditBalance,
   type AccountProfile,
   type Order,
   type ReturnRequest,
-  type StoreCredit,
   type User,
 } from "../../lib/api";
 import {
@@ -30,9 +29,10 @@ import {
   formatPhone,
 } from "../../lib/input-formatters";
 import { AddressesPanel } from "./panels/AddressesPanel";
-import { ReturnsPanel } from "./panels/ReturnsPanel";
+import { OrdersPanel } from "./panels/OrdersPanel";
+import { useActionDialog } from "../shared/overlays/ActionDialog";
 
-type AccountTab = "orders" | "returns" | "profile" | "addresses";
+type AccountTab = "orders" | "profile" | "addresses";
 
 const emptyProfile: AccountProfile = {
   uid: "",
@@ -52,7 +52,11 @@ export function AccountPage() {
   const [profile, setProfile] = useState<AccountProfile>(emptyProfile);
   const [orders, setOrders] = useState<Order[]>([]);
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
-  const [credits, setCredits] = useState<StoreCredit[]>([]);
+  const [creditBalance, setCreditBalance] = useState<AccountCreditBalance>({
+    balance: 0,
+    expiresAt: null,
+    credits: 0,
+  });
   const [tab, setTab] = useState<AccountTab>("orders");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -61,18 +65,19 @@ export function AccountPage() {
   const [messageKind, setMessageKind] = useState<"success" | "error">(
     "success",
   );
+  const actionDialog = useActionDialog();
 
   useEffect(() => {
     void loadAccount();
   }, []);
 
-  async function loadAccount() {
+  async function loadAccount(silent = false) {
     const params = new URLSearchParams(window.location.search);
     const requestedTab = accountTabFromParam(params.get("tab"));
     const intent = params.get("intent");
     if (requestedTab) setTab(requestedTab);
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     setLoadError("");
     let currentUser: User | null;
 
@@ -82,7 +87,7 @@ export function AccountPage() {
       setLoadError(
         "Não foi possível validar sua sessão agora. Verifique sua conexão e tente novamente.",
       );
-      setLoading(false);
+      if (!silent) setLoading(false);
       return;
     }
 
@@ -100,13 +105,13 @@ export function AccountPage() {
     });
 
     try {
-      const [accountResult, ordersResult, returnsResult, creditsResult] =
+      const [accountResult, ordersResult, returnsResult, creditResult] =
         await Promise.allSettled([
-        apiFetch<Partial<AccountProfile>>("/account"),
-        apiFetch<Order[] | null>("/orders/mine"),
-        apiFetch<ReturnRequest[]>("/returns/mine"),
-        apiFetch<StoreCredit[]>("/returns/credits/mine"),
-      ]);
+          apiFetch<Partial<AccountProfile>>("/account"),
+          apiFetch<Order[] | null>("/orders/mine"),
+          apiFetch<ReturnRequest[]>("/returns/mine"),
+          apiFetch<AccountCreditBalance>("/credits/balance"),
+        ]);
 
       if (accountResult.status === "fulfilled") {
         const account = accountResult.value;
@@ -122,21 +127,24 @@ export function AccountPage() {
       if (ordersResult.status === "fulfilled") {
         setOrders(Array.isArray(ordersResult.value) ? ordersResult.value : []);
       }
-      if (returnsResult.status === "fulfilled") setReturns(returnsResult.value);
-      if (creditsResult.status === "fulfilled") setCredits(creditsResult.value);
-
+      if (returnsResult.status === "fulfilled") {
+        setReturns(returnsResult.value);
+      }
+      if (creditResult.status === "fulfilled") {
+        setCreditBalance(creditResult.value);
+      }
       if (
         accountResult.status === "rejected" ||
         ordersResult.status === "rejected" ||
         returnsResult.status === "rejected" ||
-        creditsResult.status === "rejected"
+        creditResult.status === "rejected"
       ) {
         setLoadError(
           "Sua sessão está ativa, mas alguns dados da conta não puderam ser carregados. Tente novamente.",
         );
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -174,17 +182,23 @@ export function AccountPage() {
   }
 
   async function deleteAccount() {
-    if (
-      !window.confirm(
-        "Excluir sua conta e seus dados pessoais? Esta ação não pode ser desfeita.",
-      )
-    )
-      return;
+    const confirmed = await actionDialog.confirm({
+      title: "Excluir minha conta",
+      description:
+        "Sua conta e seus dados pessoais serão excluídos. Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir conta",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     try {
       const result = await apiFetch<{ protocol: string }>("/account/delete", {
         method: "POST",
       });
-      window.alert(`Conta excluída. Protocolo: ${result.protocol}`);
+      await actionDialog.alert({
+        title: "Conta excluída",
+        description: `A solicitação foi concluída. Protocolo: ${result.protocol}`,
+        confirmLabel: "Voltar à loja",
+      });
       window.location.replace("/");
     } catch (error) {
       showMessage(
@@ -216,7 +230,9 @@ export function AccountPage() {
       <main className="flex min-h-screen items-center justify-center bg-bubble-cream px-6 text-bubble-ink">
         <div className="max-w-lg border border-bubble-ink bg-bubble-white p-8 text-center">
           <h1 className="text-2xl">Não foi possível abrir sua conta</h1>
-          <p className="mt-3 text-sm leading-6 text-bubble-ink/65">{loadError}</p>
+          <p className="mt-3 text-sm leading-6 text-bubble-ink/65">
+            {loadError}
+          </p>
           <button
             type="button"
             onClick={() => void loadAccount()}
@@ -234,6 +250,7 @@ export function AccountPage() {
 
   return (
     <main className="min-h-screen bg-bubble-cream text-bubble-ink">
+      {actionDialog.dialog}
       <header className="border-b border-bubble-ink bg-bubble-cream">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-6 py-5">
           <Link href="/" className="flex cursor-pointer flex-col leading-[.82]">
@@ -299,12 +316,6 @@ export function AccountPage() {
               </div>
               <div className="mt-5 border-t border-bubble-line pt-3">
                 <AccountNavButton
-                  active={tab === "returns"}
-                  icon={<RotateCcw />}
-                  label="Trocas e devoluções"
-                  onClick={() => setTab("returns")}
-                />
-                <AccountNavButton
                   active={tab === "orders"}
                   icon={<ShoppingBag />}
                   label="Meus pedidos"
@@ -332,6 +343,23 @@ export function AccountPage() {
                 </Link>
               ) : null}
             </div>
+            <div className="mt-4 border border-bubble-success/25 bg-bubble-success/[.08] p-4">
+              <div className="flex items-center gap-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-bubble-success">
+                <WalletCards className="size-4" /> Saldo Wear Bubble
+              </div>
+              <strong className="mt-2 block text-xl">
+                {money.format(creditBalance.balance)}
+              </strong>
+              <p className="mt-1 text-[.62rem] leading-5 text-bubble-ink/55">
+                {creditBalance.balance > 0
+                  ? `Aplicado automaticamente na próxima compra.${
+                      creditBalance.expiresAt
+                        ? ` Próximo vencimento em ${new Date(creditBalance.expiresAt).toLocaleDateString("pt-BR")}.`
+                        : ""
+                    }`
+                  : "Você ainda não possui saldo disponível."}
+              </p>
+            </div>
             <div className="mt-4 flex gap-3 border border-bubble-success/25 bg-bubble-success/[.08] p-4 text-[.68rem] leading-[1.55] text-bubble-success">
               <ShieldCheck className="mt-0.5 size-4 shrink-0" />
               Seus dados pessoais ficam separados do histórico comercial.
@@ -339,14 +367,8 @@ export function AccountPage() {
           </aside>
 
           <section>
-            {tab === "orders" ? <OrdersPanel orders={orders} /> : null}
-            {tab === "returns" ? (
-              <ReturnsPanel
-                orders={orders}
-                requests={returns}
-                credits={credits}
-                onChanged={loadAccount}
-              />
+            {tab === "orders" ? (
+              <OrdersPanel orders={orders} requests={returns} />
             ) : null}
             {tab === "addresses" ? <AddressesPanel /> : null}
             {tab === "profile" ? (
@@ -457,116 +479,6 @@ export function AccountPage() {
   );
 }
 
-function OrdersPanel({ orders }: { orders: Order[] }) {
-  const safeOrders = Array.isArray(orders) ? orders : [];
-  const statusLabel: Record<Order["status"], string> = {
-    pending: "Aguardando pagamento",
-    paid: "Pagamento confirmado",
-    canceled: "Cancelado",
-  };
-
-  return (
-    <div className="border border-bubble-ink bg-bubble-white p-7 max-[620px]:p-5">
-      <div className="mb-7 flex items-center justify-between border-b border-bubble-line pb-5">
-        <div>
-          <h2 className="text-2xl">Meus pedidos</h2>
-          <p className="mt-1 text-[.72rem] text-bubble-ink/55">
-            Acompanhe pagamentos, preparação e entrega.
-          </p>
-        </div>
-        <span className="font-display text-3xl">{safeOrders.length}</span>
-      </div>
-
-      {safeOrders.length ? (
-        <div className="space-y-4">
-          {safeOrders.map((order) => (
-            <article
-              key={order.id}
-              className="border border-bubble-line bg-bubble-cream p-5"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <span className="font-sans text-[.6rem] font-semibold uppercase tracking-[.12em] text-bubble-ink/45">
-                    Pedido
-                  </span>
-                  <h3 className="mt-0.5 text-lg">#{order.number}</h3>
-                  <span className="text-[.68rem] text-bubble-ink/50">
-                    {new Date(order.date).toLocaleDateString("pt-BR")}
-                  </span>
-                </div>
-                <span
-                  className={`px-3 py-1.5 font-sans text-[.62rem] font-semibold uppercase tracking-[.08em] ${
-                    order.status === "paid"
-                      ? "bg-bubble-success/10 text-bubble-success"
-                      : order.status === "pending"
-                        ? "bg-[#fff1c7] text-[#7a5500]"
-                        : "bg-bubble-danger/10 text-bubble-danger"
-                  }`}
-                >
-                  {statusLabel[order.status]}
-                </span>
-              </div>
-
-              <div className="my-4 border-y border-bubble-line py-3">
-                {order.items.map((item) => (
-                  <div
-                    className="flex justify-between gap-4 py-1 text-[.72rem]"
-                    key={`${item.pid}-${item.color || "legacy"}-${item.size}`}
-                  >
-                    <span>
-                      {item.qty}x {item.name}
-                      {item.color ? ` · Cor ${item.color}` : ""} · Tam.{" "}
-                      {item.size}
-                    </span>
-                    <span>{money.format(item.price * item.qty)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="text-[.68rem] text-bubble-ink/55">
-                  <span className="flex items-center gap-1.5">
-                    <PackageCheck className="size-4" />
-                    Etapa de envio {order.shipStage || 0} de 5
-                  </span>
-                  {order.tracking ? (
-                    <span className="mt-1 flex items-center gap-1.5">
-                      <MapPin className="size-4" />
-                      Rastreio: {order.tracking}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="text-right">
-                  <span className="block text-[.62rem] uppercase tracking-[.08em] text-bubble-ink/45">
-                    Total · {order.method}
-                  </span>
-                  <strong className="text-lg">
-                    {money.format(order.total)}
-                  </strong>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center px-4 py-16 text-center">
-          <ShoppingBag className="size-9 text-bubble-ink/25" />
-          <h3 className="mt-4 text-xl">Nenhum pedido ainda</h3>
-          <p className="mt-2 max-w-[360px] text-[.76rem] leading-[1.6] text-bubble-ink/50">
-            Quando você fizer uma compra, o acompanhamento aparecerá aqui.
-          </p>
-          <Link
-            href="/produtos"
-            className="mt-6 bg-bubble-ink px-6 py-3.5 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em] text-bubble-white"
-          >
-            Conhecer a coleção
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function AccountNavButton({
   active,
   icon,
@@ -596,12 +508,7 @@ function AccountNavButton({
 }
 
 function accountTabFromParam(value: string | null): AccountTab | null {
-  if (
-    value === "orders" ||
-    value === "returns" ||
-    value === "profile" ||
-    value === "addresses"
-  ) {
+  if (value === "orders" || value === "profile" || value === "addresses") {
     return value;
   }
   return null;

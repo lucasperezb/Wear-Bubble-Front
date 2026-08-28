@@ -4,26 +4,46 @@ import { useEffect, useMemo, useState } from "react";
 import { Product, apiFetch, money } from "../../../lib/api";
 import { productHasPromotion, productPrice, promotionPct } from "../../../lib/pricing";
 import { ProductIcon } from "../../shared";
-import { outlineButton, primaryButton, productInput } from "../shared/styles";
+import { adminNote, outlineButton, primaryButton, productInput } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
 
 type PromotionsAdminProps = {
-  products: Product[];
   onSaved: OnSaved;
   notify: Notify;
 };
 
-export function PromotionsAdmin({
-  products,
-  onSaved,
-  notify,
-}: PromotionsAdminProps) {
+export function PromotionsAdmin({ onSaved, notify }: PromotionsAdminProps) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const visibleProducts = useMemo(
     () => products.filter((product) => product.active !== false),
     [products],
   );
   const [drafts, setDrafts] = useState<Record<number, number>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    apiFetch<Product[]>("/products/admin")
+      .then((data) => {
+        if (!cancelled) setProducts(data);
+      })
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os produtos.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setDrafts(
@@ -41,6 +61,8 @@ export function PromotionsAdmin({
         method: "PATCH",
         body: JSON.stringify({ promoPct }),
       });
+      const refreshed = await apiFetch<Product[]>("/products/admin");
+      setProducts(refreshed);
       await onSaved();
       notify(
         promoPct > 0
@@ -57,6 +79,8 @@ export function PromotionsAdmin({
       setSavingId(null);
     }
   }
+
+  if (loading) return <p className={adminNote}>Carregando produtos...</p>;
 
   return (
     <>

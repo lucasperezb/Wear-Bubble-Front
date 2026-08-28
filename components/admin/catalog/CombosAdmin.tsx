@@ -4,28 +4,49 @@ import { useEffect, useMemo, useState } from "react";
 import { Product, apiFetch, money } from "../../../lib/api";
 import { isBottomCategory, isTopCategory } from "../../../lib/product-filters";
 import { ProductIcon } from "../../shared";
-import { chartCard, saveButton } from "../shared/styles";
+import { adminNote, chartCard, saveButton } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
 
 export function CombosAdmin({
-  products,
   onSaved,
   notify,
 }: {
-  products: Product[];
   onSaved: OnSaved;
   notify: Notify;
 }) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const bottoms = useMemo(
     () => available(products, isBottomCategory),
     [products],
   );
   const tops = useMemo(() => available(products, isTopCategory), [products]);
-  const [bottomIds, setBottomIds] = useState<number[]>(() =>
-    selectedIds(bottoms),
-  );
-  const [topIds, setTopIds] = useState<number[]>(() => selectedIds(tops));
+  const [bottomIds, setBottomIds] = useState<number[]>([0]);
+  const [topIds, setTopIds] = useState<number[]>([0]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    apiFetch<Product[]>("/products/admin")
+      .then((data) => {
+        if (!cancelled) setProducts(data);
+      })
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os produtos.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     setBottomIds(selectedIds(bottoms));
@@ -43,6 +64,8 @@ export function CombosAdmin({
         method: "PATCH",
         body: JSON.stringify({ bottomIds, topIds }),
       });
+      const refreshed = await apiFetch<Product[]>("/products/admin");
+      setProducts(refreshed);
       await onSaved();
       notify("Vitrine de conjuntos atualizada.");
     } catch (error) {
@@ -55,6 +78,8 @@ export function CombosAdmin({
       setSaving(false);
     }
   }
+
+  if (loading) return <p className={adminNote}>Carregando produtos...</p>;
 
   return (
     <>

@@ -1,65 +1,282 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ChevronRight,
   Copy,
   Mail,
-  PackageCheck,
   Phone,
+  Search,
+  X,
 } from "lucide-react";
-import { Order, OrderShipment, apiFetch, money } from "../../../lib/api";
+import {
+  Order,
+  OrderShipment,
+  ReturnRequest,
+  apiFetch,
+  money,
+} from "../../../lib/api";
 import { shippingStages } from "../shared/constants";
 import { adminNote, adminTable, saveButton } from "../shared/styles";
 import type { Notify, OnSaved } from "../shared/types";
 import { OrderAddressEditor } from "../shared/OrderAddressEditor";
 import { DeleteOrderButton } from "../shared/DeleteOrderButton";
+import { usePagination } from "../shared/usePagination";
+import { PaginationControls } from "../shared/PaginationControls";
+import { useActionDialog } from "../../shared/overlays/ActionDialog";
+
+type StatusFilter = "all" | Order["status"];
 
 const dateTime = new Intl.DateTimeFormat("pt-BR", {
   dateStyle: "short",
   timeStyle: "short",
 });
 
+const returnKindLabels = {
+  exchange: "Troca por crédito",
+  return: "Devolução",
+  defect: "Defeito ou avaria",
+};
+const returnReasonLabels: Record<string, string> = {
+  size_small: "Tamanho pequeno",
+  size_large: "Tamanho grande",
+  fit: "Não vestiu como esperado",
+  expectation: "Cor ou modelo diferente do esperado",
+  wrong_product: "Produto recebido incorretamente",
+  defect: "Produto com defeito ou avaria",
+  withdrawal: "Arrependimento da compra",
+  other: "Outro motivo",
+};
+const returnStatusLabels: Record<ReturnRequest["status"], string> = {
+  requested: "Solicitação recebida",
+  approved: "Solicitação aprovada",
+  awaiting_posting: "Aguardando postagem",
+  returning: "Produto retornando",
+  received: "Produto recebido",
+  inspecting: "Em inspeção",
+  completed: "Concluída",
+  rejected: "Rejeitada",
+  canceled: "Cancelada",
+};
+
+const RETURN_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+type ReturnDeadline = {
+  key: "within" | "outside" | "unknown";
+  label: string;
+  title: string;
+  className: string;
+};
+
+function getReturnDeadline(
+  request: ReturnRequest,
+  deliveredAt?: number,
+): ReturnDeadline {
+  if (!deliveredAt) {
+    return {
+      key: "unknown",
+      label: "Prazo não verificável",
+      title: "Este pedido não possui uma data de entrega registrada.",
+      className: "border-bubble-line bg-bubble-cream text-bubble-ink/60",
+    };
+  }
+
+  const elapsed = request.requestedAt - deliveredAt;
+  const withinDeadline = elapsed >= 0 && elapsed <= RETURN_WINDOW_MS;
+  return withinDeadline
+    ? {
+        key: "within",
+        label: "Dentro do prazo de 7 dias",
+        title: "A devolução foi solicitada em até 7 dias após a entrega.",
+        className: "border-green-700/30 bg-green-700/10 text-green-800",
+      }
+    : {
+        key: "outside",
+        label: "Fora do prazo de 7 dias",
+        title: "A devolução foi solicitada mais de 7 dias após a entrega.",
+        className:
+          "border-bubble-danger/30 bg-bubble-danger/[.08] text-bubble-danger",
+      };
+}
+
 export function ShipAdmin({
-  orders,
   onSaved,
   notify,
 }: {
-  orders: Order[];
   onSaved: OnSaved;
   notify: Notify;
 }) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = orders.find((order) => order.id === selectedId);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [returnKindFilter, setReturnKindFilter] = useState<
+    "all" | ReturnRequest["kind"]
+  >("all");
+  const [returnStatusFilter, setReturnStatusFilter] = useState<
+    "all" | ReturnRequest["status"]
+  >("all");
+  const [stageFilter, setStageFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
+  const [periodFilter, setPeriodFilter] = useState("all");
 
-  async function save(order: Order, shipStage: number, tracking: string) {
-    try {
-      await apiFetch(`/orders/${order.id}/ship`, {
-        method: "PATCH",
-        body: JSON.stringify({ shipStage, tracking: tracking.trim() }),
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.all([
+      apiFetch<Order[]>("/orders"),
+      apiFetch<ReturnRequest[]>("/returns"),
+    ])
+      .then(([ordersRes, returnsRes]) => {
+        if (cancelled) return;
+        setOrders(ordersRes);
+        setReturns(returnsRes);
+      })
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar os pedidos.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
-      await onSaved();
-      notify(
-        `Envio do #${order.number} atualizado. O cliente receberá a nova etapa por e-mail.`,
-      );
-    } catch (error) {
-      notify(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível atualizar envio.",
-      );
-      throw error;
-    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleSaved() {
+    const [ordersRes, returnsRes] = await Promise.all([
+      apiFetch<Order[]>("/orders"),
+      apiFetch<ReturnRequest[]>("/returns"),
+    ]);
+    setOrders(ordersRes);
+    setReturns(returnsRes);
+    await onSaved();
   }
+
+  const selected = orders.find((order) => order.id === selectedId);
+  const returnsByOrder = useMemo(() => {
+    const map = new Map<string, ReturnRequest[]>();
+    for (const request of returns) {
+      const list = map.get(request.orderId) || [];
+      list.push(request);
+      map.set(request.orderId, list);
+    }
+    return map;
+  }, [returns]);
+  const counts = useMemo(
+    () => ({
+      all: orders.length,
+      pending: orders.filter((order) => order.status === "pending").length,
+      paid: orders.filter((order) => order.status === "paid").length,
+      canceled: orders.filter((order) => order.status === "canceled").length,
+    }),
+    [orders],
+  );
+  const returnCounts = useMemo(
+    () => ({
+      exchange: returns.filter((request) => request.kind === "exchange")
+        .length,
+      return: returns.filter((request) => request.kind === "return").length,
+    }),
+    [returns],
+  );
+  const filteredOrders = useMemo(() => {
+    const search = normalizeSearch(query);
+    const periodDays = periodFilter === "all" ? 0 : Number(periodFilter);
+    const periodStart = periodDays
+      ? Date.now() - periodDays * 24 * 60 * 60 * 1000
+      : 0;
+    return [...orders]
+      .filter((order) => {
+        if (search) {
+          const searchable = normalizeSearch(
+            [
+              order.number,
+              order.delivery?.name,
+              order.delivery?.email,
+              order.delivery?.taxId,
+              order.delivery?.city,
+              order.tracking,
+              order.shipping?.name,
+            ].join(" "),
+          );
+          if (!searchable.includes(search)) return false;
+        }
+        if (status !== "all" && order.status !== status) return false;
+        if (stageFilter !== "all" && order.shipStage !== Number(stageFilter))
+          return false;
+        const service = normalizeSearch(order.shipping?.name || "");
+        if (serviceFilter !== "all" && !service.includes(serviceFilter))
+          return false;
+        if (periodStart && order.date < periodStart) return false;
+        if (returnKindFilter !== "all" || returnStatusFilter !== "all") {
+          const orderReturns = returnsByOrder.get(order.id) || [];
+          const matches = orderReturns.some(
+            (request) =>
+              (returnKindFilter === "all" ||
+                request.kind === returnKindFilter) &&
+              (returnStatusFilter === "all" ||
+                request.status === returnStatusFilter),
+          );
+          if (!matches) return false;
+        }
+        return true;
+      })
+      .sort((first, second) => second.date - first.date);
+  }, [
+    orders,
+    periodFilter,
+    query,
+    returnKindFilter,
+    returnStatusFilter,
+    returnsByOrder,
+    serviceFilter,
+    stageFilter,
+    status,
+  ]);
+  const {
+    pageItems: paginatedOrders,
+    pageSize,
+    setPageSize,
+    page,
+    setPage,
+    totalPages,
+    pageStart,
+  } = usePagination(filteredOrders, [
+    periodFilter,
+    query,
+    returnKindFilter,
+    returnStatusFilter,
+    serviceFilter,
+    stageFilter,
+    status,
+  ]);
+  const hasFilters =
+    Boolean(query) ||
+    status !== "all" ||
+    returnKindFilter !== "all" ||
+    returnStatusFilter !== "all" ||
+    stageFilter !== "all" ||
+    serviceFilter !== "all" ||
+    periodFilter !== "all";
+
+  if (loading) return <p className={adminNote}>Carregando pedidos...</p>;
 
   if (selected) {
     return (
       <ShipmentDetail
         order={selected}
+        returns={returnsByOrder.get(selected.id) || []}
         onBack={() => setSelectedId(null)}
-        onSave={save}
-        onSaved={onSaved}
+        onSaved={handleSaved}
         notify={notify}
       />
     );
@@ -68,8 +285,143 @@ export function ShipAdmin({
   return (
     <>
       <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink">
-        <b>Controle de entrega.</b> Clique em um pedido para consultar todas as
-        informações e executar as ações de envio.
+        <b>Gestão de pedidos.</b> Clique em um pedido para consultar todas as
+        informações, executar as ações de envio e acompanhar trocas ou
+        devoluções.
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        {(
+          [
+            ["all", "Todos"],
+            ["pending", "Aguardando pagamento"],
+            ["paid", "Pagos"],
+            ["canceled", "Cancelados"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setStatus(value)}
+            className={`border p-4 text-left transition ${
+              status === value
+                ? "border-bubble-ink bg-bubble-ink text-bubble-cream"
+                : "border-bubble-line bg-bubble-white hover:border-bubble-ink"
+            }`}
+          >
+            <span className="block font-sans text-[.62rem] font-bold uppercase tracking-[.12em]">
+              {label}
+            </span>
+            <strong className="mt-2 block text-2xl">{counts[value]}</strong>
+          </button>
+        ))}
+        {(
+          [
+            ["exchange", "Trocas"],
+            ["return", "Devoluções"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() =>
+              setReturnKindFilter((current) =>
+                current === value ? "all" : value,
+              )
+            }
+            className={`border p-4 text-left transition ${
+              returnKindFilter === value
+                ? "border-bubble-ink bg-bubble-ink text-bubble-cream"
+                : "border-bubble-line bg-bubble-white hover:border-bubble-ink"
+            }`}
+          >
+            <span className="block font-sans text-[.62rem] font-bold uppercase tracking-[.12em]">
+              {label}
+            </span>
+            <strong className="mt-2 block text-2xl">
+              {returnCounts[value]}
+            </strong>
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-4 border border-bubble-line bg-bubble-white p-4">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1.3fr)_repeat(4,minmax(150px,.65fr))_auto]">
+          <label className="relative block">
+            <span className="sr-only">Buscar envios</span>
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-bubble-ink/40" />
+            <input
+              className="h-11 w-full border border-bubble-line bg-bubble-cream pl-10 pr-3 text-sm outline-none focus:border-bubble-ink"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Pedido, cliente, CPF ou rastreio"
+            />
+          </label>
+          <FilterSelect
+            label="Etapa"
+            value={stageFilter}
+            onChange={setStageFilter}
+          >
+            <option value="all">Todas as etapas</option>
+            {shippingStages.map((stage, index) => (
+              <option value={index} key={stage}>
+                {stage}
+              </option>
+            ))}
+          </FilterSelect>
+          <FilterSelect
+            label="Serviço"
+            value={serviceFilter}
+            onChange={setServiceFilter}
+          >
+            <option value="all">PAC e SEDEX</option>
+            <option value="pac">PAC</option>
+            <option value="sedex">SEDEX</option>
+          </FilterSelect>
+          <FilterSelect
+            label="Período"
+            value={periodFilter}
+            onChange={setPeriodFilter}
+          >
+            <option value="all">Todo o período</option>
+            <option value="1">Últimas 24 horas</option>
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+          </FilterSelect>
+          <FilterSelect
+            label="Status da troca/devolução"
+            value={returnStatusFilter}
+            onChange={(value) =>
+              setReturnStatusFilter(value as "all" | ReturnRequest["status"])
+            }
+          >
+            <option value="all">Troca/devolução: todos os status</option>
+            {Object.entries(returnStatusLabels).map(([value, label]) => (
+              <option value={value} key={value}>
+                {label}
+              </option>
+            ))}
+          </FilterSelect>
+          <button
+            type="button"
+            disabled={!hasFilters}
+            onClick={() => {
+              setQuery("");
+              setStatus("all");
+              setReturnKindFilter("all");
+              setReturnStatusFilter("all");
+              setStageFilter("all");
+              setServiceFilter("all");
+              setPeriodFilter("all");
+            }}
+            className="inline-flex h-11 items-center justify-center gap-2 border border-bubble-line px-4 font-sans text-[.62rem] font-bold uppercase tracking-[.08em] disabled:cursor-not-allowed disabled:opacity-35"
+          >
+            <X className="size-4" /> Limpar
+          </button>
+        </div>
+        <p className="mt-3 text-[.68rem] text-bubble-ink/50">
+          {filteredOrders.length} de {orders.length} envio(s) encontrado(s)
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table
@@ -83,23 +435,24 @@ export function ShipAdmin({
               <th>Total</th>
               <th>Rastreio</th>
               <th>Estágio</th>
+              <th>Troca/devolução</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            {orders.length === 0 ? (
+            {filteredOrders.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="p-[26px] text-center text-bubble-ink/50"
                 >
-                  Nenhum pedido ainda.
+                  {orders.length
+                    ? "Nenhum envio corresponde aos filtros selecionados."
+                    : "Nenhum pedido ainda."}
                 </td>
               </tr>
             ) : null}
-            {[...orders]
-              .sort((first, second) => second.date - first.date)
-              .map((order) => (
+            {paginatedOrders.map((order) => (
                 <tr key={order.id} onClick={() => setSelectedId(order.id)}>
                   <td className="whitespace-nowrap">
                     <strong>#{order.number}</strong>
@@ -129,6 +482,9 @@ export function ShipAdmin({
                   <td>
                     <StageBadge order={order} />
                   </td>
+                  <td>
+                    <ReturnBadge requests={returnsByOrder.get(order.id)} />
+                  </td>
                   <td className="whitespace-nowrap">
                     <div className="flex items-center gap-3">
                       <button
@@ -142,7 +498,7 @@ export function ShipAdmin({
                       </button>
                       <DeleteOrderButton
                         order={order}
-                        onSaved={onSaved}
+                        onSaved={handleSaved}
                         notify={notify}
                         compact
                       />
@@ -153,6 +509,18 @@ export function ShipAdmin({
           </tbody>
         </table>
       </div>
+      <div className="mt-3">
+        <PaginationControls
+          page={page}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          onPageChange={setPage}
+          totalPages={totalPages}
+          pageStart={pageStart}
+          count={filteredOrders.length}
+          ariaLabel="Paginação dos pedidos"
+        />
+      </div>
       <p className={adminNote}>
         Linha do tempo: Confirmado {">"} Pagamento {">"} Separação {">"} Enviado{" "}
         {">"} Em trânsito {">"} Entregue.
@@ -161,35 +529,205 @@ export function ShipAdmin({
   );
 }
 
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="block">
+      <span className="sr-only">{label}</span>
+      <select
+        aria-label={label}
+        className="h-11 w-full border border-bubble-line bg-bubble-cream px-3 text-sm outline-none focus:border-bubble-ink"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .trim();
+}
+
 function ShipmentDetail({
   order,
+  returns,
   onBack,
-  onSave,
   onSaved,
   notify,
 }: {
   order: Order;
+  returns: ReturnRequest[];
   onBack: () => void;
-  onSave: (order: Order, shipStage: number, tracking: string) => Promise<void>;
   onSaved: OnSaved;
   notify: Notify;
 }) {
-  const [shipStage, setShipStage] = useState(order.shipStage || 0);
-  const [tracking, setTracking] = useState(order.tracking || "");
-  const [saving, setSaving] = useState(false);
   const [invoiceKey, setInvoiceKey] = useState("");
   const [shipments, setShipments] = useState<OrderShipment[]>([]);
   const [labelBusy, setLabelBusy] = useState(false);
+  const [canceling, setCanceling] = useState(false);
+  const [returnBusy, setReturnBusy] = useState("");
+  const [stageBusy, setStageBusy] = useState(false);
+  const actionDialog = useActionDialog();
   const canceled = order.status === "canceled";
 
-  useEffect(() => {
-    setShipStage(order.shipStage || 0);
-    setTracking(order.tracking || "");
-  }, [order.shipStage, order.tracking]);
+  async function updateReturn(
+    request: ReturnRequest,
+    body: Record<string, unknown>,
+  ) {
+    setReturnBusy(request.id);
+    try {
+      await apiFetch(`/returns/${request.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      });
+      await onSaved();
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "Não foi possível atualizar.",
+      );
+    } finally {
+      setReturnBusy("");
+    }
+  }
+
+  async function issueReverseShipment(request: ReturnRequest) {
+    const confirmed = await actionDialog.confirm({
+      title: "Emitir postagem reversa",
+      description:
+        "A postagem será comprada pelos Correios e o valor será debitado da Melhor Carteira. Depois da emissão, o código e o PDF serão enviados ao cliente.",
+      confirmLabel: "Comprar e emitir",
+    });
+    if (!confirmed) return;
+    setReturnBusy(request.id);
+    try {
+      const updated = await apiFetch<ReturnRequest>(
+        `/returns/${request.id}/reverse-shipment`,
+        { method: "POST" },
+      );
+      await onSaved();
+      notify(
+        updated.reverseStatus === "sandbox_simulated"
+          ? "Postagem simulada. O código de Sandbox não é válido nos Correios; o e-mail de teste foi disparado."
+          : "Postagem emitida e enviada por e-mail ao cliente.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível emitir a postagem reversa.",
+      );
+      await onSaved();
+    } finally {
+      setReturnBusy("");
+    }
+  }
+
+  async function resolveReturn(
+    request: ReturnRequest,
+    resolution: "credit" | "refund",
+  ) {
+    const estimated = request.items.reduce(
+      (sum, item) => sum + item.unitRefundValue * item.quantity,
+      0,
+    );
+    const credit = resolution === "credit";
+    const input = await actionDialog.prompt({
+      title: credit ? "Liberar saldo" : "Solicitar estorno",
+      description: credit
+        ? "Confirme o valor que será adicionado diretamente ao saldo da conta do cliente."
+        : "Confirme o valor que será enviado ao fluxo de estorno do Asaas.",
+      inputLabel: "Valor aprovado",
+      initialValue: estimated.toFixed(2).replace(".", ","),
+      inputMode: "decimal",
+      required: true,
+      confirmLabel: credit ? "Liberar saldo" : "Solicitar estorno",
+      tone: credit ? "default" : "danger",
+    });
+    if (!input) return;
+    const amount = Number(input.replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0)
+      return notify("Informe um valor válido.");
+    setReturnBusy(request.id);
+    try {
+      await apiFetch(`/returns/${request.id}/resolve`, {
+        method: "POST",
+        body: JSON.stringify({ resolution, amount }),
+      });
+      await onSaved();
+      notify(
+        resolution === "credit"
+          ? "Saldo Wear Bubble liberado na conta do cliente."
+          : "Estorno solicitado ao Asaas.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error ? error.message : "Não foi possível concluir.",
+      );
+    } finally {
+      setReturnBusy("");
+    }
+  }
+
+  async function rejectReturn(request: ReturnRequest) {
+    const reason = await actionDialog.prompt({
+      title: "Rejeitar solicitação",
+      description: `Informe ao cliente por que a solicitação ${request.protocol} não foi aprovada.`,
+      inputLabel: "Motivo da rejeição",
+      placeholder: "Descreva o motivo",
+      required: true,
+      confirmLabel: "Rejeitar solicitação",
+      tone: "danger",
+    });
+    if (!reason?.trim()) return;
+    await updateReturn(request, {
+      status: "rejected",
+      publicNote: reason.trim(),
+    });
+  }
 
   useEffect(() => {
     void loadShipments();
   }, [order.id]);
+
+  async function cancelOrder() {
+    const confirmed = await actionDialog.confirm({
+      title: `Cancelar pedido #${order.number}`,
+      description: `O pedido será cancelado e ${money.format(order.total)} será enviado ao fluxo de estorno do Asaas. Esta ação não pode ser desfeita.`,
+      confirmLabel: "Cancelar e estornar",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setCanceling(true);
+    try {
+      await apiFetch(`/payment/orders/${order.id}/cancel`, { method: "POST" });
+      await onSaved();
+      notify(`Pedido #${order.number} cancelado e valor estornado.`);
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cancelar o pedido.",
+      );
+    } finally {
+      setCanceling(false);
+    }
+  }
 
   async function loadShipments() {
     try {
@@ -221,6 +759,7 @@ function ShipmentDetail({
         },
       );
       setShipments(rows);
+      await onSaved();
       notify(
         rows.some((row) => row.printUrl)
           ? "Etiqueta dos Correios gerada."
@@ -237,26 +776,41 @@ function ShipmentDetail({
     }
   }
 
-  async function submit(stage = shipStage) {
-    if (canceled) return;
-    setSaving(true);
+  async function updateShipStage(nextStage: number) {
+    if (nextStage === order.shipStage) return;
+    const confirmed = await actionDialog.confirm({
+      title: "Atualizar etapa manualmente",
+      description:
+        "Use somente quando a integração não avançou o pedido automaticamente (ex.: falha de webhook, envio feito fora do fluxo padrão). O cliente pode receber um e-mail de atualização de envio.",
+      confirmLabel: "Atualizar etapa",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+    setStageBusy(true);
     try {
-      await onSave(order, stage, tracking);
-      setShipStage(stage);
-    } catch {
-      // A mensagem de erro já é exibida pelo fluxo de salvamento.
+      await apiFetch(`/orders/${order.id}/ship-stage`, {
+        method: "PATCH",
+        body: JSON.stringify({ shipStage: nextStage }),
+      });
+      await onSaved();
+      notify("Etapa do pedido atualizada manualmente.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar a etapa.",
+      );
     } finally {
-      setSaving(false);
+      setStageBusy(false);
     }
   }
 
   async function copyTracking() {
-    if (!tracking) return;
-    await navigator.clipboard.writeText(tracking);
+    if (!order.tracking) return;
+    await navigator.clipboard.writeText(order.tracking);
     notify("Código de rastreio copiado.");
   }
 
-  const nextStage = Math.min(5, shipStage + 1);
   const productsTotal = order.items.reduce(
     (sum, item) => sum + item.price * item.qty,
     0,
@@ -264,11 +818,12 @@ function ShipmentDetail({
 
   return (
     <section className="space-y-5">
+      {actionDialog.dialog}
       <button
-        className="inline-flex items-center gap-2 font-sans text-[.66rem] font-bold uppercase tracking-[.1em] text-bubble-ink/65 hover:text-bubble-ink"
+        className="inline-flex items-center gap-2 border border-bubble-ink bg-bubble-white px-4 py-3 font-sans text-[.64rem] font-bold uppercase tracking-[.1em] hover:bg-bubble-ink hover:text-white"
         onClick={onBack}
       >
-        <ArrowLeft size={16} /> Voltar aos envios
+        <ArrowLeft size={16} /> Voltar aos pedidos
       </button>
 
       <header className="flex flex-col gap-4 border border-bubble-line bg-bubble-white p-5 md:flex-row md:items-center md:justify-between">
@@ -287,11 +842,19 @@ function ShipmentDetail({
             Total do pedido
           </div>
           <strong className="text-2xl">{money.format(order.total)}</strong>
-          <DeleteOrderButton
-            order={order}
-            onSaved={onSaved}
-            notify={notify}
-          />
+          {order.status === "paid" &&
+          order.gateway === "asaas" &&
+          order.asaasPaymentId ? (
+            <button
+              type="button"
+              disabled={canceling}
+              onClick={() => void cancelOrder()}
+              className="block w-full border border-red-700 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-red-700 transition-colors hover:bg-red-700 hover:text-white disabled:cursor-wait disabled:opacity-50 md:w-auto"
+            >
+              {canceling ? "Cancelando..." : "Cancelar e estornar"}
+            </button>
+          ) : null}
+          <DeleteOrderButton order={order} onSaved={onSaved} notify={notify} />
         </div>
       </header>
 
@@ -404,6 +967,234 @@ function ShipmentDetail({
               ) : null}
             </div>
           </DetailCard>
+
+          {returns.map((request) => {
+            const deadline = getReturnDeadline(request, order.deliveredAt);
+            const busy = returnBusy === request.id;
+            return (
+              <DetailCard
+                key={request.id}
+                title={`Troca/devolução · ${request.protocol}`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm">
+                    {returnKindLabels[request.kind]} ·{" "}
+                    {returnReasonLabels[request.reason] || request.reason}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span
+                      className={`border px-3 py-1.5 text-xs font-semibold uppercase ${deadline.className}`}
+                      title={deadline.title}
+                    >
+                      {deadline.label}
+                    </span>
+                    <span className="border border-bubble-line px-3 py-1.5 text-xs font-semibold uppercase">
+                      {request.events.at(-1)?.label ||
+                        returnStatusLabels[request.status]}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <h4 className="text-sm font-semibold">Relato do cliente</h4>
+                  <p className="mt-2 min-h-10 text-sm text-bubble-ink/65">
+                    {request.details || "Nenhum detalhe adicional."}
+                  </p>
+                  <div className="mt-3 space-y-2">
+                    {request.items.map((item) => {
+                      const original = order.items.find(
+                        (line) => line.id === item.orderItemId,
+                      );
+                      return (
+                        <div
+                          className="border border-bubble-line bg-bubble-cream p-3 text-sm"
+                          key={item.id}
+                        >
+                          <strong>
+                            {item.quantity}x{" "}
+                            {original?.name || `Item ${item.orderItemId}`}
+                          </strong>
+                          {original ? (
+                            <span>
+                              {" "}
+                              · {original.color} · {original.size}
+                            </span>
+                          ) : null}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(["resellable", "damaged"] as const).map(
+                              (condition) => (
+                                <button
+                                  type="button"
+                                  key={condition}
+                                  disabled={
+                                    !["received", "inspecting"].includes(
+                                      request.status,
+                                    )
+                                  }
+                                  onClick={() =>
+                                    void updateReturn(request, {
+                                      itemId: item.id,
+                                      condition,
+                                    })
+                                  }
+                                  className={`border px-2 py-1 text-[.62rem] uppercase disabled:opacity-35 ${item.condition === condition ? "border-bubble-ink bg-bubble-ink text-white" : "border-bubble-line"}`}
+                                >
+                                  {condition === "resellable"
+                                    ? "Revendável"
+                                    : "Avariado"}
+                                </button>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5 border-t border-bubble-line pt-4">
+                  {request.publicNote ? (
+                    <p className="text-sm text-bubble-ink/65">
+                      {request.publicNote}
+                    </p>
+                  ) : null}
+                  {request.postingCode ? (
+                    <p className="mt-3 text-sm">
+                      <strong>Postagem:</strong> {request.postingCode}
+                    </p>
+                  ) : null}
+                  {request.returnTracking ? (
+                    <p className="mt-1 text-sm">
+                      <strong>Rastreio:</strong> {request.returnTracking}
+                    </p>
+                  ) : null}
+                  {request.reverseStatus === "sandbox_simulated" ? (
+                    <p className="mt-3 border border-bubble-danger/40 bg-bubble-danger/[.06] p-3 text-xs text-bubble-danger">
+                      Teste Sandbox: este código é simulado e não funciona nos
+                      Correios.
+                    </p>
+                  ) : null}
+                  {request.reversePrintUrl ? (
+                    <a
+                      className="mt-3 inline-flex text-sm font-semibold underline"
+                      href={request.reversePrintUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir documento de postagem
+                    </a>
+                  ) : null}
+                  {request.reverseLastError ? (
+                    <p className="mt-3 border border-bubble-danger/30 bg-bubble-danger/[.06] p-3 text-xs text-bubble-danger">
+                      <strong>Falha na emissão:</strong>{" "}
+                      {request.reverseLastError}
+                    </p>
+                  ) : null}
+                  <div className="mt-4 flex flex-wrap gap-2 [&_button]:border [&_button]:border-bubble-ink [&_button]:px-3 [&_button]:py-2 [&_button]:text-[.62rem] [&_button]:font-semibold [&_button]:uppercase disabled:[&_button]:opacity-40">
+                    {request.status === "requested" ? (
+                      <button
+                        disabled={busy}
+                        onClick={() =>
+                          void updateReturn(request, {
+                            status: "approved",
+                            publicNote:
+                              "Solicitação aprovada. Prepararemos o código de postagem.",
+                          })
+                        }
+                      >
+                        Aprovar
+                      </button>
+                    ) : null}
+                    {["requested", "approved"].includes(request.status) ? (
+                      <button
+                        disabled={busy}
+                        className="text-bubble-danger"
+                        onClick={() => void rejectReturn(request)}
+                      >
+                        Rejeitar
+                      </button>
+                    ) : null}
+                    {request.status === "approved" ? (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void issueReverseShipment(request)}
+                      >
+                        {request.reverseProviderOrderId
+                          ? "Tentar emitir novamente"
+                          : "Emitir postagem reversa"}
+                      </button>
+                    ) : null}
+                    {request.status === "awaiting_posting" &&
+                    request.reverseStatus === "sandbox_simulated" ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void updateReturn(request, {
+                            status: "returning",
+                            publicNote:
+                              "Postagem simulada no Sandbox. O produto está retornando.",
+                          })
+                        }
+                      >
+                        Simular postagem
+                      </button>
+                    ) : null}
+                    {request.status === "awaiting_posting" &&
+                    request.reverseStatus !== "sandbox_simulated" ? (
+                      <p className="basis-full text-xs leading-5 text-bubble-ink/55">
+                        Aguardando o Melhor Envio confirmar automaticamente a
+                        postagem pelos Correios.
+                      </p>
+                    ) : null}
+                    {request.status === "returning" ? (
+                      <button
+                        onClick={() =>
+                          void updateReturn(request, {
+                            status: "received",
+                            publicNote:
+                              "Recebemos o pacote e iniciaremos a inspeção.",
+                          })
+                        }
+                      >
+                        Registrar recebimento
+                      </button>
+                    ) : null}
+                    {request.status === "received" ? (
+                      <button
+                        onClick={() =>
+                          void updateReturn(request, {
+                            status: "inspecting",
+                            publicNote: "As peças estão em inspeção.",
+                          })
+                        }
+                      >
+                        Iniciar inspeção
+                      </button>
+                    ) : null}
+                    {request.status === "inspecting" ? (
+                      <>
+                        <button
+                          onClick={() => void resolveReturn(request, "credit")}
+                        >
+                          Liberar saldo
+                        </button>
+                        {request.kind !== "exchange" ? (
+                          <button
+                            onClick={() =>
+                              void resolveReturn(request, "refund")
+                            }
+                          >
+                            Estornar Asaas
+                          </button>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </DetailCard>
+            );
+          })}
         </div>
 
         <div className="space-y-5">
@@ -445,7 +1236,10 @@ function ShipmentDetail({
             ) : (
               <div className="mt-4 space-y-3">
                 {shipments.map((shipment) => (
-                  <div className="border border-bubble-line bg-bubble-cream p-3" key={shipment.id}>
+                  <div
+                    className="border border-bubble-line bg-bubble-cream p-3"
+                    key={shipment.id}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <strong>{shipment.serviceName}</strong>
@@ -453,84 +1247,108 @@ function ShipmentDetail({
                           Volume {shipment.packageIndex + 1} · {shipment.status}
                         </div>
                       </div>
-                      <span className="font-semibold">{money.format(shipment.carrierPrice)}</span>
+                      <span className="font-semibold">
+                        {money.format(shipment.carrierPrice)}
+                      </span>
                     </div>
-                    {shipment.tracking ? <div className="mt-2 text-xs">Rastreio: {shipment.tracking}</div> : null}
-                    {shipment.lastError ? <div className="mt-2 text-xs text-bubble-danger">{shipment.lastError}</div> : null}
+                    {shipment.tracking ? (
+                      <div className="mt-2 text-xs">
+                        Rastreio: {shipment.tracking}
+                      </div>
+                    ) : null}
+                    {shipment.lastError ? (
+                      <div className="mt-2 text-xs text-bubble-danger">
+                        {shipment.lastError}
+                      </div>
+                    ) : null}
                     <div className="mt-3 flex flex-wrap gap-2">
                       {shipment.printUrl ? (
-                        <a className="border border-bubble-ink px-3 py-2 text-xs font-bold uppercase" href={shipment.printUrl} target="_blank" rel="noreferrer">Imprimir etiqueta</a>
+                        <a
+                          className="border border-bubble-ink px-3 py-2 text-xs font-bold uppercase"
+                          href={shipment.printUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Imprimir etiqueta
+                        </a>
                       ) : null}
                       {shipment.trackingUrl ? (
-                        <a className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase" href={shipment.trackingUrl} target="_blank" rel="noreferrer">Acompanhar</a>
+                        <a
+                          className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase"
+                          href={shipment.trackingUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Acompanhar
+                        </a>
                       ) : null}
                       {!shipment.printUrl ? (
-                        <button className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase disabled:opacity-45" disabled={labelBusy} onClick={() => void generateLabel()}>Tentar novamente</button>
+                        <button
+                          className="border border-bubble-line px-3 py-2 text-xs font-bold uppercase disabled:opacity-45"
+                          disabled={labelBusy}
+                          onClick={() => void generateLabel()}
+                        >
+                          Tentar novamente
+                        </button>
                       ) : null}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-            <p className={adminNote}>A compra da etiqueta debita o saldo da Melhor Carteira. Em produção, informe a NF-e antes de gerar.</p>
+            <p className={adminNote}>
+              A compra da etiqueta debita o saldo da Melhor Carteira. Em
+              produção, informe a NF-e antes de gerar.
+            </p>
           </DetailCard>
 
-          <DetailCard title="Ações do envio">
-            <label className="block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
-              Etapa atual
+          <DetailCard title="Atualização automática">
+            <dl className="space-y-3 text-sm">
+              <Info
+                label="Etapa atual"
+                value={shippingStages[order.shipStage] || "Não informado"}
+              />
+              <div>
+                <dt className="font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-bubble-ink/45">
+                  Código de rastreio
+                </dt>
+                <dd className="mt-1 flex items-center gap-2 break-all">
+                  <span>{order.tracking || "Aguardando os Correios"}</span>
+                  {order.tracking ? (
+                    <button
+                      className="border border-bubble-line p-2"
+                      onClick={() => void copyTracking()}
+                      title="Copiar rastreio"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
+            <p className={adminNote}>
+              Pagamento, geração da etiqueta, postagem, rastreio e entrega são
+              atualizados normalmente pelas integrações.
+            </p>
+            <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
+              Ajuste manual da etapa
               <select
-                className="mt-2 w-full border border-bubble-line bg-bubble-cream px-3 py-3 font-serif text-sm normal-case tracking-normal"
-                value={shipStage}
-                disabled={canceled || saving}
-                onChange={(event) => setShipStage(Number(event.target.value))}
+                className="mt-2 h-11 w-full border border-bubble-line bg-bubble-cream px-3 text-sm normal-case tracking-normal outline-none focus:border-bubble-ink disabled:cursor-not-allowed disabled:opacity-45"
+                value={order.shipStage}
+                disabled={canceled || order.status !== "paid" || stageBusy}
+                onChange={(event) => void updateShipStage(Number(event.target.value))}
               >
                 {shippingStages.map((stage, index) => (
-                  <option key={stage} value={index}>
-                    {index} · {stage}
+                  <option value={index} key={stage}>
+                    {stage}
                   </option>
                 ))}
               </select>
             </label>
-            <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
-              Código ou link de rastreio
-              <div className="mt-2 flex">
-                <input
-                  className="min-w-0 flex-1 border border-bubble-line bg-bubble-cream px-3 py-3 font-serif text-sm normal-case tracking-normal"
-                  value={tracking}
-                  disabled={canceled || saving}
-                  onChange={(event) => setTracking(event.target.value)}
-                  placeholder="Informe quando o pedido for enviado"
-                />
-                <button
-                  className="border border-l-0 border-bubble-line px-3 disabled:opacity-40"
-                  disabled={!tracking}
-                  onClick={() => void copyTracking()}
-                  title="Copiar rastreio"
-                >
-                  <Copy size={16} />
-                </button>
-              </div>
-            </label>
-            <button
-              className={`${saveButton} mt-5 w-full py-3 disabled:cursor-not-allowed disabled:opacity-45`}
-              disabled={canceled || saving}
-              onClick={() => void submit()}
-            >
-              {saving ? "Salvando..." : "Salvar alterações"}
-            </button>
-            {!canceled && shipStage < 5 ? (
-              <button
-                className="mt-2 inline-flex w-full items-center justify-center gap-2 border border-bubble-ink px-4 py-3 font-sans text-[.64rem] font-bold uppercase tracking-[.1em] transition-colors hover:bg-bubble-ink hover:text-bubble-white disabled:opacity-45"
-                disabled={saving}
-                onClick={() => void submit(nextStage)}
-              >
-                <PackageCheck size={16} /> Avançar para{" "}
-                {shippingStages[nextStage]}
-              </button>
-            ) : null}
             <p className={adminNote}>
-              Ao salvar uma nova etapa, o cliente recebe automaticamente o
-              e-mail detalhado de acompanhamento.
+              Use apenas se um webhook falhou ou o envio foi feito fora da
+              Melhor Envio — esta ação fica registrada e pode notificar o
+              cliente por e-mail.
             </p>
           </DetailCard>
 
@@ -611,6 +1429,28 @@ function StageBadge({ order }: { order: Order }) {
   return (
     <span className="bg-bubble-candy/20 px-2 py-1 font-sans text-[.58rem] font-bold uppercase text-bubble-brown">
       {shippingStages[order.shipStage] || "Não informado"}
+    </span>
+  );
+}
+
+function ReturnBadge({ requests }: { requests?: ReturnRequest[] }) {
+  if (!requests || !requests.length) {
+    return <span className="text-[.68rem] text-bubble-ink/35">—</span>;
+  }
+  const latest = [...requests].sort(
+    (first, second) => second.requestedAt - first.requestedAt,
+  )[0];
+  const tone =
+    latest.status === "rejected" || latest.status === "canceled"
+      ? "bg-bubble-ink/[.08] text-bubble-ink/55"
+      : latest.status === "completed"
+        ? "bg-green-100 text-green-800"
+        : "bg-amber-100 text-amber-800";
+  return (
+    <span
+      className={`inline-block whitespace-nowrap px-2 py-1 font-sans text-[.58rem] font-bold uppercase ${tone}`}
+    >
+      {returnKindLabels[latest.kind]} · {returnStatusLabels[latest.status]}
     </span>
   );
 }

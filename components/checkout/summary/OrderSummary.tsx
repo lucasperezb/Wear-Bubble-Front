@@ -6,6 +6,7 @@ type OrderSummaryProps = {
   subtotal: number;
   bundleDiscount: number;
   couponDiscount: number;
+  accountCreditDiscount: number;
   pixDiscount: number;
   total: number;
   freeShipping: boolean;
@@ -18,6 +19,7 @@ export function OrderSummary({
   subtotal,
   bundleDiscount,
   couponDiscount,
+  accountCreditDiscount,
   pixDiscount,
   total,
   freeShipping,
@@ -38,8 +40,15 @@ export function OrderSummary({
       ) : null}
       {couponDiscount > 0 ? (
         <SummaryRow
-          label={coupon?.type === 'store_credit' ? `Crédito ${coupon.code}` : `Cupom ${coupon?.code}`}
+          label={`Cupom ${coupon?.code}`}
           value={`-${money.format(couponDiscount)}`}
+          discount
+        />
+      ) : null}
+      {accountCreditDiscount > 0 ? (
+        <SummaryRow
+          label="Saldo Wear Bubble"
+          value={`-${money.format(accountCreditDiscount)}`}
           discount
         />
       ) : null}

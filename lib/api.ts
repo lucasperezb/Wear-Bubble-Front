@@ -13,6 +13,8 @@ export type Product = {
   rating: number;
   reviews: number;
   stock: number;
+  physicalStock?: number;
+  reservedStock?: number;
   active: boolean;
   sizes: string[];
   material: string;
@@ -27,14 +29,20 @@ export type Product = {
   colors: Array<{
     n: string;
     h: string;
-    sizes?: Array<{ size: string; q: number }>;
+    sizes?: Array<{
+      size: string;
+      q: number;
+      physicalQ?: number;
+      reservedQ?: number;
+    }>;
   }>;
   desc: string;
   image?: string | null;
   images?: ProductImage[];
 };
 
-export type ShowcaseKey = "hero" | "home" | "core" | "tops" | "bottoms" | "sets";
+export type ShowcaseKey =
+  "hero" | "home" | "core" | "tops" | "bottoms" | "sets";
 export type ShowcaseMap = Record<ShowcaseKey, Product[]>;
 
 export type ProductImage = {
@@ -103,12 +111,22 @@ export type Order = {
   method: string;
   coupon: string | null;
   couponPct?: number;
-  status: "pending" | "paid" | "canceled";
+  status: "pending" | "paid" | "canceled" | "expired" | "stock_conflict";
+  inventoryStatus?: "none" | "reserved" | "committed" | "released" | "conflict";
+  paymentStatus?:
+    | "pending"
+    | "authorized"
+    | "confirmed"
+    | "refund_pending"
+    | "refunded"
+    | "failed";
+  stockConflictReason?: string | null;
   shipStage: number;
   tracking?: string;
   gateway?: string;
   asaasCustomerId?: string;
   asaasPaymentId?: string;
+  storeCreditAmount?: number;
   paidAt?: number;
   deliveredAt?: number;
   delivery?: {
@@ -137,6 +155,7 @@ export type Order = {
     id?: number;
     pid: number;
     name: string;
+    image?: string | null;
     size: string;
     color?: string;
     qty: number;
@@ -187,6 +206,11 @@ export type ReturnRequest = {
   postingCode: string | null;
   returnTracking: string | null;
   postingExpiresAt: number | null;
+  reverseProviderOrderId: string | null;
+  reverseServiceId: number | null;
+  reverseStatus: string | null;
+  reversePrintUrl: string | null;
+  reverseLastError: string | null;
   resolution: "credit" | "refund" | null;
   resolutionAmount: number;
   creditCode: string | null;
@@ -221,10 +245,17 @@ export type StoreCredit = {
   returnRequestId: string;
 };
 
+export type AccountCreditBalance = {
+  balance: number;
+  expiresAt: number | null;
+  credits: number;
+};
+
 export type Coupon = {
   code: string;
   pct: number;
   minimumCharge: boolean;
+  freeShipping: boolean;
   active: boolean;
   uses: number;
   expiresAt?: number | null;

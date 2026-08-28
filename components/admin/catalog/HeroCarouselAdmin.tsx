@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from "lucide-react";
-import {
-  apiFetch,
-  type HeroConfig,
-  type HeroSlide,
-} from "../../../lib/api";
+import { apiFetch, type HeroConfig, type HeroSlide } from "../../../lib/api";
 import {
   adminNote,
   outlineButton,
@@ -15,28 +11,52 @@ import {
   productLabel,
 } from "../shared/styles";
 import type { Notify } from "../shared/types";
+import { useActionDialog } from "../../shared/overlays/ActionDialog";
 
 type HeroCarouselAdminProps = {
-  config: HeroConfig;
-  onConfig: (config: HeroConfig) => void;
   onPublished: () => void | Promise<void>;
   notify: Notify;
 };
 
+const emptyHeroConfig: HeroConfig = { enabled: false, slides: [] };
+
 export function HeroCarouselAdmin({
-  config,
-  onConfig,
   onPublished,
   notify,
 }: HeroCarouselAdminProps) {
+  const [config, setConfig] = useState<HeroConfig>(emptyHeroConfig);
+  const [loading, setLoading] = useState(true);
   const [image, setImage] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState("#colecao");
   const [altText, setAltText] = useState("");
   const [saving, setSaving] = useState(false);
   const preview = useObjectUrl(image);
 
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    apiFetch<HeroConfig>("/hero/admin")
+      .then((response) => {
+        if (!cancelled) setConfig(response);
+      })
+      .catch((error) => {
+        notify(
+          error instanceof Error
+            ? error.message
+            : "Não foi possível carregar o carrossel.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function publish(next: HeroConfig, message: string) {
-    onConfig(next);
+    setConfig(next);
     await onPublished();
     notify(message);
   }
@@ -106,6 +126,8 @@ export function HeroCarouselAdmin({
     }
   }
 
+  if (loading) return <p className={adminNote}>Carregando carrossel...</p>;
+
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-bubble-line pb-5">
@@ -134,17 +156,25 @@ export function HeroCarouselAdmin({
         <div className="grid grid-cols-[minmax(220px,360px)_minmax(0,1fr)] gap-5 max-[760px]:grid-cols-1">
           <label className="group flex aspect-[16/7] cursor-pointer items-center justify-center overflow-hidden border border-dashed border-bubble-ink/35 bg-bubble-cream2 text-center">
             {preview ? (
-              <img src={preview} alt="Prévia do novo slide" className="size-full object-cover" />
+              <img
+                src={preview}
+                alt="Prévia do novo slide"
+                className="size-full object-cover"
+              />
             ) : (
               <span className="px-5 text-[.72rem] leading-[1.6] text-bubble-ink/55 group-hover:text-bubble-ink">
-                Clique para escolher uma imagem horizontal<br />JPEG, PNG ou WebP · até 10 MB
+                Clique para escolher uma imagem horizontal
+                <br />
+                JPEG, PNG ou WebP · até 10 MB
               </span>
             )}
             <input
               type="file"
               className="sr-only"
               accept="image/jpeg,image/png,image/webp"
-              onChange={(event) => setImage(validImage(event.target.files?.[0], notify))}
+              onChange={(event) =>
+                setImage(validImage(event.target.files?.[0], notify))
+              }
             />
           </label>
           <div>
@@ -224,6 +254,7 @@ function HeroSlideEditor({
   onMove: (direction: -1 | 1) => void;
   notify: Notify;
 }) {
+  const actionDialog = useActionDialog();
   const [linkUrl, setLinkUrl] = useState(slide.linkUrl);
   const [altText, setAltText] = useState(slide.altText);
 
@@ -237,11 +268,25 @@ function HeroSlideEditor({
     if (validation) return notify(validation);
     onBusy(true);
     try {
-      const next = await apiFetch<HeroConfig>(`/hero/admin/slides/${slide.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ linkUrl: linkUrl.trim(), altText: altText.trim(), ...patch }),
-      });
-      await onConfig(next, patch.active === undefined ? "Slide atualizado." : patch.active ? "Slide exibido no carrossel." : "Slide ocultado do carrossel.");
+      const next = await apiFetch<HeroConfig>(
+        `/hero/admin/slides/${slide.id}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            linkUrl: linkUrl.trim(),
+            altText: altText.trim(),
+            ...patch,
+          }),
+        },
+      );
+      await onConfig(
+        next,
+        patch.active === undefined
+          ? "Slide atualizado."
+          : patch.active
+            ? "Slide exibido no carrossel."
+            : "Slide ocultado do carrossel.",
+      );
     } catch (error) {
       notify(messageFrom(error, "Não foi possível salvar o slide."));
     } finally {
@@ -256,10 +301,13 @@ function HeroSlideEditor({
     try {
       const body = new FormData();
       body.append("image", valid);
-      const next = await apiFetch<HeroConfig>(`/hero/admin/slides/${slide.id}/image`, {
-        method: "POST",
-        body,
-      });
+      const next = await apiFetch<HeroConfig>(
+        `/hero/admin/slides/${slide.id}/image`,
+        {
+          method: "POST",
+          body,
+        },
+      );
       await onConfig(next, "Imagem do slide substituída.");
     } catch (error) {
       notify(messageFrom(error, "Não foi possível substituir a imagem."));
@@ -269,12 +317,22 @@ function HeroSlideEditor({
   }
 
   async function remove() {
-    if (!window.confirm("Excluir esta imagem do carrossel?")) return;
+    const confirmed = await actionDialog.confirm({
+      title: "Excluir imagem do carrossel",
+      description:
+        "A imagem será removida do carrossel publicado. Esta ação não pode ser desfeita.",
+      confirmLabel: "Excluir imagem",
+      tone: "danger",
+    });
+    if (!confirmed) return;
     onBusy(true);
     try {
-      const next = await apiFetch<HeroConfig>(`/hero/admin/slides/${slide.id}`, {
-        method: "DELETE",
-      });
+      const next = await apiFetch<HeroConfig>(
+        `/hero/admin/slides/${slide.id}`,
+        {
+          method: "DELETE",
+        },
+      );
       await onConfig(next, "Imagem removida do carrossel.");
     } catch (error) {
       notify(messageFrom(error, "Não foi possível excluir o slide."));
@@ -284,43 +342,98 @@ function HeroSlideEditor({
   }
 
   return (
-    <article className="grid grid-cols-[280px_minmax(0,1fr)_auto] gap-4 border border-bubble-line bg-bubble-white p-4 max-[900px]:grid-cols-[220px_minmax(0,1fr)] max-[620px]:grid-cols-1">
-      <div>
-        <div className="relative aspect-[16/7] overflow-hidden bg-bubble-cream2">
-          <img src={slide.imageUrl} alt={slide.altText} className="size-full object-cover" />
-          <span className="absolute left-2 top-2 bg-bubble-ink px-2 py-1 text-[.58rem] font-bold uppercase tracking-[.1em] text-bubble-white">
-            {index + 1}
-          </span>
+    <>
+      {actionDialog.dialog}
+      <article className="grid grid-cols-[280px_minmax(0,1fr)_auto] gap-4 border border-bubble-line bg-bubble-white p-4 max-[900px]:grid-cols-[220px_minmax(0,1fr)] max-[620px]:grid-cols-1">
+        <div>
+          <div className="relative aspect-[16/7] overflow-hidden bg-bubble-cream2">
+            <img
+              src={slide.imageUrl}
+              alt={slide.altText}
+              className="size-full object-cover"
+            />
+            <span className="absolute left-2 top-2 bg-bubble-ink px-2 py-1 text-[.58rem] font-bold uppercase tracking-[.1em] text-bubble-white">
+              {index + 1}
+            </span>
+          </div>
+          <label
+            className={`${outlineButton} mt-2 flex cursor-pointer items-center justify-center py-2.5`}
+          >
+            Trocar imagem
+            <input
+              type="file"
+              className="sr-only"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              onChange={(event) => void replaceImage(event.target.files?.[0])}
+            />
+          </label>
         </div>
-        <label className={`${outlineButton} mt-2 flex cursor-pointer items-center justify-center py-2.5`}>
-          Trocar imagem
+        <div>
+          <label className={`${productLabel} mt-0`}>Destino ao clicar</label>
           <input
-            type="file"
-            className="sr-only"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={busy}
-            onChange={(event) => void replaceImage(event.target.files?.[0])}
+            className={productInput}
+            value={linkUrl}
+            onChange={(event) => setLinkUrl(event.target.value)}
+            maxLength={500}
           />
-        </label>
-      </div>
-      <div>
-        <label className={`${productLabel} mt-0`}>Destino ao clicar</label>
-        <input className={productInput} value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} maxLength={500} />
-        <label className={productLabel}>Descrição acessível</label>
-        <input className={productInput} value={altText} onChange={(event) => setAltText(event.target.value)} maxLength={180} />
-        <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" className={primaryButton} onClick={() => void saveMetadata()} disabled={busy}>Salvar</button>
-          <button type="button" className={outlineButton} onClick={() => void saveMetadata({ active: !slide.active })} disabled={busy}>
-            {slide.active ? "Ocultar slide" : "Exibir slide"}
+          <label className={productLabel}>Descrição acessível</label>
+          <input
+            className={productInput}
+            value={altText}
+            onChange={(event) => setAltText(event.target.value)}
+            maxLength={180}
+          />
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={primaryButton}
+              onClick={() => void saveMetadata()}
+              disabled={busy}
+            >
+              Salvar
+            </button>
+            <button
+              type="button"
+              className={outlineButton}
+              onClick={() => void saveMetadata({ active: !slide.active })}
+              disabled={busy}
+            >
+              {slide.active ? "Ocultar slide" : "Exibir slide"}
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2 max-[900px]:col-span-2 max-[900px]:flex-row max-[620px]:col-span-1">
+          <button
+            type="button"
+            className={`${outlineButton} px-3`}
+            onClick={() => onMove(-1)}
+            disabled={busy || index === 0}
+            aria-label="Mover slide para cima"
+          >
+            <ArrowUp size={16} />
+          </button>
+          <button
+            type="button"
+            className={`${outlineButton} px-3`}
+            onClick={() => onMove(1)}
+            disabled={busy || index === total - 1}
+            aria-label="Mover slide para baixo"
+          >
+            <ArrowDown size={16} />
+          </button>
+          <button
+            type="button"
+            className="flex items-center justify-center border border-bubble-danger/35 px-3 py-3 text-bubble-danger hover:bg-bubble-danger hover:text-bubble-white"
+            onClick={() => void remove()}
+            disabled={busy}
+            aria-label="Excluir slide"
+          >
+            <Trash2 size={16} />
           </button>
         </div>
-      </div>
-      <div className="flex flex-col gap-2 max-[900px]:col-span-2 max-[900px]:flex-row max-[620px]:col-span-1">
-        <button type="button" className={`${outlineButton} px-3`} onClick={() => onMove(-1)} disabled={busy || index === 0} aria-label="Mover slide para cima"><ArrowUp size={16} /></button>
-        <button type="button" className={`${outlineButton} px-3`} onClick={() => onMove(1)} disabled={busy || index === total - 1} aria-label="Mover slide para baixo"><ArrowDown size={16} /></button>
-        <button type="button" className="flex items-center justify-center border border-bubble-danger/35 px-3 py-3 text-bubble-danger hover:bg-bubble-danger hover:text-bubble-white" onClick={() => void remove()} disabled={busy} aria-label="Excluir slide"><Trash2 size={16} /></button>
-      </div>
-    </article>
+      </article>
+    </>
   );
 }
 
@@ -345,9 +458,12 @@ function validImage(file: File | undefined, notify: Notify) {
 
 function useObjectUrl(file: File | null) {
   const url = useMemo(() => (file ? URL.createObjectURL(file) : ""), [file]);
-  useEffect(() => () => {
-    if (url) URL.revokeObjectURL(url);
-  }, [url]);
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url],
+  );
   return url;
 }
 

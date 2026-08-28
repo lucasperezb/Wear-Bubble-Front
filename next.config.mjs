@@ -15,10 +15,26 @@ const nextConfig = {
         value: 'no-store, no-cache, max-age=0, must-revalidate',
       },
     ];
+    // A full Content-Security-Policy needs its own pass (allowlisting the
+    // Google Ads conversion script, Next.js chunks, etc.) so it isn't
+    // included here — these are the headers that are safe to ship without
+    // that dedicated testing.
+    const securityHeaders = [
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=()',
+      },
+    ];
 
-    return ['/', '/conta', '/login', '/cadastro', '/carrinho', '/verificar-email'].map(
-      (source) => ({ source, headers: noStaleHtml }),
-    );
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      ...['/', '/conta', '/login', '/cadastro', '/carrinho', '/verificar-email'].map(
+        (source) => ({ source, headers: noStaleHtml }),
+      ),
+    ];
   },
   async rewrites() {
     return [
