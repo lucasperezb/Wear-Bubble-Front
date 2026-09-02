@@ -582,6 +582,8 @@ function ShipmentDetail({
   const [canceling, setCanceling] = useState(false);
   const [returnBusy, setReturnBusy] = useState("");
   const [stageBusy, setStageBusy] = useState(false);
+  const [trackingInput, setTrackingInput] = useState(order.tracking || "");
+  const [trackingBusy, setTrackingBusy] = useState(false);
   const actionDialog = useActionDialog();
   const canceled = order.status === "canceled";
 
@@ -809,6 +811,44 @@ function ShipmentDetail({
     if (!order.tracking) return;
     await navigator.clipboard.writeText(order.tracking);
     notify("Código de rastreio copiado.");
+  }
+
+  async function saveTracking() {
+    const trimmed = trackingInput.trim();
+    if (!trimmed) {
+      notify("Informe o código de rastreio.");
+      return;
+    }
+    if (trimmed === order.tracking) {
+      notify("Esse código já está salvo neste pedido.");
+      return;
+    }
+    const confirmed = await actionDialog.confirm({
+      title: "Enviar código de rastreio",
+      description: `O cliente receberá um e-mail em ${order.delivery?.email || "seu e-mail cadastrado"} com o código ${trimmed}.`,
+      confirmLabel: "Salvar e enviar e-mail",
+    });
+    if (!confirmed) return;
+    setTrackingBusy(true);
+    try {
+      await apiFetch(`/orders/${order.id}/ship-stage`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          shipStage: order.shipStage,
+          tracking: trimmed,
+        }),
+      });
+      await onSaved();
+      notify("Código de rastreio salvo e enviado por e-mail ao cliente.");
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível enviar o código de rastreio.",
+      );
+    } finally {
+      setTrackingBusy(false);
+    }
   }
 
   const productsTotal = order.items.reduce(
@@ -1329,6 +1369,30 @@ function ShipmentDetail({
             <p className={adminNote}>
               Pagamento, geração da etiqueta, postagem, rastreio e entrega são
               atualizados normalmente pelas integrações.
+            </p>
+            <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
+              Informar rastreio manualmente
+              <input
+                className="mt-2 w-full border border-bubble-line bg-bubble-cream px-3 py-3 font-serif text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-45"
+                value={trackingInput}
+                maxLength={120}
+                disabled={canceled || order.status !== "paid" || trackingBusy}
+                onChange={(event) => setTrackingInput(event.target.value)}
+                placeholder="Ex.: BR123456789BR"
+              />
+            </label>
+            <button
+              type="button"
+              className={`${saveButton} mt-2 w-full py-3 disabled:cursor-not-allowed disabled:opacity-45`}
+              disabled={canceled || order.status !== "paid" || trackingBusy}
+              onClick={() => void saveTracking()}
+            >
+              {trackingBusy ? "Enviando..." : "Salvar e enviar por e-mail"}
+            </button>
+            <p className={adminNote}>
+              Use quando a etiqueta foi comprada fora da Melhor Envio (ex.:
+              diretamente nos Correios). O cliente recebe um e-mail com o
+              código assim que você salvar.
             </p>
             <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
               Ajuste manual da etapa
