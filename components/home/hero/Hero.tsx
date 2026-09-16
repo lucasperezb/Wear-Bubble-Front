@@ -196,7 +196,7 @@ function StaticHero({
             </a>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-sans text-[.63rem] font-semibold uppercase tracking-[.1em] text-bubble-ink/60 lg:justify-start">
-            <span>Frete grátis acima de R$ 199</span>
+            <span>Frete grátis acima de R$ 299</span>
             <span
               className="hidden size-1 rounded-full bg-bubble-brown sm:block"
               aria-hidden="true"

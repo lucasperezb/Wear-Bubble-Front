@@ -191,6 +191,8 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
       <SizeGuideDialog
         open={sizeGuideOpen}
         onClose={() => setSizeGuideOpen(false)}
+        product={product}
+        selectedSize={selectedSize}
       />
     </div>
   );

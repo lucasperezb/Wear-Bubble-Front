@@ -7,12 +7,14 @@ import { Header } from "../layout";
 import { ProductCatalog } from "../product";
 import { ProductModal } from "../product";
 import { Product, User, apiFetch } from "../../lib/api";
+import { trackEvent } from "../../lib/analytics";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { sortProductSizes } from "../../lib/product-sizes";
 import { productPrice } from "../../lib/pricing";
 import { readDemoProducts } from "../../lib/demo-store";
 import { categoryMatches } from "../../lib/product-filters";
 import { collectionSlug as slugForCollection } from "../../lib/collections";
+import { matchingProducts, searchProducts } from "../../lib/product-search";
 
 type ShowcasePageProps = {
   category?: string;
@@ -54,10 +56,14 @@ export function ShowcasePage({
   const [toast, setToast] = useState("");
   const [demoMode, setDemoMode] = useState(false);
   const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    const demo = new URLSearchParams(window.location.search).get("demo") === "1";
+    const params = new URLSearchParams(window.location.search);
+    const demo = params.get("demo") === "1";
+    setSearchQuery(params.get("busca") || "");
     setDemoMode(demo);
     void load(demo);
     setCart(readCart());
@@ -106,8 +112,29 @@ export function ShowcasePage({
     [scopedProducts],
   );
 
+  const searchMatches = useMemo(
+    () => matchingProducts(scopedProducts, searchQuery),
+    [scopedProducts, searchQuery],
+  );
+
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery.trim() || searchMatches.length) return [];
+    const ranked = searchProducts(scopedProducts, searchQuery).map(({ product }) => product);
+    const fallback = [...scopedProducts].sort((left, right) => right.rating - left.rating || right.reviews - left.reviews);
+    const candidates = [...ranked, ...fallback].filter((product, index, list) => list.findIndex((item) => item.id === product.id) === index);
+    if (!candidates.length) return [];
+    const start = suggestionOffset % candidates.length;
+    return Array.from({ length: Math.min(4, candidates.length) }, (_, index) => candidates[(start + index) % candidates.length]);
+  }, [scopedProducts, searchMatches.length, searchQuery, suggestionOffset]);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || searchMatches.length || searchSuggestions.length < 2) return;
+    const timer = window.setInterval(() => setSuggestionOffset((current) => current + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, [searchMatches.length, searchQuery, searchSuggestions.length]);
+
   const visibleProducts = useMemo(() => {
-    let list = scopedProducts;
+    let list = searchQuery.trim() ? searchMatches.map(({ product }) => product) : scopedProducts;
     if (showAll && filters.cat !== "all")
       list = list.filter((product) => categoryMatches(product.cat, filters.cat));
     if (filters.size)
@@ -119,9 +146,10 @@ export function ShowcasePage({
     if (filters.sort === "stock-asc") list = [...list].sort((a, b) => a.stock - b.stock);
     if (filters.sort === "stock-desc") list = [...list].sort((a, b) => b.stock - a.stock);
     return list;
-  }, [filters, scopedProducts, showAll]);
+  }, [filters, scopedProducts, searchMatches, searchQuery, showAll]);
 
   function openProduct(product: Product) {
+    trackEvent("click", product.id);
     window.location.assign(`/produto/${product.id}${demoMode ? "?demo=1" : ""}`);
   }
 
@@ -131,6 +159,7 @@ export function ShowcasePage({
       if (found) return current.map((item) => item === found ? { ...item, qty: Math.min(10, item.qty + 1) } : item);
       return [...current, { pid: product.id, size, color, qty: 1, bundle }];
     });
+    trackEvent("add", product.id);
     setSelectedProduct(null);
     setCartOpen(true);
     setToast("Peça adicionada à sacola.");
@@ -171,6 +200,10 @@ export function ShowcasePage({
         onRetry={() => void load(demoMode)}
         showFilters
         showCategoryFilter={showAll}
+        emptyTitle={searchQuery.trim() ? "Não encontramos sua busca" : undefined}
+        emptyDescription={searchQuery.trim() ? "Tente outro termo ou confira as sugestões abaixo. Encontramos opções próximas ao que você procurou." : undefined}
+        suggestionProducts={searchSuggestions}
+        suggestionTitle={searchQuery.trim() ? "Sugestões relevantes para você" : undefined}
         eyebrow={collectionName ? `Coleção ${collectionName}` : showAll ? "Wear Bubble · Todas as linhas" : "Seleção por categoria"}
         title={showAll ? "Todas as peças" : collectionName ? `Todas as peças ${collectionName}` : "Todas as peças"}
         description={showAll ? "Explore toda a coleção e encontre as peças que combinam com o seu movimento." : collectionName ? `Todas as peças cadastradas na coleção ${collectionName}.` : "Todas as peças publicadas nesta categoria."}
