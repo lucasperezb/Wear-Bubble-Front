@@ -108,7 +108,58 @@ export function lastNDays(n: number) {
 }
 
 export function dayKey(ts: number) {
-  return new Date(ts).toISOString().slice(0, 10);
+  const date = new Date(ts);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+export function monthKey(ts: number) {
+  return dayKey(ts).slice(0, 7);
+}
+
+export function currentMonthKey() {
+  return monthKey(Date.now());
+}
+
+const MONTH_NAMES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MONTH_NAMES_LONG = [
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+];
+
+/** "2026-09" -> "set/26" */
+export function monthLabel(key: string) {
+  const [year, month] = key.split('-');
+  const name = MONTH_NAMES[Number(month) - 1];
+  return name ? `${name}/${year.slice(2)}` : key;
+}
+
+/** "2026-09" -> "setembro de 2026" */
+export function monthLabelLong(key: string) {
+  const [year, month] = key.split('-');
+  const name = MONTH_NAMES_LONG[Number(month) - 1];
+  return name ? `${name} de ${year}` : key;
+}
+
+/** Últimos n meses (inclui o atual), em ordem cronológica. */
+export function lastNMonths(n: number) {
+  const now = new Date();
+  return Array.from({ length: n }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - (n - 1 - index), 1);
+    return monthKey(date.getTime());
+  });
+}
+
+/** Dias de um mês ("2026-09"); o mês corrente para no dia de hoje. */
+export function daysOfMonth(key: string) {
+  const [year, month] = key.split('-').map(Number);
+  if (!year || !month) return [];
+  const today = dayKey(Date.now());
+  const count = new Date(year, month, 0).getDate();
+  return Array.from({ length: count }, (_, index) =>
+    dayKey(new Date(year, month - 1, index + 1).getTime()),
+  ).filter((day) => day <= today);
 }
 
 export function maskId(uid: string) {

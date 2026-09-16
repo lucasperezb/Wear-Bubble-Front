@@ -3,15 +3,17 @@
 import { ArrowLeft, Check, Minus, Plus, RefreshCw, ShoppingBag, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Product, User, apiFetch, money } from "../../lib/api";
+import { trackEvent, trackEventOnce } from "../../lib/analytics";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { readDemoProducts } from "../../lib/demo-store";
 import { availableVariantSizes, sortProductSizes } from "../../lib/product-sizes";
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from "../../lib/pricing";
 import { productImagesForColor } from "../../lib/product-images";
+import { measurementFields, resolveSizeGuide } from "../../lib/size-guide";
 import { CartDrawer } from "../cart";
 import { Footer } from "../home";
 import { Header } from "../layout";
-import { ProductIcon } from "../shared";
+import { ProductIcon, SizeGuideDialog } from "../shared";
 import { ProductCard } from "./catalog/ProductCard";
 
 export function ProductDetailPage({ productId }: { productId: number }) {
@@ -26,6 +28,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
   const [quantity, setQuantity] = useState(1);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [cartHydrated, setCartHydrated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [toast, setToast] = useState("");
@@ -55,6 +58,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       setActiveImage(0);
       setSuggestions(randomSuggestions(list, productId));
       if (!found) throw new Error("Esta peça não foi encontrada.");
+      trackEventOnce("view", found.id);
       const firstColor = found.colors?.[0];
       setColor(firstColor?.n || "");
       setSize(availableVariantSizes(firstColor?.sizes || [])[0] || sortProductSizes(found.sizes)[0] || "");
@@ -89,6 +93,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       if (found) return current.map((item) => item === found ? { ...item, qty: Math.min(10, item.qty + quantity) } : item);
       return [...current, { pid: product.id, size, color, qty: quantity }];
     });
+    trackEvent("add", product.id);
     setToast("Peça adicionada à sacola");
     setCartOpen(true);
     window.setTimeout(() => setToast(""), 2600);
@@ -112,6 +117,8 @@ export function ProductDetailPage({ productId }: { productId: number }) {
   if (!product || error) return <main><Header cartCount={cart.length} /><div className="flex min-h-[70vh] flex-col items-center justify-center gap-5 px-6 text-center"><h1 className="text-3xl">Peça não encontrada</h1><p className="text-bubble-ink/60">{error}</p><a href={`/${demoMode ? "?demo=1" : ""}`} className="border border-bubble-ink px-6 py-3 font-sans text-xs uppercase">Voltar à loja</a></div></main>;
 
   const promo = productHasPromotion(product);
+  const sizeGuide = resolveSizeGuide(product);
+  const sizeSummary = size ? sizeGuide.fields.filter((field) => measurementFields[field].unit === "cm" && sizeGuide.rows[size]?.[field]).map((field) => `${measurementFields[field].label} ${sizeGuide.rows[size][field]}`) : [];
   return (
     <main>
       <Header cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} onCart={() => setCartOpen(true)} onAccount={() => window.location.assign(user ? "/conta" : "/login")} />
@@ -149,10 +156,11 @@ export function ProductDetailPage({ productId }: { productId: number }) {
 
             {product.colors?.length ? <div className="mt-8"><div className="mb-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]">Cor · <span className="text-bubble-ink/55">{color}</span></div><div className="flex flex-wrap gap-2">{product.colors.map((item) => <button key={item.n} type="button" aria-label={`Selecionar cor ${item.n}`} onClick={() => selectColor(item.n)} className={`${color === item.n ? "ring-2 ring-bubble-ink ring-offset-2 ring-offset-bubble-cream" : ""} size-9 rounded-full border border-bubble-ink/30`} style={{ backgroundColor: item.h }} />)}</div></div> : null}
 
-            <div className="mt-7"><div className="mb-3 flex items-center justify-between font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]"><span>Tamanho</span><span className="text-[.58rem] text-bubble-ink/45">Escolha o seu</span></div><div className="grid grid-cols-4 gap-2">{sortProductSizes(product.sizes).map((item) => { const available = availableSizes.includes(item); return <button key={item} type="button" disabled={!available} onClick={() => setSize(item)} className={`${size === item ? "bg-bubble-ink text-bubble-cream" : "bg-transparent text-bubble-ink"} border border-bubble-ink py-3 font-sans text-[.68rem] font-semibold uppercase disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25`}>{item}</button>; })}</div></div>
+            <div className="mt-7"><div className="mb-3 flex items-center justify-between font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]"><span>Tamanho</span><button type="button" onClick={() => setSizeGuideOpen(true)} className="border-0 bg-transparent p-0 font-sans text-[.68rem] font-semibold normal-case tracking-normal text-bubble-brown underline underline-offset-4 transition-colors hover:text-bubble-ink">Guia de medidas</button></div><div className="grid grid-cols-4 gap-2">{sortProductSizes(product.sizes).map((item) => { const available = availableSizes.includes(item); return <button key={item} type="button" disabled={!available} onClick={() => setSize(item)} className={`${size === item ? "bg-bubble-ink text-bubble-cream" : "bg-transparent text-bubble-ink"} border border-bubble-ink py-3 font-sans text-[.68rem] font-semibold uppercase disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25`}>{item}</button>; })}</div></div>
 
             <div className="mt-8 grid grid-cols-[112px_1fr] gap-2"><div className="grid grid-cols-3 border border-bubble-ink"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="Diminuir quantidade" className="flex items-center justify-center"><Minus size={14} /></button><span className="flex items-center justify-center font-sans text-sm">{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(10, value + 1))} aria-label="Aumentar quantidade" className="flex items-center justify-center"><Plus size={14} /></button></div><button type="button" onClick={addToCart} disabled={!size || product.stock <= 0} className="flex items-center justify-center gap-2 bg-bubble-ink px-5 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.12em] text-bubble-cream transition-colors hover:bg-bubble-brown disabled:opacity-40"><ShoppingBag size={17} /> {product.stock > 0 ? "Adicionar à sacola" : "Esgotado"}</button></div>
             <div className="mt-4 flex items-center gap-2 text-[.72rem] text-bubble-ink/55"><Check size={14} /> Troca garantida em até 30 dias</div>
+            {sizeSummary.length ? <div className="mt-2 text-[.68rem] text-bubble-ink/45">Tam. {size} · {sizeSummary.join(" · ")} cm</div> : null}
           </section>
         </div>
       </div>
@@ -184,6 +192,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       ) : null}
       <Footer />
       <CartDrawer open={cartOpen} cart={cart} products={products} onQty={changeQty} onClose={() => setCartOpen(false)} />
+      <SizeGuideDialog open={sizeGuideOpen} onClose={() => setSizeGuideOpen(false)} product={product} selectedSize={size} />
       <div className={`fixed bottom-7 left-1/2 z-[900] -translate-x-1/2 bg-bubble-ink px-6 py-3 text-sm text-bubble-cream shadow-bubble transition-all ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"}`}>{toast}</div>
     </main>
   );

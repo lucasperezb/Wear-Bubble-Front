@@ -19,6 +19,15 @@ import {
   standardProductSizes,
 } from "../../../lib/product-sizes";
 import { productPrice } from "../../../lib/pricing";
+import {
+  MEASUREMENT_NOTES_MAX_LENGTH,
+  MEASUREMENT_VALUE_MAX_LENGTH,
+  type MeasurementField,
+  type ProductMeasurements,
+  defaultMeasurements,
+  measurementFields,
+  measurementFieldsForCategory,
+} from "../../../lib/size-guide";
 import { useBodyScrollLock } from "../../../lib/use-body-scroll-lock";
 import { ProductIcon } from "../../shared";
 import {
@@ -33,6 +42,7 @@ import {
   primaryButton,
   productInput,
   productLabel,
+  smallButton,
   stockBadge,
 } from "../shared/styles";
 import type {
@@ -513,7 +523,9 @@ function ProductEditorModal({
   useBodyScrollLock(true);
   const editing = Boolean(product);
   const [draft, setDraft] = useState<ProductDraft>(() =>
-    product ? { ...product, cat: catalogCategory(product.cat) } : createEmptyProductDraft(),
+    product
+      ? { ...product, cat: catalogCategory(product.cat) }
+      : { ...createEmptyProductDraft(), measurements: null },
   );
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -522,7 +534,9 @@ function ProductEditorModal({
 
   useEffect(() => {
     setDraft(
-      product ? { ...product, cat: catalogCategory(product.cat) } : createEmptyProductDraft(),
+      product
+        ? { ...product, cat: catalogCategory(product.cat) }
+        : { ...createEmptyProductDraft(), measurements: null },
     );
     setFiles([]);
     setError("");
@@ -537,18 +551,22 @@ function ProductEditorModal({
     setSaving(true);
     setError("");
     let created: Product | null = null;
+    const payload = {
+      ...productPayload(draft),
+      measurements: draft.measurements ?? null,
+    };
     try {
       if (demoMode) {
-        created = saveDemoProduct(productPayload(draft), product?.id);
+        created = saveDemoProduct(payload, product?.id);
       } else if (product) {
         await apiFetch(`/products/${product.id}`, {
           method: "PATCH",
-          body: JSON.stringify(productPayload(draft)),
+          body: JSON.stringify(payload),
         });
       } else {
         created = await apiFetch<Product>("/products", {
           method: "POST",
-          body: JSON.stringify(productPayload(draft)),
+          body: JSON.stringify(payload),
         });
         if (files.length) await uploadProductImages(created.id, files);
       }
@@ -759,6 +777,13 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
         0,
       )
     : draft.stock;
+  const measurementColumns = measurementFieldsForCategory(draft.cat);
+  const measurementDefaults = defaultMeasurements(draft.cat, sizes);
+  const measurementRows: ProductMeasurements['rows'] =
+    draft.measurements?.rows || {};
+  const measurementNotes = draft.measurements?.notes || '';
+  const hasMeasurements =
+    Object.keys(measurementRows).length > 0 || measurementNotes.length > 0;
   const availableSports = Array.from(
     new Set([...sports, ...(draft.sports || [])]),
   );
@@ -789,6 +814,29 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
       update({ sports: [...selected, existing || label] });
     }
     setCustomSport('');
+  }
+
+  function setMeasurements(rows: ProductMeasurements['rows'], notes: string) {
+    update({
+      measurements:
+        Object.keys(rows).length || notes
+          ? { rows, ...(notes ? { notes } : {}) }
+          : null,
+    });
+  }
+
+  function setMeasurement(size: string, field: MeasurementField, value: string) {
+    const rows: ProductMeasurements['rows'] = { ...measurementRows };
+    const row: Record<string, string> = { ...(rows[size] || {}) };
+    if (value) row[field] = value;
+    else delete row[field];
+    if (Object.keys(row).length) rows[size] = row;
+    else delete rows[size];
+    setMeasurements(rows, measurementNotes);
+  }
+
+  function setMeasurementNotes(notes: string) {
+    setMeasurements(measurementRows, notes);
   }
 
   return (
@@ -826,6 +874,53 @@ function ProductFields({ draft, sports, onDraft }: { draft: ProductDraft; sports
           <div><label className={productLabel}>Largura (cm)</label><input className={productInput} type="number" min="1" value={draft.width} onChange={(event) => update({ width: Number(event.target.value) })} /></div>
           <div><label className={productLabel}>Altura (cm)</label><input className={productInput} type="number" min="1" value={draft.height} onChange={(event) => update({ height: Number(event.target.value) })} /></div>
           <div><label className={productLabel}>Comprimento (cm)</label><input className={productInput} type="number" min="1" value={draft.length} onChange={(event) => update({ length: Number(event.target.value) })} /></div>
+        </div>
+      </div>
+      <div className="mt-3 border border-bubble-line bg-bubble-cream/60 p-3">
+        <div className="font-sans text-[.62rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">Guia de medidas</div>
+        <p className="mt-1 text-[.68rem] leading-relaxed text-bubble-ink/50">Em branco usa o padrão da categoria. Valores em cm; faixas como 82–86 são aceitas.</p>
+        <div className="mt-2 overflow-x-auto">
+          <table className="w-full min-w-[420px] border-separate border-spacing-x-1.5 border-spacing-y-1 text-left">
+            <thead>
+              <tr>
+                <th className="font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/50">Tamanho</th>
+                {measurementColumns.map((field) => (
+                  <th className="font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/50" key={field}>{measurementFields[field].label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sizes.map((size) => (
+                <tr key={size}>
+                  <td className="whitespace-nowrap text-[.76rem] font-semibold text-bubble-ink">{size}</td>
+                  {measurementColumns.map((field) => (
+                    <td key={field}>
+                      <input
+                        className={`${productInput} py-1.5 text-[.76rem]`}
+                        value={draft.measurements?.rows?.[size]?.[field] ?? ''}
+                        placeholder={measurementDefaults.rows[size]?.[field] || '—'}
+                        maxLength={MEASUREMENT_VALUE_MAX_LENGTH}
+                        aria-label={`${measurementFields[field].label} do tamanho ${size}`}
+                        onChange={(event) => setMeasurement(size, field, event.target.value)}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <label className={productLabel}>Observação (opcional)</label>
+        <input className={productInput} value={measurementNotes} maxLength={MEASUREMENT_NOTES_MAX_LENGTH} onChange={(event) => setMeasurementNotes(event.target.value)} placeholder="Ex: Modelo veste M e tem 1,70 m" />
+        <div className="mt-2">
+          <button
+            type="button"
+            className={`${smallButton} disabled:cursor-not-allowed disabled:opacity-40`}
+            onClick={() => update({ measurements: null })}
+            disabled={!hasMeasurements}
+          >
+            Limpar e usar padrão
+          </button>
         </div>
       </div>
       <label className={productLabel}>Esportes recomendados</label>

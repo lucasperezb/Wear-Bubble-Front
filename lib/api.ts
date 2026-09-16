@@ -1,3 +1,4 @@
+import type { ProductMeasurements } from "./size-guide";
 import axios from "axios";
 
 export type Product = {
@@ -39,6 +40,7 @@ export type Product = {
   desc: string;
   image?: string | null;
   images?: ProductImage[];
+  measurements?: ProductMeasurements | null;
 };
 
 export type ShowcaseKey =

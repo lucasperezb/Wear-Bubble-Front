@@ -13,6 +13,7 @@ import {
 import { Header } from "../components/layout";
 import { ProductCatalog, ProductModal } from "../components/product";
 import { HeroConfig, Product, ShowcaseMap, User, apiFetch } from "../lib/api";
+import { trackEvent } from "../lib/analytics";
 import { readCart, writeCart, type CartItem } from "../lib/cart";
 import { categoryMatches } from "../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
@@ -212,6 +213,7 @@ export default function Home() {
   }, [homeProducts, products, showcases]);
 
   function openProduct(product: Product) {
+    trackEvent("click", product.id);
     window.location.assign(
       `/produto/${product.id}${demoMode ? "?demo=1" : ""}`,
     );
@@ -237,6 +239,7 @@ export default function Home() {
         );
       return [...current, { pid: product.id, size, color, qty: 1, bundle }];
     });
+    trackEvent("add", product.id);
     setSelectedProduct(null);
     setCartOpen(true);
     showToast(

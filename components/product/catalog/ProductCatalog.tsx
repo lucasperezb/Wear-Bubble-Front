@@ -25,6 +25,10 @@ type ProductCatalogProps = {
   eyebrow?: string;
   title?: string;
   description?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  suggestionProducts?: Product[];
+  suggestionTitle?: string;
 };
 
 export function ProductCatalog({
@@ -39,6 +43,10 @@ export function ProductCatalog({
   onRetry,
   showFilters = true,
   showCategoryFilter = true,
+  emptyTitle = "Nenhuma peça encontrada com estes filtros.",
+  emptyDescription,
+  suggestionProducts = [],
+  suggestionTitle,
   eyebrow = "Coleção Core · Linha feminina",
   title = "Core Collection",
   description = "Clique na peça para ver detalhes, tecido e sugestão de conjunto. Peças da coleção não voltam ao estoque.",
@@ -134,7 +142,8 @@ export function ProductCatalog({
           ) : null}
           {!loading && !error && !products.length ? (
             <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center gap-2.5 border border-bubble-ink/10 bg-bubble-cream2 p-8 text-center">
-              Nenhuma peça encontrada com estes filtros.
+              <strong>{emptyTitle}</strong>
+              {emptyDescription ? <span className="max-w-[480px] text-[.82rem] text-bubble-ink/65">{emptyDescription}</span> : null}
             </div>
           ) : null}
           {!loading && !error
@@ -143,6 +152,22 @@ export function ProductCatalog({
               ))
             : null}
         </div>
+        {!loading && !error && !products.length && suggestionProducts.length ? (
+          <div className="mt-12">
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <span className="font-sans text-[.66rem] font-semibold uppercase tracking-[.24em] text-bubble-brown">Sugestões para você</span>
+                <h3 className="mt-2 text-[1.8rem]">{suggestionTitle || "Talvez você goste destas peças"}</h3>
+              </div>
+              <span className="hidden font-serif text-[.82rem] italic text-bubble-ink/55 sm:block">Atualizadas automaticamente</span>
+            </div>
+            <div className="grid grid-cols-4 gap-0.5 border border-bubble-ink bg-bubble-cream2 max-[980px]:grid-cols-2 max-[350px]:grid-cols-1">
+              {suggestionProducts.map((product) => (
+                <ProductCard key={product.id} product={product} href={productHref(product)} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );
