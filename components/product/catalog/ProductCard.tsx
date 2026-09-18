@@ -1,6 +1,6 @@
 import { Product, money } from '../../../lib/api';
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from '../../../lib/pricing';
-import { ProductIcon } from '../../shared';
+import { ProductIcon, PromoBadge } from '../../shared';
 import { useRef } from 'react';
 import { hasFinePointer } from '../../../lib/pointer';
 
@@ -40,7 +40,8 @@ export function ProductCard({ product, href }: ProductCardProps) {
       aria-label={`Ver detalhes de ${product.name}`}
     >
       <div ref={visualRef} className="relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#EAE2CC,#F3EDDD)] transition-transform duration-500 ease-out [@media(hover:hover)]:will-change-transform">
-        {out ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-ink/70 px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:text-[.6rem]">Esgotado</span> : promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:text-[.6rem]">{promotionPct(product)}% OFF</span> : product.collectionName ? <span className="absolute left-3.5 top-3.5 z-[2] max-w-[calc(100%-28px)] truncate bg-bubble-ink px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:max-w-[calc(100%-16px)] max-[520px]:px-2 max-[520px]:text-[.6rem]">{product.collectionName}</span> : null}
+        {out ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-ink/70 px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:text-[.6rem]">Esgotado</span> : product.collectionName ? <span className={`absolute left-3.5 top-3.5 z-[2] truncate bg-bubble-ink px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white max-[520px]:left-2 max-[520px]:top-2 max-[520px]:px-2 max-[520px]:text-[.6rem] ${promo ? 'max-w-[calc(100%-76px)] max-[520px]:max-w-[calc(100%-64px)]' : 'max-w-[calc(100%-28px)] max-[520px]:max-w-[calc(100%-16px)]'}`}>{product.collectionName}</span> : null}
+        {promo && !out ? <PromoBadge pct={promotionPct(product)} /> : null}
         <div ref={mediaRef} className="flex size-full items-center justify-center transition-transform duration-500 ease-out [@media(hover:hover)]:will-change-transform [&_svg]:w-[46%] [&_svg]:opacity-[.88]">
           {product.image ? <img className="size-full object-cover" src={product.image} alt={product.name} loading="lazy" decoding="async" /> : <ProductIcon icon={product.icon} />}
         </div>
@@ -61,6 +62,7 @@ export function ProductCard({ product, href }: ProductCardProps) {
             {promo ? <span className="block text-[.72rem] text-bubble-ink/45 line-through">{money.format(product.price)}</span> : null}
             <span className="text-[1.05rem] font-semibold text-bubble-ink max-[520px]:text-[.98rem]">{money.format(finalPrice)}</span>
             <span className="block text-[.66rem] font-semibold text-bubble-success max-[520px]:text-[.7rem]">{money.format(pixPrice(product))} no Pix</span>
+            {promo ? <span className="mt-1 inline-block bg-bubble-success/10 px-1.5 py-0.5 font-sans text-[.58rem] font-bold uppercase tracking-[.08em] text-bubble-success">Economize {money.format(product.price - finalPrice)}</span> : null}
           </div>
           <span className="border border-bubble-ink bg-transparent px-3.5 py-2 text-center font-sans text-[.64rem] font-bold uppercase tracking-[.1em] transition-all group-hover:bg-bubble-ink group-hover:text-bubble-white max-[520px]:w-full max-[520px]:py-3 max-[520px]:text-[.66rem]">Ver peça</span>
         </div>

@@ -10,7 +10,7 @@ import { Product, User, apiFetch } from "../../lib/api";
 import { trackEvent } from "../../lib/analytics";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { sortProductSizes } from "../../lib/product-sizes";
-import { productPrice } from "../../lib/pricing";
+import { productHasPromotion, productPrice } from "../../lib/pricing";
 import { readDemoProducts } from "../../lib/demo-store";
 import { categoryMatches } from "../../lib/product-filters";
 import { collectionSlug as slugForCollection } from "../../lib/collections";
@@ -33,9 +33,10 @@ type Filters = {
   size: string;
   sport: string;
   sort: string;
+  promo: boolean;
 };
 
-const initialFilters: Filters = { cat: "all", size: "", sport: "", sort: "rel" };
+const initialFilters: Filters = { cat: "all", size: "", sport: "", sort: "rel", promo: false };
 
 export function ShowcasePage({
   category,
@@ -67,6 +68,8 @@ export function ShowcasePage({
     const demo = params.get("demo") === "1";
     const initialQuery = params.get("busca") || "";
     setSearchQuery(initialQuery);
+    // O link "Promoção" do menu e do hero chegam com ?promo=1 para abrir já filtrado.
+    if (params.get("promo") === "1") setFilters((current) => ({ ...current, promo: true }));
     if (initialQuery.trim()) addSearchToHistory(initialQuery);
     setDemoMode(demo);
     void load(demo);
@@ -116,6 +119,11 @@ export function ShowcasePage({
     [scopedProducts],
   );
 
+  const promoCount = useMemo(
+    () => scopedProducts.filter(productHasPromotion).length,
+    [scopedProducts],
+  );
+
   const searchMatches = useMemo(
     () => matchingProducts(scopedProducts, searchQuery),
     [scopedProducts, searchQuery],
@@ -146,6 +154,7 @@ export function ShowcasePage({
     let list = searchQuery.trim() ? searchMatches.map(({ product }) => product) : scopedProducts;
     if (showAll && filters.cat !== "all")
       list = list.filter((product) => categoryMatches(product.cat, filters.cat));
+    if (filters.promo) list = list.filter(productHasPromotion);
     if (filters.size)
       list = list.filter((product) => sortProductSizes(product.sizes).includes(filters.size));
     if (filters.sport)
@@ -209,7 +218,8 @@ export function ShowcasePage({
         onRetry={() => void load(demoMode)}
         showFilters
         showCategoryFilter={showAll}
-        emptyTitle={searchQuery.trim() ? "Não encontramos sua busca" : undefined}
+        promoCount={promoCount}
+        emptyTitle={searchQuery.trim() ? "Não encontramos sua busca" : filters.promo ? "Nenhuma peça em promoção neste momento" : undefined}
         emptyDescription={searchQuery.trim() ? (
           <>
             {didYouMean ? (
@@ -222,6 +232,17 @@ export function ShowcasePage({
               </>
             ) : null}
             Tente outro termo ou confira as sugestões abaixo — são as peças mais próximas do que você procurou.
+          </>
+        ) : filters.promo ? (
+          <>
+            O desconto progressivo continua valendo na sacola.{" "}
+            <button
+              type="button"
+              className="font-semibold text-bubble-brown underline underline-offset-4"
+              onClick={() => setFilters((current) => ({ ...current, promo: false }))}
+            >
+              Ver todas as peças
+            </button>
           </>
         ) : undefined}
         suggestionProducts={searchSuggestions}

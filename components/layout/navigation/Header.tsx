@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiFetch, type User } from "../../../lib/api";
 import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
+import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
 import { SearchBox } from "./SearchBox";
 
 type HeaderProps = {
@@ -166,11 +167,21 @@ export function Header({
       ? "/conta"
       : "/login";
 
+  // Avaliado no render para servidor e cliente concordarem; vira false sozinho quando a data passa.
+  const promoActive = promoCampaignActive();
+  const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "&demo=1" : ""}`;
+
   return (
     <>
-      <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
-        FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
-      </div>
+      {promoActive ? (
+        <div className="bg-bubble-danger px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-white [&_b]:font-bold">
+          <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
+        </div>
+      ) : (
+        <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
+          FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
+        </div>
+      )}
       <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream min-[981px]:bg-bubble-cream/95 min-[981px]:backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-8 py-[15px] max-[520px]:px-4">
           <a
@@ -263,6 +274,19 @@ export function Header({
                 Ver a coleção completa <span aria-hidden="true">→</span>
               </a>
             </DesktopMenu>
+
+            {promoActive ? (
+              <a
+                href={promoHref}
+                className="relative flex h-full items-center gap-2 px-3 font-bold text-bubble-danger after:absolute after:bottom-0 after:left-3 after:h-px after:w-0 after:bg-bubble-danger after:transition-[width] hover:after:w-[calc(100%-1.5rem)]"
+              >
+                <span
+                  className="size-1.5 rounded-full bg-bubble-danger motion-safe:animate-pulse"
+                  aria-hidden="true"
+                />
+                Promoção
+              </a>
+            ) : null}
 
             <a
               href="/#conjunto"
@@ -500,6 +524,24 @@ export function Header({
         {mobileOpen ? (
           <div className="absolute inset-x-0 top-full max-h-[calc(100dvh-152px)] overflow-y-auto overscroll-contain border-b border-bubble-ink bg-bubble-cream shadow-bubble min-[981px]:hidden">
             <nav className="mx-auto max-w-[720px] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3" aria-label="Navegação mobile">
+              {promoActive ? (
+                <a
+                  href={promoHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-between border-b border-bubble-ink/25 px-1 py-4 font-display text-lg uppercase text-bubble-danger"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <span
+                      className="size-2 rounded-full bg-bubble-danger motion-safe:animate-pulse"
+                      aria-hidden="true"
+                    />
+                    Promoção
+                  </span>
+                  <span className="bg-bubble-danger px-2.5 py-1 font-sans text-[.56rem] font-bold tracking-[.1em] text-bubble-white">
+                    ATÉ {PROMO_CAMPAIGN.maxPct}% OFF
+                  </span>
+                </a>
+              ) : null}
               <details className="group border-b border-bubble-ink/25">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-1 py-4 font-display text-lg uppercase [&::-webkit-details-marker]:hidden">
                   Coleções

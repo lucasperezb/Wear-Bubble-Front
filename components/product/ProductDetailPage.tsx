@@ -15,7 +15,7 @@ import { CartDrawer, describeProgressiveTiers } from "../cart";
 import { usePromotionSettings } from "../../lib/use-promotion-settings";
 import { Footer } from "../home";
 import { Header } from "../layout";
-import { ProductIcon, SizeGuideDialog } from "../shared";
+import { ProductIcon, PromoBadge, SizeGuideDialog } from "../shared";
 import { ProductCard } from "./catalog/ProductCard";
 
 export function ProductDetailPage({ productId }: { productId: number }) {
@@ -154,10 +154,15 @@ export function ProductDetailPage({ productId }: { productId: number }) {
             <h1 className="mt-3 text-[clamp(2.1rem,4vw,3.8rem)] leading-[.98]">{product.name}</h1>
             <div className="mt-5 flex items-center gap-3 border-b border-bubble-line pb-5 text-[.76rem] text-bubble-ink/55"><span className="text-bubble-brown">{"★".repeat(Math.round(product.rating))}</span><span>{product.rating.toFixed(1)} · {product.reviews} avaliações</span></div>
             <div className="mt-6">
-              {promo ? <div className="text-sm text-bubble-ink/40 line-through">{money.format(product.price)}</div> : null}
-              <div className="font-display text-[2rem]">{money.format(productPrice(product))}</div>
-              <div className="mt-1 text-sm font-semibold text-bubble-success">{money.format(pixPrice(product))} no Pix</div>
-              {promo ? <span className="mt-2 inline-block bg-bubble-danger px-2.5 py-1 font-sans text-[.6rem] font-bold uppercase text-bubble-white">{promotionPct(product)}% OFF</span> : null}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  {promo ? <div className="text-sm text-bubble-ink/40 line-through">{money.format(product.price)}</div> : null}
+                  <div className="font-display text-[2rem]">{money.format(productPrice(product))}</div>
+                  <div className="mt-1 text-sm font-semibold text-bubble-success">{money.format(pixPrice(product))} no Pix</div>
+                  {promo ? <span className="mt-2 inline-block bg-bubble-success/10 px-2 py-1 font-sans text-[.62rem] font-bold uppercase tracking-[.08em] text-bubble-success">Você economiza {money.format(product.price - productPrice(product))}</span> : null}
+                </div>
+                {promo ? <div className="shrink-0 pr-2 pt-1"><PromoBadge pct={promotionPct(product)} variant="inline" /></div> : null}
+              </div>
               {progressiveTeaser ? <div className="mt-3 border-l-2 border-bubble-brown pl-3 text-[.72rem] leading-relaxed text-bubble-ink/70"><span className="font-sans text-[.58rem] font-bold uppercase tracking-[.14em] text-bubble-brown">Leve mais, pague menos</span><br />{progressiveTeaser}</div> : null}
             </div>
 
