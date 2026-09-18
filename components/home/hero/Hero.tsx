@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { money, type HeroConfig, type Product } from "../../../lib/api";
 import { productPrice } from "../../../lib/pricing";
+import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
+import { usePromoCountdown } from "../../../lib/use-promo-countdown";
 import { ProductIcon } from "../../shared";
 
 type HeroProps = {
@@ -19,20 +21,93 @@ export function Hero({
   collectionHref = "/produtos",
 }: HeroProps) {
   const slides = config.slides.filter((slide) => slide.active);
+  const promoActive = promoCampaignActive();
+  const useCarousel = config.enabled && slides.length > 0;
 
   return (
     <>
-      {config.enabled && slides.length ? (
+      {useCarousel ? (
         <HeroCarousel slides={slides} />
       ) : (
         <StaticHero
           product={product}
           productHref={productHref}
           collectionHref={collectionHref}
+          promoActive={promoActive}
         />
       )}
-      <PromoMarquee />
+      {/* Com o carrossel ligado o hero é só imagem; a campanha ganha uma faixa própria. */}
+      {useCarousel && promoActive ? <PromoStrip /> : null}
+      <PromoMarquee promoActive={promoActive} />
     </>
+  );
+}
+
+function PromoPill() {
+  return (
+    <span className="inline-flex items-center gap-2 bg-bubble-danger px-3 py-[7px] font-sans text-[.6rem] font-bold uppercase tracking-[.18em] text-bubble-white">
+      <span
+        className="size-1.5 rounded-full bg-bubble-white motion-safe:animate-pulse"
+        aria-hidden="true"
+      />
+      Promoção · até {PROMO_CAMPAIGN.maxPct}% OFF
+    </span>
+  );
+}
+
+function pad(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+/** Contador até o fim da campanha. Renderiza traços até montar, para não divergir do HTML do servidor. */
+function PromoCountdown() {
+  const countdown = usePromoCountdown();
+  if (countdown?.expired) return null;
+  const cells: [string, string][] = [
+    [countdown ? pad(countdown.days) : "--", "dias"],
+    [countdown ? pad(countdown.hours) : "--", "horas"],
+    [countdown ? pad(countdown.minutes) : "--", "min"],
+    [countdown ? pad(countdown.seconds) : "--", "seg"],
+  ];
+  return (
+    <div
+      className="inline-flex items-center gap-3 font-sans text-bubble-ink"
+      role="timer"
+      aria-live="off"
+      aria-label="Tempo restante da promoção"
+    >
+      <span className="text-[.6rem] font-semibold uppercase tracking-[.16em] text-bubble-ink/55">
+        Termina em
+      </span>
+      {cells.map(([value, label]) => (
+        <span key={label} className="flex flex-col items-center leading-none">
+          <span className="text-[1.35rem] font-semibold tabular-nums">{value}</span>
+          <span className="mt-1 text-[.5rem] uppercase tracking-[.16em] text-bubble-ink/50">
+            {label}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Faixa da campanha para quando o hero é o carrossel de imagens. */
+function PromoStrip() {
+  return (
+    <div className="border-b border-bubble-ink bg-bubble-cream px-6 py-5">
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <PromoPill />
+          <PromoCountdown />
+        </div>
+        <a
+          href={PROMO_CAMPAIGN.href}
+          className="inline-flex min-h-12 items-center justify-center border border-bubble-danger bg-bubble-danger px-6 py-3 font-sans text-[.7rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-colors hover:border-bubble-ink hover:bg-bubble-ink"
+        >
+          Ver peças em promoção
+        </a>
+      </div>
+    </div>
   );
 }
 
@@ -137,7 +212,10 @@ function StaticHero({
   product,
   productHref,
   collectionHref,
-}: Pick<HeroProps, "product" | "productHref" | "collectionHref">) {
+  promoActive,
+}: Pick<HeroProps, "product" | "productHref" | "collectionHref"> & {
+  promoActive: boolean;
+}) {
   return (
     <section
       className="relative overflow-hidden border-b border-bubble-ink bg-bubble-cream px-6 py-12 md:px-10 md:py-16 lg:min-h-[680px] lg:py-20"
@@ -167,30 +245,55 @@ function StaticHero({
           <circle cx="156" cy="152" r="12" fill="currentColor" />
         </svg>
         <div className="relative z-10 col-start-1 row-start-1 min-w-0 max-w-[590px] text-left">
-          <span className="font-sans text-[.64rem] font-semibold uppercase tracking-[.16em] text-bubble-brown sm:text-[.68rem] sm:tracking-[.28em]">
-            Moda fitness feminina · Coleção Core
-          </span>
+          {promoActive ? (
+            <PromoPill />
+          ) : (
+            <span className="font-sans text-[.64rem] font-semibold uppercase tracking-[.16em] text-bubble-brown sm:text-[.68rem] sm:tracking-[.28em]">
+              Moda fitness feminina · Coleção Core
+            </span>
+          )}
           <h1 className="mt-4 text-[clamp(2.15rem,10vw,3.2rem)] leading-[.92] tracking-[-.035em] sm:mt-5 sm:text-[clamp(3rem,8vw,5rem)] lg:text-[clamp(3.2rem,6.3vw,6rem)]">
             Estoure
             <br />
             seus limites.
           </h1>
           <p className="m-0 mt-3 font-serif text-[clamp(1rem,3vw,1.8rem)] font-semibold italic sm:mt-4">
-            vista bubble.
+            {promoActive ? (
+              <>
+                vista bubble <span className="not-italic text-bubble-danger">por menos</span>.
+              </>
+            ) : (
+              "vista bubble."
+            )}
           </p>
         </div>
         <div className="relative z-10 col-span-2 row-start-2 text-center lg:col-span-1 lg:col-start-1 lg:text-left">
           <p className="mx-auto mt-6 max-w-[540px] font-serif text-[clamp(1rem,1.7vw,1.25rem)] italic leading-[1.65] text-bubble-ink/70 lg:mx-0">
-            Peças de toque macio, conforto e design versátil para acompanhar
-            você dentro e fora do treino.
+            {promoActive
+              ? `Peças de toque macio, conforto e design versátil — agora com até ${PROMO_CAMPAIGN.maxPct}% de desconto.`
+              : "Peças de toque macio, conforto e design versátil para acompanhar você dentro e fora do treino."}
           </p>
+          {promoActive ? (
+            <div className="mt-6 flex justify-center lg:justify-start">
+              <PromoCountdown />
+            </div>
+          ) : null}
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-            <a
-              href={collectionHref}
-              className="inline-flex min-h-13 items-center justify-center border border-bubble-ink bg-bubble-ink px-7 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:bg-bubble-brown"
-            >
-              Conhecer a Coleção Core
-            </a>
+            {promoActive ? (
+              <a
+                href={PROMO_CAMPAIGN.href}
+                className="inline-flex min-h-13 items-center justify-center border border-bubble-danger bg-bubble-danger px-7 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:border-bubble-ink hover:bg-bubble-ink"
+              >
+                Ver peças em promoção
+              </a>
+            ) : (
+              <a
+                href={collectionHref}
+                className="inline-flex min-h-13 items-center justify-center border border-bubble-ink bg-bubble-ink px-7 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-all hover:bg-bubble-brown"
+              >
+                Conhecer a Coleção Core
+              </a>
+            )}
             <a
               href="#conjunto"
               className="inline-flex min-h-13 items-center justify-center border border-bubble-ink bg-transparent px-7 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.14em] text-bubble-ink transition-all hover:bg-bubble-ink hover:text-bubble-white"
@@ -261,7 +364,26 @@ function StaticHero({
   );
 }
 
-function PromoMarquee() {
+function PromoMarquee({ promoActive }: { promoActive: boolean }) {
+  if (promoActive) {
+    // O letreiro precisa de duas metades iguais: a animação anda -50% e recomeça.
+    const half = (
+      <>
+        <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> COLEÇÃO CORE NO AR{" "}
+        <span>FRETE GRÁTIS DE LANÇAMENTO</span> 5% OFF NO PIX{" "}
+        <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> TROCA EM 30 DIAS{" "}
+        <span>CONJUNTO COM 5% OFF</span> POR TEMPO LIMITADO{" "}
+      </>
+    );
+    return (
+      <div className="overflow-hidden whitespace-nowrap bg-bubble-ink py-[13px] text-bubble-cream">
+        <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] motion-reduce:animate-none [&_b]:mx-7 [&_b]:font-bold [&_b]:text-bubble-candy [&_span]:mx-7 [&_span]:text-bubble-cream/85">
+          {half}
+          {half}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="overflow-hidden whitespace-nowrap bg-bubble-ink py-[13px] text-bubble-cream">
       <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] motion-reduce:animate-none [&_span]:mx-7 [&_span]:text-bubble-cream/85">

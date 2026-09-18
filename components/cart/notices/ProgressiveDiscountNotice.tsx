@@ -32,8 +32,26 @@ export function describeProgressiveTiers(settings: ProgressiveSettings) {
 }
 
 /**
- * Aviso do desconto progressivo na sacola e no carrinho: o que já foi ganho
- * e quanto falta para a próxima faixa.
+ * Uma célula da barra por posição (1ª peça sem desconto, depois cada faixa).
+ * Com extendLast a última célula vira "Nª+" porque vale dali em diante.
+ */
+function tierCells(settings: ProgressiveSettings) {
+  const last = settings.tiers.length + 1;
+  return Array.from({ length: last }, (_, index) => {
+    const position = index + 1;
+    const pct = progressivePctForPosition(position, settings.tiers, settings.extendLast);
+    const open = settings.extendLast && position === last;
+    return {
+      position,
+      pct,
+      label: `${ordinal[position] || `${position}ª`}${open ? "+" : ""}`,
+    };
+  });
+}
+
+/**
+ * Aviso do desconto progressivo na sacola e no carrinho: o que já foi ganho,
+ * quanto falta para a próxima faixa e uma barra com todas as faixas.
  */
 export function ProgressiveDiscountNotice({
   settings,
@@ -47,6 +65,12 @@ export function ProgressiveDiscountNotice({
   const hint = nextStep
     ? `Adicione mais 1 peça e ganhe ${nextStep.pct}% nela.`
     : "";
+  const cells = tierCells(settings);
+  const maxPct = Math.max(...cells.map((cell) => cell.pct));
+  const maxCell = cells.find((cell) => cell.pct === maxPct);
+  const missingForMax = maxCell
+    ? Math.max(0, maxCell.position - progressive.eligibleCount)
+    : 0;
 
   return (
     <div
@@ -63,7 +87,33 @@ export function ProgressiveDiscountNotice({
           </span>
         ) : null}
       </div>
-      <p className={`mt-1 text-bubble-ink/70 ${compact ? "text-[.7rem]" : "text-[.74rem]"} leading-relaxed`}>
+
+      <div
+        className={`grid gap-1 ${compact ? "mt-2" : "mt-2.5"}`}
+        style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))` }}
+        aria-hidden="true"
+      >
+        {cells.map((cell) => {
+          const reached = progressive.eligibleCount >= cell.position;
+          return (
+            <div key={cell.position} className="min-w-0">
+              <div
+                className={`h-1.5 transition-colors ${reached ? "bg-bubble-success" : "bg-bubble-ink/15"}`}
+              />
+              <div
+                className={`mt-1 truncate font-sans text-[.56rem] uppercase tracking-[.06em] ${
+                  reached ? "font-bold text-bubble-success" : "text-bubble-ink/55"
+                }`}
+              >
+                {cell.label}
+                {cell.pct ? ` ${cell.pct}%` : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className={`mt-1.5 text-bubble-ink/70 ${compact ? "text-[.7rem]" : "text-[.74rem]"} leading-relaxed`}>
         {earned && hint ? hint : describeProgressiveTiers(settings)}
         {earned && !hint && settings.tiers.length
           ? " Você já está na maior faixa."
@@ -72,6 +122,13 @@ export function ProgressiveDiscountNotice({
       {!earned && hint && progressive.eligibleCount === 1 ? (
         <p className={`mt-1 font-semibold text-bubble-ink ${compact ? "text-[.7rem]" : "text-[.74rem]"}`}>
           {hint}
+        </p>
+      ) : null}
+      {missingForMax > 0 && maxPct > 0 ? (
+        <p className={`mt-1 font-sans font-semibold uppercase tracking-[.08em] text-bubble-brown ${compact ? "text-[.6rem]" : "text-[.64rem]"}`}>
+          {missingForMax === 1
+            ? `Falta 1 peça para chegar nos ${maxPct}% OFF`
+            : `Faltam ${missingForMax} peças para chegar nos ${maxPct}% OFF`}
         </p>
       ) : null}
     </div>

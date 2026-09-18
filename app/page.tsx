@@ -31,6 +31,7 @@ type Filters = {
   size: string;
   sport: string;
   sort: string;
+  promo: boolean;
 };
 
 type ComboVariantSelection = {
@@ -43,6 +44,7 @@ const initialFilters: Filters = {
   size: "",
   sport: "",
   sort: "rel",
+  promo: false,
 };
 
 export default function Home() {

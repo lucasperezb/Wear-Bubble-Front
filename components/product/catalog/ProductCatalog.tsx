@@ -9,6 +9,8 @@ type Filters = {
   size: string;
   sport: string;
   sort: string;
+  /** Só peças com desconto individual. */
+  promo: boolean;
 };
 
 type ProductCatalogProps = {
@@ -23,6 +25,8 @@ type ProductCatalogProps = {
   onRetry: () => void;
   showFilters?: boolean;
   showCategoryFilter?: boolean;
+  /** Quantas peças do escopo estão em promoção; o chip só aparece se houver alguma. */
+  promoCount?: number;
   eyebrow?: string;
   title?: string;
   description?: string;
@@ -44,6 +48,7 @@ export function ProductCatalog({
   onRetry,
   showFilters = true,
   showCategoryFilter = true,
+  promoCount = 0,
   emptyTitle = "Nenhuma peça encontrada com estes filtros.",
   emptyDescription,
   suggestionProducts = [],
@@ -81,6 +86,20 @@ export function ProductCatalog({
                 </button>
               ))
             : null}
+          {promoCount > 0 || filters.promo ? (
+            <button
+              className={`${filters.promo ? "border-bubble-danger bg-bubble-danger text-bubble-white" : "border-bubble-danger bg-bubble-white text-bubble-danger"} inline-flex items-center gap-2 border px-[18px] py-[9px] font-sans text-[.7rem] font-semibold uppercase tracking-[.1em] transition-colors`}
+              onClick={() => onFilter({ promo: !filters.promo })}
+              aria-pressed={filters.promo}
+            >
+              <span
+                className={`size-1.5 rounded-full ${filters.promo ? "bg-bubble-white" : "bg-bubble-danger motion-safe:animate-pulse"}`}
+                aria-hidden="true"
+              />
+              Em promoção
+              {promoCount > 0 ? <span className="opacity-70">({promoCount})</span> : null}
+            </button>
+          ) : null}
           <select
             className="cursor-pointer border border-bubble-line bg-bubble-white px-3 py-[9px] font-sans text-[.72rem] font-semibold tracking-[.04em] text-bubble-ink/70"
             value={filters.size}
