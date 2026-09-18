@@ -69,6 +69,7 @@ export function CustomersAdmin() {
         <b>Cofre de dados pessoais.</b> Estes dados são visíveis apenas para o
         gerente e devem ser usados para entrega e atendimento.
       </div>
+      <div className="overflow-x-auto">
       <table className={adminTable}>
         <thead>
           <tr>
@@ -135,6 +136,7 @@ export function CustomersAdmin() {
           ))}
         </tbody>
       </table>
+      </div>
       <div className="mt-3">
         <PaginationControls
           page={page}

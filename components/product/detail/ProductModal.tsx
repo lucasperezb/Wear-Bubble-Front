@@ -89,6 +89,8 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
                     className="absolute inset-0 size-full object-cover"
                     src={selectedImage.url}
                     alt={selectedImage.altText || product.name}
+                    fetchPriority="high"
+                    decoding="async"
                   />
                 ) : (
                   <ProductIcon icon={product.icon} />
@@ -107,8 +109,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
                       <img
                         className="size-full object-cover"
                         src={image.url}
-                        alt=""
-                      />
+                        alt="" loading="lazy" decoding="async" />
                     </button>
                   ))}
                 </div>

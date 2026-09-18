@@ -56,12 +56,12 @@ export function CookieConsentBanner() {
   return (
     <aside
       aria-label="Preferências de cookies"
-      className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-[760px] border border-bubble-ink bg-bubble-white p-5 shadow-2xl sm:p-6"
+      className="fixed inset-x-3 bottom-[max(.75rem,env(safe-area-inset-bottom))] z-[100] mx-auto max-w-[760px] border border-bubble-ink bg-bubble-white p-4 shadow-2xl sm:inset-x-4 sm:p-6"
     >
-      <div className="grid items-center gap-5 md:grid-cols-[1fr_auto]">
+      <div className="grid items-center gap-3 sm:gap-5 md:grid-cols-[1fr_auto]">
         <div>
-          <h2 className="text-xl">Sua privacidade importa</h2>
-          <p className="mt-2 text-sm leading-relaxed text-bubble-ink/70">
+          <h2 className="text-base sm:text-xl">Sua privacidade importa</h2>
+          <p className="mt-1.5 text-[.8rem] leading-relaxed text-bubble-ink/70 sm:mt-2 sm:text-sm">
             Usamos cookies opcionais do Google Ads para medir compras originadas
             por anúncios e melhorar nossas campanhas. Você pode aceitar ou
             recusar sem afetar o funcionamento da loja. Consulte nossa{" "}
@@ -75,14 +75,14 @@ export function CookieConsentBanner() {
           <button
             type="button"
             onClick={() => choose("accepted")}
-            className="flex-1 bg-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.08em] text-bubble-white"
+            className="min-h-11 flex-1 bg-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.08em] text-bubble-white"
           >
             Aceitar opcionais
           </button>
           <button
             type="button"
             onClick={() => choose("rejected")}
-            className="flex-1 border border-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.08em]"
+            className="min-h-11 flex-1 border border-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.08em]"
           >
             Recusar opcionais
           </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AdminPanel } from "../components/admin";
+import dynamic from "next/dynamic";
 import { CartDrawer } from "../components/cart";
 import {
   BrandSections,
@@ -19,6 +19,12 @@ import { categoryMatches } from "../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../lib/product-sizes";
 import { productPrice } from "../lib/pricing";
 import { readDemoProducts, readDemoShowcases } from "../lib/demo-store";
+
+// O painel (recharts, editores) pesa ~550 KB: só entra no bundle de quem é gerente.
+const AdminPanel = dynamic(
+  () => import("../components/admin").then((module) => module.AdminPanel),
+  { ssr: false },
+);
 
 type Filters = {
   cat: string;

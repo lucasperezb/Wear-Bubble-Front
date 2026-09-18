@@ -950,6 +950,12 @@ function ShipmentDetail({
                     : "Grátis"
                 }
               />
+              {Number(order.progressiveDiscount) > 0 ? (
+                <SummaryLine
+                  label="Desconto progressivo"
+                  value={`-${money.format(Number(order.progressiveDiscount))}`}
+                />
+              ) : null}
               {order.coupon ? (
                 <SummaryLine
                   label={`Cupom ${order.coupon}`}

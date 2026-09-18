@@ -5,6 +5,7 @@ import type { AppliedCoupon } from "../../../lib/cart";
 type OrderSummaryProps = {
   subtotal: number;
   bundleDiscount: number;
+  progressiveDiscount?: number;
   couponDiscount: number;
   accountCreditDiscount: number;
   pixDiscount: number;
@@ -18,6 +19,7 @@ type OrderSummaryProps = {
 export function OrderSummary({
   subtotal,
   bundleDiscount,
+  progressiveDiscount = 0,
   couponDiscount,
   accountCreditDiscount,
   pixDiscount,
@@ -35,6 +37,13 @@ export function OrderSummary({
         <SummaryRow
           label="Desconto no conjunto"
           value={`-${money.format(bundleDiscount)}`}
+          discount
+        />
+      ) : null}
+      {progressiveDiscount > 0 ? (
+        <SummaryRow
+          label="Desconto progressivo"
+          value={`-${money.format(progressiveDiscount)}`}
           discount
         />
       ) : null}

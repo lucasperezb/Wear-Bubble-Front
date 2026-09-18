@@ -6,11 +6,13 @@ import { Product, User, apiFetch, money } from "../../lib/api";
 import { trackEvent, trackEventOnce } from "../../lib/analytics";
 import { CartItem, readCart, writeCart } from "../../lib/cart";
 import { readDemoProducts } from "../../lib/demo-store";
+import { hasFinePointer } from "../../lib/pointer";
 import { availableVariantSizes, sortProductSizes } from "../../lib/product-sizes";
 import { pixPrice, productHasPromotion, productPrice, promotionPct } from "../../lib/pricing";
 import { productImagesForColor } from "../../lib/product-images";
 import { measurementFields, resolveSizeGuide } from "../../lib/size-guide";
-import { CartDrawer } from "../cart";
+import { CartDrawer, describeProgressiveTiers } from "../cart";
+import { usePromotionSettings } from "../../lib/use-promotion-settings";
 import { Footer } from "../home";
 import { Header } from "../layout";
 import { ProductIcon, SizeGuideDialog } from "../shared";
@@ -34,6 +36,10 @@ export function ProductDetailPage({ productId }: { productId: number }) {
   const [toast, setToast] = useState("");
   const [suggestions, setSuggestions] = useState<Product[]>([]);
   const mediaRef = useRef<HTMLDivElement>(null);
+  const promotionSettings = usePromotionSettings();
+  const progressiveTeaser = promotionSettings.progressive.enabled
+    ? describeProgressiveTiers(promotionSettings.progressive)
+    : "";
 
   useEffect(() => {
     const demo = new URLSearchParams(window.location.search).get("demo") === "1";
@@ -106,7 +112,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
   }
 
   function moveMedia(event: React.MouseEvent<HTMLDivElement>) {
-    if (!mediaRef.current) return;
+    if (!mediaRef.current || !hasFinePointer()) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const x = (event.clientX - bounds.left) / bounds.width - 0.5;
     const y = (event.clientY - bounds.top) / bounds.height - 0.5;
@@ -125,21 +131,21 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       {demoMode ? <div className="border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.66rem] font-semibold uppercase tracking-[.1em]">Modo demonstração · página individual</div> : null}
 
       <div className="mx-auto max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10">
-        <a href={`/${demoMode ? "?demo=1" : ""}`} className="mb-6 inline-flex items-center gap-2 font-sans text-[.65rem] font-semibold uppercase tracking-[.12em] text-bubble-ink/55 hover:text-bubble-ink"><ArrowLeft size={14} /> Voltar à loja</a>
+        <a href={`/${demoMode ? "?demo=1" : ""}`} className="mb-4 inline-flex min-h-11 items-center gap-2 font-sans text-[.65rem] font-semibold uppercase tracking-[.12em] text-bubble-ink/55 hover:text-bubble-ink sm:mb-6"><ArrowLeft size={14} /> Voltar à loja</a>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(360px,.9fr)] lg:gap-14">
           <div className="grid min-w-0 gap-3 sm:grid-cols-[76px_minmax(0,1fr)]">
             <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
               {(images.length ? images : [null]).map((image, index) => (
                 <button key={image?.id || `empty-${index}`} type="button" onClick={() => setActiveImage(index)} className={`${activeImage === index ? "border-bubble-ink" : "border-bubble-line opacity-60"} flex aspect-[3/4] w-[68px] shrink-0 items-center justify-center overflow-hidden border bg-bubble-cream2 transition-opacity hover:opacity-100`}>
-                  {image ? <img src={image.url} alt="" className="size-full object-cover" /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
+                  {image ? <img src={image.url} alt="" className="size-full object-cover" loading="lazy" decoding="async" /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
                 </button>
               ))}
             </div>
             <div onMouseMove={moveMedia} onMouseLeave={() => { if (mediaRef.current) mediaRef.current.style.transform = ""; }} className="order-1 relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_42%,#FAF6E9_0%,#EAE2CC_70%)] sm:order-2">
-              <div ref={mediaRef} className="flex size-full items-center justify-center transition-transform duration-500 ease-out will-change-transform [&_svg]:w-[44%] [&_svg]:opacity-90">
-                {images[activeImage] ? <img src={images[activeImage].url} alt={images[activeImage].altText || product.name} className="size-full object-cover" /> : <ProductIcon icon={product.icon} />}
+              <div ref={mediaRef} className="flex size-full items-center justify-center transition-transform duration-500 ease-out [@media(hover:hover)]:will-change-transform [&_svg]:w-[44%] [&_svg]:opacity-90">
+                {images[activeImage] ? <img src={images[activeImage].url} alt={images[activeImage].altText || product.name} className="size-full object-cover" fetchPriority="high" decoding="async" /> : <ProductIcon icon={product.icon} />}
               </div>
-              <span className="absolute bottom-5 left-5 rounded-full bg-bubble-white/90 px-3 py-2 font-sans text-[.56rem] uppercase tracking-[.12em] text-bubble-ink/60"><Sparkles className="mr-1 inline size-3" /> Mova para aproximar</span>
+              <span className="absolute bottom-5 left-5 hidden rounded-full bg-bubble-white/90 px-3 py-2 font-sans text-[.56rem] uppercase tracking-[.12em] text-bubble-ink/60 [@media(hover:hover)]:block"><Sparkles className="mr-1 inline size-3" /> Mova para aproximar</span>
             </div>
           </div>
 
@@ -152,13 +158,14 @@ export function ProductDetailPage({ productId }: { productId: number }) {
               <div className="font-display text-[2rem]">{money.format(productPrice(product))}</div>
               <div className="mt-1 text-sm font-semibold text-bubble-success">{money.format(pixPrice(product))} no Pix</div>
               {promo ? <span className="mt-2 inline-block bg-bubble-danger px-2.5 py-1 font-sans text-[.6rem] font-bold uppercase text-bubble-white">{promotionPct(product)}% OFF</span> : null}
+              {progressiveTeaser ? <div className="mt-3 border-l-2 border-bubble-brown pl-3 text-[.72rem] leading-relaxed text-bubble-ink/70"><span className="font-sans text-[.58rem] font-bold uppercase tracking-[.14em] text-bubble-brown">Leve mais, pague menos</span><br />{progressiveTeaser}</div> : null}
             </div>
 
             {product.colors?.length ? <div className="mt-8"><div className="mb-3 font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]">Cor · <span className="text-bubble-ink/55">{color}</span></div><div className="flex flex-wrap gap-2">{product.colors.map((item) => <button key={item.n} type="button" aria-label={`Selecionar cor ${item.n}`} onClick={() => selectColor(item.n)} className={`${color === item.n ? "ring-2 ring-bubble-ink ring-offset-2 ring-offset-bubble-cream" : ""} size-9 rounded-full border border-bubble-ink/30`} style={{ backgroundColor: item.h }} />)}</div></div> : null}
 
-            <div className="mt-7"><div className="mb-3 flex items-center justify-between font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]"><span>Tamanho</span><button type="button" onClick={() => setSizeGuideOpen(true)} className="border-0 bg-transparent p-0 font-sans text-[.68rem] font-semibold normal-case tracking-normal text-bubble-brown underline underline-offset-4 transition-colors hover:text-bubble-ink">Guia de medidas</button></div><div className="grid grid-cols-4 gap-2">{sortProductSizes(product.sizes).map((item) => { const available = availableSizes.includes(item); return <button key={item} type="button" disabled={!available} onClick={() => setSize(item)} className={`${size === item ? "bg-bubble-ink text-bubble-cream" : "bg-transparent text-bubble-ink"} border border-bubble-ink py-3 font-sans text-[.68rem] font-semibold uppercase disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25`}>{item}</button>; })}</div></div>
+            <div className="mt-7"><div className="mb-3 flex items-center justify-between font-sans text-[.68rem] font-semibold uppercase tracking-[.12em]"><span>Tamanho</span><button type="button" onClick={() => setSizeGuideOpen(true)} className="-my-2 border-0 bg-transparent px-1 py-2 font-sans text-[.7rem] font-semibold normal-case tracking-normal text-bubble-brown underline underline-offset-4 transition-colors hover:text-bubble-ink">Guia de medidas</button></div><div className="grid grid-cols-4 gap-2">{sortProductSizes(product.sizes).map((item) => { const available = availableSizes.includes(item); return <button key={item} type="button" disabled={!available} onClick={() => setSize(item)} className={`${size === item ? "bg-bubble-ink text-bubble-cream" : "bg-transparent text-bubble-ink"} border border-bubble-ink py-3 font-sans text-[.68rem] font-semibold uppercase disabled:cursor-not-allowed disabled:border-bubble-line disabled:text-bubble-ink/25`}>{item}</button>; })}</div></div>
 
-            <div className="mt-8 grid grid-cols-[112px_1fr] gap-2"><div className="grid grid-cols-3 border border-bubble-ink"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="Diminuir quantidade" className="flex items-center justify-center"><Minus size={14} /></button><span className="flex items-center justify-center font-sans text-sm">{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(10, value + 1))} aria-label="Aumentar quantidade" className="flex items-center justify-center"><Plus size={14} /></button></div><button type="button" onClick={addToCart} disabled={!size || product.stock <= 0} className="flex items-center justify-center gap-2 bg-bubble-ink px-5 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.12em] text-bubble-cream transition-colors hover:bg-bubble-brown disabled:opacity-40"><ShoppingBag size={17} /> {product.stock > 0 ? "Adicionar à sacola" : "Esgotado"}</button></div>
+            <div className="mt-8 grid grid-cols-[112px_1fr] gap-2 max-[380px]:grid-cols-1"><div className="grid min-h-12 grid-cols-3 border border-bubble-ink"><button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} aria-label="Diminuir quantidade" className="flex items-center justify-center"><Minus size={14} /></button><span className="flex items-center justify-center font-sans text-sm">{quantity}</span><button type="button" onClick={() => setQuantity((value) => Math.min(10, value + 1))} aria-label="Aumentar quantidade" className="flex items-center justify-center"><Plus size={14} /></button></div><button type="button" onClick={addToCart} disabled={!size || product.stock <= 0} className="flex items-center justify-center gap-2 bg-bubble-ink px-5 py-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.12em] text-bubble-cream transition-colors hover:bg-bubble-brown disabled:opacity-40"><ShoppingBag size={17} /> {product.stock > 0 ? "Adicionar à sacola" : "Esgotado"}</button></div>
             <div className="mt-4 flex items-center gap-2 text-[.72rem] text-bubble-ink/55"><Check size={14} /> Troca garantida em até 30 dias</div>
             {sizeSummary.length ? <div className="mt-2 text-[.68rem] text-bubble-ink/45">Tam. {size} · {sizeSummary.join(" · ")} cm</div> : null}
           </section>

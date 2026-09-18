@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Product } from "../../../lib/api";
 import { money } from "../../../lib/api";
 import type { AppliedCoupon, CartItem } from "../../../lib/cart";
@@ -18,6 +19,7 @@ type CartStepProps = {
   onApplyCoupon: () => void;
   onRemoveCoupon: () => void;
   onQty: (item: CartItem, delta: number) => void;
+  notice?: ReactNode;
 };
 
 export function CartStep({
@@ -29,10 +31,12 @@ export function CartStep({
   onApplyCoupon,
   onRemoveCoupon,
   onQty,
+  notice,
 }: CartStepProps) {
   return (
     <section>
       <h1 className="mb-6 text-[clamp(2rem,5vw,3.5rem)]">Seu carrinho</h1>
+      {notice ? <div className="mb-4">{notice}</div> : null}
       <div className="border border-bubble-line bg-bubble-white px-6">
         {lines.map(({ item, product }) => {
           const finalPrice = productPrice(product);
@@ -47,8 +51,7 @@ export function CartStep({
                   <img
                     className="size-full object-cover"
                     src={product.image}
-                    alt=""
-                  />
+                    alt="" loading="lazy" decoding="async" />
                 ) : (
                   <ProductIcon icon={product.icon} />
                 )}

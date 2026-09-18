@@ -70,4 +70,5 @@ export const createEmptyProductDraft = (): ProductDraft => ({
   desc: "",
   image: null,
   images: [],
+  measurements: null,
 });

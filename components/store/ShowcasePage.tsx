@@ -15,6 +15,8 @@ import { readDemoProducts } from "../../lib/demo-store";
 import { categoryMatches } from "../../lib/product-filters";
 import { collectionSlug as slugForCollection } from "../../lib/collections";
 import { matchingProducts, searchProducts } from "../../lib/product-search";
+import { addSearchToHistory } from "../../lib/search-history";
+import { suggestCorrection } from "../../lib/search-suggestions";
 
 type ShowcasePageProps = {
   category?: string;
@@ -63,7 +65,9 @@ export function ShowcasePage({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const demo = params.get("demo") === "1";
-    setSearchQuery(params.get("busca") || "");
+    const initialQuery = params.get("busca") || "";
+    setSearchQuery(initialQuery);
+    if (initialQuery.trim()) addSearchToHistory(initialQuery);
     setDemoMode(demo);
     void load(demo);
     setCart(readCart());
@@ -133,6 +137,11 @@ export function ShowcasePage({
     return () => window.clearInterval(timer);
   }, [searchMatches.length, searchQuery, searchSuggestions.length]);
 
+  const didYouMean = useMemo(
+    () => (searchQuery.trim() && !searchMatches.length ? suggestCorrection(searchQuery, scopedProducts) : null),
+    [scopedProducts, searchMatches.length, searchQuery],
+  );
+
   const visibleProducts = useMemo(() => {
     let list = searchQuery.trim() ? searchMatches.map(({ product }) => product) : scopedProducts;
     if (showAll && filters.cat !== "all")
@@ -201,7 +210,20 @@ export function ShowcasePage({
         showFilters
         showCategoryFilter={showAll}
         emptyTitle={searchQuery.trim() ? "Não encontramos sua busca" : undefined}
-        emptyDescription={searchQuery.trim() ? "Tente outro termo ou confira as sugestões abaixo. Encontramos opções próximas ao que você procurou." : undefined}
+        emptyDescription={searchQuery.trim() ? (
+          <>
+            {didYouMean ? (
+              <>
+                Você quis dizer{" "}
+                <a href={`/produtos?busca=${encodeURIComponent(didYouMean)}${demoMode ? "&demo=1" : ""}`} className="font-semibold text-bubble-brown underline underline-offset-4">
+                  {didYouMean}
+                </a>
+                ?{" "}
+              </>
+            ) : null}
+            Tente outro termo ou confira as sugestões abaixo — são as peças mais próximas do que você procurou.
+          </>
+        ) : undefined}
         suggestionProducts={searchSuggestions}
         suggestionTitle={searchQuery.trim() ? "Sugestões relevantes para você" : undefined}
         eyebrow={collectionName ? `Coleção ${collectionName}` : showAll ? "Wear Bubble · Todas as linhas" : "Seleção por categoria"}

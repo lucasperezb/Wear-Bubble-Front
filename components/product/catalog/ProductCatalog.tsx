@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Product } from "../../../lib/api";
 import { categoryFilterOptions } from "../../../lib/product-filters";
 import { standardProductSizes } from "../../../lib/product-sizes";
@@ -26,7 +27,7 @@ type ProductCatalogProps = {
   title?: string;
   description?: string;
   emptyTitle?: string;
-  emptyDescription?: string;
+  emptyDescription?: ReactNode;
   suggestionProducts?: Product[];
   suggestionTitle?: string;
 };
@@ -56,7 +57,7 @@ export function ProductCatalog({
       <div className="mx-auto max-w-[1200px] px-8 max-[520px]:px-3.5">
         <div className="mb-9 flex flex-wrap items-end justify-between gap-4 max-[520px]:mb-5">
           <div>
-            <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown max-[520px]:text-[.6rem] max-[520px]:tracking-[.2em]">
+            <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown max-[520px]:text-[.66rem] max-[520px]:tracking-[.2em]">
               {eyebrow}
             </span>
             <h2 className="text-[2.6rem] max-[520px]:mt-1 max-[520px]:text-[2rem]">
@@ -112,7 +113,7 @@ export function ProductCatalog({
             <option value="stock-asc">Menor quantidade</option>
           </select>
           <button
-            className="border-0 bg-transparent font-sans text-[.68rem] font-semibold text-bubble-brown underline"
+            className="min-h-10 border-0 bg-transparent px-1 font-sans text-[.68rem] font-semibold text-bubble-brown underline"
             onClick={onClear}
           >
             Limpar filtros

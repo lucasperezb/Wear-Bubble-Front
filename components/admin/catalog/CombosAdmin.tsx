@@ -162,7 +162,7 @@ function SelectionGroup({
             >
               <div className="flex h-[68px] w-[58px] items-center justify-center overflow-hidden bg-bubble-white [&_img]:size-full [&_img]:object-cover [&_svg]:w-3/5">
                 {selected?.image ? (
-                  <img src={selected.image} alt="" />
+                  <img src={selected.image} alt="" loading="lazy" decoding="async" />
                 ) : selected ? (
                   <ProductIcon icon={selected.icon} />
                 ) : (

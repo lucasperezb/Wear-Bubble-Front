@@ -9,27 +9,75 @@
 
   html {
     scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   body {
     margin: 0;
     background-color: theme('colors.bubble.cream');
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
     color: theme('colors.bubble.ink');
     font-family: theme('fontFamily.serif');
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
+    /* Nada rola para o lado por engano (letreiro, gaveta fechada). `clip` não quebra o sticky. */
+    overflow-x: clip;
   }
 
-  body::before {
-    background-image: radial-gradient(rgba(90, 80, 60, 0.05) 1px, transparent 1px);
-    background-size: 3px 3px;
-    content: '';
-    inset: 0;
-    opacity: 0.5;
-    pointer-events: none;
-    position: fixed;
-    z-index: -1;
+  /* Textura de papel (filtro SVG) e overlay pontilhado fixo só a partir do tablet:
+     no celular os dois custam repaint a cada rolagem e não se enxergam na tela pequena. */
+  @media (min-width: 981px) {
+    body {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.05 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    body::before {
+      background-image: radial-gradient(rgba(90, 80, 60, 0.05) 1px, transparent 1px);
+      background-size: 3px 3px;
+      content: '';
+      inset: 0;
+      opacity: 0.5;
+      pointer-events: none;
+      position: fixed;
+      z-index: -1;
+    }
+  }
+
+  /* iOS dá zoom automático em campos com fonte menor que 16px. */
+  @media (max-width: 640px) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
+
+  img,
+  video {
+    max-width: 100%;
+  }
+
+  /* A busca tem o próprio botão de limpar; o nativo do WebKit ficava duplicado. */
+  input[type='search']::-webkit-search-decoration,
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   h1,

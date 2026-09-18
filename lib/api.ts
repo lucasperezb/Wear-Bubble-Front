@@ -1,4 +1,5 @@
 import type { ProductMeasurements } from "./size-guide";
+export type { PromotionSettings, ProgressiveSettings } from "./progressive-discount";
 import axios from "axios";
 
 export type Product = {
@@ -113,6 +114,7 @@ export type Order = {
   method: string;
   coupon: string | null;
   couponPct?: number;
+  progressiveDiscount?: number;
   status: "pending" | "paid" | "canceled" | "expired" | "stock_conflict";
   inventoryStatus?: "none" | "reserved" | "committed" | "released" | "conflict";
   paymentStatus?:

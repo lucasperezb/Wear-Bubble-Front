@@ -165,7 +165,7 @@ export function PaymentStep({
           <div className="mt-6 border-t border-bubble-line pt-6 text-center">
             <span className="font-sans text-[.68rem] font-semibold uppercase tracking-[.1em] text-bubble-success">Pix gerado · aguardando pagamento</span>
             <h3 className="mt-2 text-xl">Escaneie ou copie o código</h3>
-            {pix.pix.image ? <img className="mx-auto mt-5 size-[220px] border border-bubble-line bg-white p-3" src={pix.pix.image} alt="QR Code Pix do pedido" /> : null}
+            {pix.pix.image ? <img className="mx-auto mt-5 size-[220px] border border-bubble-line bg-white p-3" src={pix.pix.image} alt="QR Code Pix do pedido" loading="lazy" decoding="async" /> : null}
             <div className="mt-5 flex border border-bubble-line bg-bubble-cream p-1">
               <input className="min-w-0 flex-1 border-0 bg-transparent px-3 text-[.72rem] outline-none" value={pix.pix.text} readOnly aria-label="Código Pix copia e cola" />
               <button type="button" className="inline-flex shrink-0 items-center gap-2 bg-bubble-ink px-4 py-3 font-sans text-[.68rem] font-semibold uppercase text-bubble-white" onClick={copyPix}>{copied ? <Check className="size-4" /> : <Copy className="size-4" />}{copied ? 'Copiado' : 'Copiar'}</button>

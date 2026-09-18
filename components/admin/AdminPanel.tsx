@@ -55,7 +55,11 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, dem
   const currentLabel = visibleTabs.find((item) => item.id === tab)?.label || 'Painel';
 
   return (
-    <div className={`fixed inset-0 z-[700] overflow-hidden bg-bubble-cream transition-transform duration-[350ms] ${open ? 'translate-y-0' : 'translate-y-full'}`}>
+    <div
+      className={`fixed inset-0 z-[700] overflow-hidden bg-bubble-cream transition-transform duration-[350ms] motion-reduce:transition-none ${open ? 'translate-y-0' : 'invisible translate-y-full'}`}
+      aria-hidden={!open}
+      inert={!open}
+    >
       <div className="flex h-full min-h-0">
         {menuOpen ? (
           <button

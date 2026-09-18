@@ -161,7 +161,7 @@ export function ShowcasesAdmin({
                   return (
                     <>
                       <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-bubble-white [&_img]:size-full [&_img]:object-cover [&_svg]:w-3/5">
-                        {selected?.image ? <img src={selected.image} alt="" /> : selected ? <ProductIcon icon={selected.icon} /> : <span className="font-display text-2xl text-bubble-ink/25">★</span>}
+                        {selected?.image ? <img src={selected.image} alt="" loading="lazy" decoding="async" /> : selected ? <ProductIcon icon={selected.icon} /> : <span className="font-display text-2xl text-bubble-ink/25">★</span>}
                       </div>
                       <label className="self-center font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/45">
                         Destaque principal
@@ -182,7 +182,7 @@ export function ShowcasesAdmin({
               return (
                 <div key={position} className="grid grid-cols-[78px_1fr] gap-4 border border-bubble-line bg-bubble-cream p-3">
                   <div className="flex aspect-[3/4] items-center justify-center overflow-hidden bg-bubble-white [&_img]:size-full [&_img]:object-cover [&_svg]:w-3/5">
-                    {selected?.image ? <img src={selected.image} alt="" /> : selected ? <ProductIcon icon={selected.icon} /> : <span className="font-display text-2xl text-bubble-ink/25">{position + 1}</span>}
+                    {selected?.image ? <img src={selected.image} alt="" loading="lazy" decoding="async" /> : selected ? <ProductIcon icon={selected.icon} /> : <span className="font-display text-2xl text-bubble-ink/25">{position + 1}</span>}
                   </div>
                   <label className="self-center font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/45">
                     Posição {position + 1}

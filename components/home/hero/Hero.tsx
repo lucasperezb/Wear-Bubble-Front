@@ -62,7 +62,7 @@ function HeroCarousel({ slides }: { slides: HeroConfig["slides"] }) {
   return (
     <section
       id="top"
-      className="relative h-[clamp(520px,64vw,720px)] overflow-hidden border-b border-bubble-ink bg-bubble-ink max-[620px]:h-[520px]"
+      className="relative h-[clamp(520px,64vw,720px)] overflow-hidden border-b border-bubble-ink bg-bubble-ink max-[620px]:h-[clamp(360px,110vw,520px)]"
       aria-roledescription="carrossel"
       aria-label="Destaques da Wear Bubble"
     >
@@ -83,6 +83,9 @@ function HeroCarousel({ slides }: { slides: HeroConfig["slides"] }) {
             className="size-full object-cover"
             src={slide.imageUrl}
             alt={slide.altText || "Campanha Wear Bubble"}
+            fetchPriority={index === 0 ? "high" : "low"}
+            loading={index === 0 ? "eager" : "lazy"}
+            decoding="async"
           />
         </a>
       ))}
@@ -164,7 +167,7 @@ function StaticHero({
           <circle cx="156" cy="152" r="12" fill="currentColor" />
         </svg>
         <div className="relative z-10 col-start-1 row-start-1 min-w-0 max-w-[590px] text-left">
-          <span className="font-sans text-[.56rem] font-semibold uppercase tracking-[.16em] text-bubble-brown sm:text-[.68rem] sm:tracking-[.28em]">
+          <span className="font-sans text-[.64rem] font-semibold uppercase tracking-[.16em] text-bubble-brown sm:text-[.68rem] sm:tracking-[.28em]">
             Moda fitness feminina · Coleção Core
           </span>
           <h1 className="mt-4 text-[clamp(2.15rem,10vw,3.2rem)] leading-[.92] tracking-[-.035em] sm:mt-5 sm:text-[clamp(3rem,8vw,5rem)] lg:text-[clamp(3.2rem,6.3vw,6rem)]">
@@ -224,27 +227,29 @@ function StaticHero({
                   src={product.image}
                   alt={product.name}
                   className="size-full object-cover"
+                  fetchPriority="high"
+                  decoding="async"
                 />
               ) : (
                 <ProductIcon icon={product?.icon} />
               )}
             </div>
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink/80 via-bubble-ink/30 to-transparent px-5 pb-5 pt-24 text-bubble-white max-[620px]:hidden sm:px-7 sm:pb-7">
-              <span className="font-sans text-[.58rem] font-semibold uppercase tracking-[.18em] text-bubble-white/75">
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink/85 via-bubble-ink/35 to-transparent px-3 pb-3 pt-12 text-bubble-white sm:px-7 sm:pb-7 sm:pt-24">
+              <span className="hidden font-sans text-[.58rem] font-semibold uppercase tracking-[.18em] text-bubble-white/75 sm:block">
                 Destaque da coleção
               </span>
-              <div className="mt-2 flex items-end justify-between gap-4 max-[420px]:flex-col max-[420px]:items-start max-[420px]:gap-3">
-                <div>
-                  <strong className="block max-w-[420px] font-serif text-lg leading-tight sm:text-2xl">
+              <div className="mt-0 flex items-end justify-between gap-4 max-[620px]:flex-col max-[620px]:items-start max-[620px]:gap-1 sm:mt-2">
+                <div className="min-w-0">
+                  <strong className="line-clamp-2 block max-w-[420px] font-serif text-[.78rem] leading-tight sm:text-2xl">
                     {product?.name || "Coleção Core"}
                   </strong>
                   {product ? (
-                    <span className="mt-1 block text-sm">
+                    <span className="mt-0.5 block font-sans text-[.82rem] font-semibold tabular-nums sm:mt-1 sm:font-serif sm:text-sm sm:font-normal">
                       {money.format(productPrice(product))}
                     </span>
                   ) : null}
                 </div>
-                <span className="shrink-0 border-b border-bubble-white pb-1 font-sans text-[.62rem] font-semibold uppercase tracking-[.12em] transition-transform duration-300 group-hover:translate-x-1">
+                <span className="hidden shrink-0 border-b border-bubble-white pb-1 font-sans text-[.62rem] font-semibold uppercase tracking-[.12em] transition-transform duration-300 group-hover:translate-x-1 sm:block">
                   Ver a peça →
                 </span>
               </div>
@@ -259,7 +264,7 @@ function StaticHero({
 function PromoMarquee() {
   return (
     <div className="overflow-hidden whitespace-nowrap bg-bubble-ink py-[13px] text-bubble-cream">
-      <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] [&_span]:mx-7 [&_span]:text-bubble-cream/85">
+      <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] motion-reduce:animate-none [&_span]:mx-7 [&_span]:text-bubble-cream/85">
         <span>COLEÇÃO CORE NO AR</span> FRETE GRÁTIS DE LANÇAMENTO{" "}
         <span>5% OFF NO PIX</span> CONJUNTO COM 5% OFF{" "}
         <span>TROCA EM 30 DIAS</span> COLEÇÃO CORE NO AR{" "}

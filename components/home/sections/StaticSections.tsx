@@ -120,7 +120,7 @@ export function Footer() {
             </div>
             <div>
               <h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Loja</h4>
-              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy">
+              <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:inline-block [&_a]:py-1.5 [&_button]:py-1.5 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy">
                 <li><a href="/colecoes/core">Coleção Core</a></li>
                 <li><a href="/#conjunto">Monte seu Conjunto</a></li>
                 <li><a href="/contato">Contato</a></li>
@@ -128,7 +128,7 @@ export function Footer() {
             </div>
             <div>
               <h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Suporte</h4>
-              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy [&_button]:cursor-pointer [&_button:hover]:text-bubble-candy">
+              <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:inline-block [&_a]:py-1.5 [&_button]:py-1.5 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy [&_button]:cursor-pointer [&_button:hover]:text-bubble-candy">
                 <li><a href="/conta?tab=orders&intent=trocas">Trocas em até 30 dias</a></li>
                 <li>
                   <button
@@ -144,7 +144,7 @@ export function Footer() {
             </div>
             <div>
               <h4 className="mb-4 font-sans text-[.72rem] font-semibold uppercase tracking-[.18em] text-bubble-candy">Privacidade</h4>
-              <ul className="m-0 flex list-none flex-col gap-2.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy [&_button]:cursor-pointer [&_button:hover]:text-bubble-candy">
+              <ul className="m-0 flex list-none flex-col gap-0.5 p-0 text-[.85rem] text-bubble-cream/70 [&_a]:inline-block [&_a]:py-1.5 [&_button]:py-1.5 [&_a]:cursor-pointer [&_a:hover]:text-bubble-candy [&_button]:cursor-pointer [&_button:hover]:text-bubble-candy">
                 <li><a href="/politica-de-privacidade">Política de Privacidade (LGPD)</a></li>
                 <li>
                   <button
