@@ -65,8 +65,7 @@ export function ComboBuilder({
             <img
               className="size-full object-cover"
               src={selectedImage}
-              alt={product.name}
-            />
+              alt={product.name} loading="lazy" decoding="async" />
           ) : (
             <ProductIcon icon={product.icon} />
           )}

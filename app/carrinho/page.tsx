@@ -17,6 +17,7 @@ import {
   type PixPayment,
   type ShippingOption,
 } from "../../components/checkout";
+import { ProgressiveDiscountNotice } from "../../components/cart";
 import {
   Order,
   Product,
@@ -37,6 +38,7 @@ import {
 } from "../../lib/cart";
 import { FREE_SHIPPING_MINIMUM } from "../../lib/store-config";
 import { trackGoogleAdsPurchase } from "../../lib/google-ads";
+import { usePromotionSettings } from "../../lib/use-promotion-settings";
 
 export default function CartPage() {
   const [step, setStep] = useState<CheckoutStep>("cart");
@@ -280,7 +282,14 @@ export default function CartPage() {
     return () => window.clearInterval(timer);
   }, [pixPayment]);
 
-  const totals = calculateCart(cart, products, coupon, method);
+  const promotionSettings = usePromotionSettings();
+  const totals = calculateCart(
+    cart,
+    products,
+    coupon,
+    method,
+    promotionSettings,
+  );
   const ready = cartHydrated && productsLoaded;
   const displayedTotal =
     step === "payment" ? totals.total : totals.total + totals.pixDiscount;
@@ -665,6 +674,14 @@ export default function CartPage() {
             {step === "cart" ? (
               <CartStep
                 lines={totals.lines}
+                notice={
+                  <ProgressiveDiscountNotice
+                    settings={promotionSettings.progressive}
+                    progressive={totals.progressive}
+                    discount={totals.progressiveDiscount}
+                    nextStep={totals.nextProgressiveStep}
+                  />
+                }
                 couponCode={couponCode}
                 coupon={coupon}
                 message={message}
@@ -722,6 +739,7 @@ export default function CartPage() {
             <OrderSummary
               subtotal={totals.subtotal}
               bundleDiscount={totals.bundleDiscount}
+              progressiveDiscount={totals.progressiveDiscount}
               couponDiscount={totals.couponDiscount}
               accountCreditDiscount={accountCreditDiscount}
               pixDiscount={step === "payment" ? totals.pixDiscount : 0}

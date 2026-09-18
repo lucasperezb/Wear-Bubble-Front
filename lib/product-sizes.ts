@@ -1,6 +1,9 @@
 export const standardProductSizes = ["P", "M", "G"];
 
-const sizeRank = new Map(standardProductSizes.map((size, index) => [size, index]));
+/** Ordem de exibição dos tamanhos conhecidos; os demais vão em ordem alfabética depois. */
+export const knownSizeOrder = ["PP", "P", "M", "G", "GG", "XG", "XGG"];
+
+const sizeRank = new Map(knownSizeOrder.map((size, index) => [size, index]));
 
 export function normalizeProductSize(size: string) {
   return size.trim().toUpperCase();

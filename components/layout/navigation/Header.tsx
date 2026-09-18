@@ -10,15 +10,15 @@ import {
   PackageCheck,
   RotateCcw,
   ShoppingBag,
-  Search,
   UserPlus,
   UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { apiFetch, type User } from "../../../lib/api";
 import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
+import { SearchBox } from "./SearchBox";
 
 type HeaderProps = {
   cartCount: number;
@@ -160,14 +160,6 @@ export function Header({
     window.location.assign("/");
   }
 
-  function submitSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const query = searchQuery.trim();
-    if (!query) return;
-    setMobileOpen(false);
-    window.location.assign(`/produtos?busca=${encodeURIComponent(query)}${demoMode ? "&demo=1" : ""}`);
-  }
-
   const accountHref = demoMode
     ? "/?admin=demo"
     : sessionUser
@@ -179,7 +171,7 @@ export function Header({
       <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
         FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
       </div>
-      <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream/95 backdrop-blur-[10px]">
+      <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream min-[981px]:bg-bubble-cream/95 min-[981px]:backdrop-blur-[10px]">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-8 py-[15px] max-[520px]:px-4">
           <a
             href={demoMode ? "/?demo=1" : "/"}
@@ -311,27 +303,7 @@ export function Header({
           </nav>
 
           <div className="flex items-center gap-1.5 sm:gap-3.5">
-            <form onSubmit={submitSearch} className="hidden items-center sm:flex" role="search">
-              <Search className="size-4 text-bubble-ink/55" aria-hidden="true" />
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="w-[150px] bg-transparent px-2 py-2 font-serif text-[.82rem] outline-none placeholder:text-bubble-ink/45 lg:w-[190px]"
-                placeholder="Buscar peças"
-                aria-label="Buscar produtos"
-              />
-              {searchQuery ? (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="flex size-5 items-center justify-center text-bubble-ink/55 transition-colors hover:text-bubble-ink [&_svg]:size-3.5"
-                  aria-label="Limpar busca"
-                  title="Limpar busca"
-                >
-                  <X aria-hidden="true" />
-                </button>
-              ) : null}
-            </form>
+            <SearchBox variant="desktop" demoMode={demoMode} initialQuery={searchQuery} onNavigate={() => setMobileOpen(false)} />
             <div
               className="relative"
               ref={accountMenuRef}
@@ -345,7 +317,7 @@ export function Header({
             >
               <a
                 href={accountHref}
-                className={`relative flex size-[38px] cursor-pointer items-center justify-center border bg-transparent text-bubble-ink transition-colors [&_svg]:size-5 ${accountMenuOpen ? "border-bubble-ink bg-bubble-white" : "border-transparent"}`}
+                className={`relative flex size-[38px] cursor-pointer items-center justify-center border bg-transparent text-bubble-ink transition-colors max-[980px]:size-11 [&_svg]:size-5 ${accountMenuOpen ? "border-bubble-ink bg-bubble-white" : "border-transparent"}`}
                 aria-label={sessionUser ? "Ir para minha conta" : "Entrar na conta"}
                 title="Minha conta"
                 onClick={() => {
@@ -510,7 +482,7 @@ export function Header({
             </button>
             <button
               type="button"
-              className="hidden size-[38px] cursor-pointer items-center justify-center border border-bubble-ink bg-transparent text-bubble-ink max-[980px]:flex"
+              className="hidden size-[38px] cursor-pointer items-center justify-center border border-bubble-ink bg-transparent text-bubble-ink max-[980px]:flex max-[980px]:size-11"
               aria-label={mobileOpen ? "Fechar menu" : "Abrir menu"}
               aria-expanded={mobileOpen}
               onClick={() => {
@@ -523,9 +495,11 @@ export function Header({
           </div>
         </div>
 
+        <SearchBox variant="mobile" demoMode={demoMode} initialQuery={searchQuery} onNavigate={() => setMobileOpen(false)} />
+
         {mobileOpen ? (
-          <div className="absolute inset-x-0 top-full max-h-[calc(100vh-96px)] overflow-y-auto border-b border-bubble-ink bg-bubble-cream shadow-bubble min-[981px]:hidden">
-            <nav className="mx-auto max-w-[720px] px-4 pb-6 pt-3" aria-label="Navegação mobile">
+          <div className="absolute inset-x-0 top-full max-h-[calc(100dvh-152px)] overflow-y-auto overscroll-contain border-b border-bubble-ink bg-bubble-cream shadow-bubble min-[981px]:hidden">
+            <nav className="mx-auto max-w-[720px] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3" aria-label="Navegação mobile">
               <details className="group border-b border-bubble-ink/25">
                 <summary className="flex cursor-pointer list-none items-center justify-between px-1 py-4 font-display text-lg uppercase [&::-webkit-details-marker]:hidden">
                   Coleções
@@ -539,7 +513,7 @@ export function Header({
                       onClick={() => setMobileOpen(false)}
                       className="border border-bubble-ink bg-bubble-ink p-4 text-left text-bubble-cream"
                     >
-                      <span className="font-sans text-[.56rem] uppercase tracking-[.16em] text-bubble-cream/55">
+                      <span className="font-sans text-[.62rem] uppercase tracking-[.16em] text-bubble-cream/55">
                         {topic.eyebrow}
                       </span>
                       <strong className="mt-3 block font-display text-xl uppercase">
@@ -573,7 +547,7 @@ export function Header({
                       className="grid grid-cols-[28px_1fr] gap-3 border border-bubble-ink/25 bg-bubble-white p-3 text-left"
                       onClick={() => setMobileOpen(false)}
                     >
-                      <span className="flex size-7 items-center justify-center rounded-full border border-bubble-ink/30 font-sans text-[.56rem]">
+                      <span className="flex size-7 items-center justify-center rounded-full border border-bubble-ink/30 font-sans text-[.62rem]">
                         {topic.number}
                       </span>
                       <span>

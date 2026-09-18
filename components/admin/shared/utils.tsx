@@ -65,6 +65,7 @@ export function productPayload(draft: ProductDraft) {
     desc: draft.desc || '',
     ...(pair > 0 ? { pair } : {}),
     image: draft.image || null,
+    measurements: draft.measurements ?? null,
   };
 }
 

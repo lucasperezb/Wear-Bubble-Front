@@ -425,7 +425,7 @@ function ProductAdminRow({
     <article className="grid grid-cols-[64px_minmax(0,1fr)_110px_110px_auto] items-center gap-4 border-b border-bubble-line p-4 last:border-b-0 max-[760px]:grid-cols-[58px_minmax(0,1fr)_auto] max-[760px]:gap-3">
       <div className="flex aspect-[3/4] w-16 items-center justify-center overflow-hidden bg-bubble-cream2 max-[760px]:w-[58px] [&_svg]:w-3/5">
         {product.image ? (
-          <img className="size-full object-cover" src={product.image} alt="" />
+          <img className="size-full object-cover" src={product.image} alt="" loading="lazy" decoding="async" />
         ) : (
           <ProductIcon icon={product.icon} />
         )}
@@ -525,7 +525,7 @@ function ProductEditorModal({
   const [draft, setDraft] = useState<ProductDraft>(() =>
     product
       ? { ...product, cat: catalogCategory(product.cat) }
-      : { ...createEmptyProductDraft(), measurements: null },
+      : createEmptyProductDraft(),
   );
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -536,7 +536,7 @@ function ProductEditorModal({
     setDraft(
       product
         ? { ...product, cat: catalogCategory(product.cat) }
-        : { ...createEmptyProductDraft(), measurements: null },
+        : createEmptyProductDraft(),
     );
     setFiles([]);
     setError("");
@@ -551,10 +551,7 @@ function ProductEditorModal({
     setSaving(true);
     setError("");
     let created: Product | null = null;
-    const payload = {
-      ...productPayload(draft),
-      measurements: draft.measurements ?? null,
-    };
+    const payload = productPayload(draft);
     try {
       if (demoMode) {
         created = saveDemoProduct(payload, product?.id);
@@ -677,7 +674,7 @@ function ProductPreview({ draft, previewUrl }: { draft: ProductDraft; previewUrl
   return (
     <div className="border border-bubble-line bg-bubble-white">
       <div className="flex aspect-[3/4] items-center justify-center overflow-hidden" style={{ background: color?.h || '#EAE2CC' }}>
-        {previewUrl || draft.image ? <img src={previewUrl || draft.image || ''} alt="" className="size-full object-cover" /> : <div className="w-[52%] text-bubble-white"><ProductIcon icon={draft.icon} /></div>}
+        {previewUrl || draft.image ? <img src={previewUrl || draft.image || ''} alt="" className="size-full object-cover" loading="lazy" decoding="async" /> : <div className="w-[52%] text-bubble-white"><ProductIcon icon={draft.icon} /></div>}
       </div>
       <div className="p-3.5">
         <div className="text-[.66rem] uppercase tracking-[.1em] text-bubble-ink/45">{draft.cat ? catalogCategory(draft.cat) : 'Categoria'}</div>
@@ -1057,8 +1054,7 @@ function PendingImagePicker({
               <img
                 className="size-full object-cover"
                 src={previews[index]}
-                alt=""
-              />
+                alt="" loading="lazy" decoding="async" />
               {index === 0 ? (
                 <span className="absolute left-1.5 top-1.5 bg-bubble-ink px-1.5 py-1 font-sans text-[.5rem] uppercase text-bubble-white">
                   Principal
@@ -1169,8 +1165,7 @@ function ProductImagesManager({
                 <img
                   className="size-full object-cover"
                   src={image.url}
-                  alt={image.altText || product.name}
-                />
+                  alt={image.altText || product.name} loading="lazy" decoding="async" />
                 {image.isPrimary ? (
                   <span className="absolute left-1.5 top-1.5 bg-bubble-ink px-1.5 py-1 font-sans text-[.5rem] uppercase text-bubble-white">
                     Principal

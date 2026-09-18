@@ -159,8 +159,7 @@ export function HeroCarouselAdmin({
               <img
                 src={preview}
                 alt="Prévia do novo slide"
-                className="size-full object-cover"
-              />
+                className="size-full object-cover" loading="lazy" decoding="async" />
             ) : (
               <span className="px-5 text-[.72rem] leading-[1.6] text-bubble-ink/55 group-hover:text-bubble-ink">
                 Clique para escolher uma imagem horizontal
@@ -350,8 +349,7 @@ function HeroSlideEditor({
             <img
               src={slide.imageUrl}
               alt={slide.altText}
-              className="size-full object-cover"
-            />
+              className="size-full object-cover" loading="lazy" decoding="async" />
             <span className="absolute left-2 top-2 bg-bubble-ink px-2 py-1 text-[.58rem] font-bold uppercase tracking-[.1em] text-bubble-white">
               {index + 1}
             </span>

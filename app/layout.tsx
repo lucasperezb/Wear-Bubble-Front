@@ -1,10 +1,17 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { CookieConsentBanner, GoogleAdsTag } from '../components/analytics';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'Wear Bubble - Moda fitness feminina',
   description: 'Moda fitness feminina que une qualidade, conforto e design autêntico.',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#17130E',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

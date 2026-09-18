@@ -1,6 +1,13 @@
 import type { Product } from './api';
 import { isBottomCategory, isTopCategory } from './product-filters';
-import { productPrice } from './pricing';
+import { productHasPromotion, productPrice } from './pricing';
+import {
+  calculateProgressiveDiscount,
+  defaultPromotionSettings,
+  nextProgressiveStep,
+  type ProgressiveUnit,
+  type PromotionSettings,
+} from './progressive-discount';
 import { FREE_SHIPPING_MINIMUM } from './store-config';
 
 export type CartItem = {
@@ -46,6 +53,7 @@ export function calculateCart(
   products: Product[],
   coupon: AppliedCoupon = null,
   method: PaymentMethod = "Pix",
+  settings: PromotionSettings | null = null,
 ) {
   const lines = cart
     .map((item) => ({
@@ -86,7 +94,30 @@ export function calculateCart(
     );
   }, 0);
   const bundleDiscount = bundleSubtotal * 0.05;
-  const afterBundle = subtotal - bundleDiscount;
+
+  // Desconto progressivo por quantidade: mesma regra da API (orders.service).
+  const progressiveSettings =
+    settings?.progressive || defaultPromotionSettings.progressive;
+  const progressiveUnits: ProgressiveUnit[] = lines.flatMap((line, index) => {
+    const unitPrice = productPrice(line.product);
+    const hasOtherDiscount =
+      productHasPromotion(line.product) || Boolean(line.item.bundle);
+    return Array.from({ length: line.item.qty }, () => ({
+      key: String(index),
+      price: unitPrice,
+      eligible:
+        progressiveSettings.stackWithOtherDiscounts || !hasOtherDiscount,
+    }));
+  });
+  const progressive = calculateProgressiveDiscount(
+    progressiveUnits,
+    progressiveSettings,
+  );
+  const progressiveDiscount = Math.min(
+    progressive.discount,
+    Math.max(0, subtotal - bundleDiscount),
+  );
+  const afterBundle = subtotal - bundleDiscount - progressiveDiscount;
   const minimumChargeCoupon =
     coupon?.type === "coupon" && coupon.minimumCharge === true;
   const percentDiscount = minimumChargeCoupon
@@ -112,6 +143,12 @@ export function calculateCart(
     lines,
     subtotal,
     bundleDiscount,
+    progressiveDiscount,
+    progressive,
+    nextProgressiveStep: nextProgressiveStep(
+      progressive.eligibleCount,
+      progressiveSettings,
+    ),
     couponDiscount,
     pixDiscount,
     total,

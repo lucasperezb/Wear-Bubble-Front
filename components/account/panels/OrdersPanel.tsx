@@ -610,7 +610,7 @@ function ProductImage({
       className={`relative flex overflow-hidden bg-bubble-ink/[.06] ${className}`}
     >
       {image ? (
-        <img src={image} alt={name} className="size-full object-cover" />
+        <img src={image} alt={name} className="size-full object-cover" loading="lazy" decoding="async" />
       ) : (
         <span className="flex size-full items-center justify-center">
           <ShoppingBag className="size-5 text-bubble-ink/25" />

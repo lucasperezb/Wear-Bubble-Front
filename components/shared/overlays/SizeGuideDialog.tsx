@@ -23,20 +23,6 @@ type SizeGuideDialogProps = {
 /** Tamanhos mostrados no guia genérico do rodapé, quando não há peça. */
 const genericSizes = ["PP", "P", "M", "G", "GG"];
 
-/** Ordem de exibição das letras; o que não estiver aqui mantém a ordem do guia. */
-const sizeDisplayOrder = ["PP", "P", "M", "G", "GG", "XG"];
-
-function orderGuideSizes(sizes: string[]) {
-  return [...sizes].sort((first, second) => {
-    const firstRank = sizeDisplayOrder.indexOf(first);
-    const secondRank = sizeDisplayOrder.indexOf(second);
-    if (firstRank !== -1 && secondRank !== -1) return firstRank - secondRank;
-    if (firstRank !== -1) return -1;
-    if (secondRank !== -1) return 1;
-    return 0;
-  });
-}
-
 const linkButtonClass =
   "border-0 bg-transparent p-0 font-sans text-[.68rem] font-semibold text-bubble-brown underline underline-offset-4 transition-colors hover:text-bubble-ink";
 
@@ -73,7 +59,7 @@ export function SizeGuideDialog({
   const guide = product
     ? resolveSizeGuide(product)
     : resolveSizeGuide({ cat: category, sizes: genericSizes });
-  const sizes = orderGuideSizes(guide.sizes);
+  const sizes = guide.sizes;
   const currentSize = normalizeProductSize(selectedSize);
 
   return (
@@ -124,8 +110,7 @@ export function SizeGuideDialog({
             <img
               className="mx-auto h-auto max-w-full"
               src="/tabela-de-medidas.png"
-              alt="Tabela de medidas feminina Wear Bubble: tamanhos 36 a 44"
-            />
+              alt="Tabela de medidas feminina Wear Bubble: tamanhos 36 a 44" loading="lazy" decoding="async" />
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-auto bg-bubble-cream p-5 max-[620px]:p-4">
