@@ -6,6 +6,7 @@ import { productPrice } from "../../../lib/pricing";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
 import { usePromoCountdown } from "../../../lib/use-promo-countdown";
 import { ProductIcon } from "../../shared";
+import { ProgressivePromoBanner } from "./ProgressivePromoBanner";
 
 type HeroProps = {
   config: HeroConfig;
@@ -38,6 +39,8 @@ export function Hero({
       )}
       {/* Com o carrossel ligado o hero é só imagem; a campanha ganha uma faixa própria. */}
       {useCarousel && promoActive ? <PromoStrip /> : null}
+      {/* Só renderiza com o desconto progressivo ligado no painel. */}
+      <ProgressivePromoBanner href={collectionHref} />
       <PromoMarquee promoActive={promoActive} />
     </>
   );

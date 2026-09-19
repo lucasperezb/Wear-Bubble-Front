@@ -35,7 +35,7 @@ export function describeProgressiveTiers(settings: ProgressiveSettings) {
  * Uma célula da barra por posição (1ª peça sem desconto, depois cada faixa).
  * Com extendLast a última célula vira "Nª+" porque vale dali em diante.
  */
-function tierCells(settings: ProgressiveSettings) {
+export function tierCells(settings: ProgressiveSettings) {
   const last = settings.tiers.length + 1;
   return Array.from({ length: last }, (_, index) => {
     const position = index + 1;

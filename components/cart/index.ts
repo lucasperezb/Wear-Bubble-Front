@@ -1,2 +1,2 @@
 export { CartDrawer } from './drawers/CartDrawer';
-export { ProgressiveDiscountNotice, describeProgressiveTiers } from './notices/ProgressiveDiscountNotice';
+export { ProgressiveDiscountNotice, describeProgressiveTiers, tierCells } from './notices/ProgressiveDiscountNotice';
