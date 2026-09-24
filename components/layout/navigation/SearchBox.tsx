@@ -27,7 +27,7 @@ import {
   typeaheadSuggestions,
   type SearchSuggestion,
 } from "../../../lib/search-suggestions";
-import { ProductIcon } from "../../shared";
+import { ProductIcon, SafeImage } from "../../shared";
 
 type SearchBoxProps = {
   demoMode: boolean;
@@ -273,7 +273,7 @@ export function SearchBox({ demoMode, initialQuery = "", variant, onNavigate }: 
                     {item.product ? (
                       <span className="flex h-11 w-9 shrink-0 items-center justify-center overflow-hidden bg-bubble-cream2 [&_svg]:w-3/5">
                         {item.product.image ? (
-                          <img src={item.product.image} alt="" className="size-full object-cover" loading="lazy" decoding="async" />
+                          <SafeImage src={item.product.image} alt="" className="size-full object-cover" loading="lazy" decoding="async" fallback={<ProductIcon icon={item.product.icon} />} />
                         ) : (
                           <ProductIcon icon={item.product.icon} />
                         )}

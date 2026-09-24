@@ -1,4 +1,5 @@
 import { ProductDetailPage } from "../../../components/product/ProductDetailPage";
+import { parseProductParam } from "../../../lib/product-url";
 
 export default async function ProductPage({
   params,
@@ -6,5 +7,5 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <ProductDetailPage productId={Number(id)} />;
+  return <ProductDetailPage productId={parseProductParam(id)} />;
 }

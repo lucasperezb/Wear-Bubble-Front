@@ -36,6 +36,13 @@ const nextConfig = {
       ),
     ];
   },
+  async redirects() {
+    return [
+      // Links antigos da promoção e atalho para o "Monte seu look" da home.
+      { source: "/produtos", has: [{ type: "query", key: "promo", value: "1" }], destination: "/promocoes", permanent: false },
+      { source: "/monte-seu-look", destination: "/#conjunto", permanent: false },
+    ];
+  },
   async rewrites() {
     return [
       {

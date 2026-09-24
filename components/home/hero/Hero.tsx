@@ -5,7 +5,7 @@ import { money, type HeroConfig, type Product } from "../../../lib/api";
 import { productPrice } from "../../../lib/pricing";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
 import { usePromoCountdown } from "../../../lib/use-promo-countdown";
-import { ProductIcon } from "../../shared";
+import { ProductIcon, SafeImage } from "../../shared";
 import { ProgressivePromoBanner } from "./ProgressivePromoBanner";
 
 type HeroProps = {
@@ -157,7 +157,7 @@ function HeroCarousel({ slides }: { slides: HeroConfig["slides"] }) {
           tabIndex={index === current ? 0 : -1}
           aria-label={`${slide.altText || "Campanha Wear Bubble"}. Abrir destino.`}
         >
-          <img
+          <SafeImage
             className="size-full object-cover"
             src={slide.imageUrl}
             alt={slide.altText || "Campanha Wear Bubble"}
@@ -329,7 +329,7 @@ function StaticHero({
           >
             <div className="flex size-full items-center justify-center transition-transform duration-700 ease-out group-hover:scale-[1.025] [&_svg]:h-auto [&_svg]:max-h-[62%] [&_svg]:w-auto [&_svg]:max-w-[44%] [&_svg]:text-bubble-brown">
               {product?.image ? (
-                <img
+                <SafeImage
                   src={product.image}
                   alt={product.name}
                   className="size-full object-cover"

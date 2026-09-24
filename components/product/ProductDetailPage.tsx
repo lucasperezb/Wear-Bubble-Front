@@ -15,7 +15,8 @@ import { CartDrawer, describeProgressiveTiers } from "../cart";
 import { usePromotionSettings } from "../../lib/use-promotion-settings";
 import { Footer } from "../home";
 import { Header } from "../layout";
-import { ProductIcon, PromoBadge, SizeGuideDialog } from "../shared";
+import { ProductIcon, PromoBadge, SafeImage, ShareButton, SizeGuideDialog } from "../shared";
+import { productPath } from "../../lib/product-url";
 import { ProductCard } from "./catalog/ProductCard";
 
 export function ProductDetailPage({ productId }: { productId: number }) {
@@ -65,6 +66,8 @@ export function ProductDetailPage({ productId }: { productId: number }) {
       setSuggestions(randomSuggestions(list, productId));
       if (!found) throw new Error("Esta peça não foi encontrada.");
       trackEventOnce("view", found.id);
+      const canonical = productPath(found);
+      if (window.location.pathname !== canonical) window.history.replaceState(null, "", `${canonical}${window.location.search}`);
       const firstColor = found.colors?.[0];
       setColor(firstColor?.n || "");
       setSize(availableVariantSizes(firstColor?.sizes || [])[0] || sortProductSizes(found.sizes)[0] || "");
@@ -137,13 +140,13 @@ export function ProductDetailPage({ productId }: { productId: number }) {
             <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
               {(images.length ? images : [null]).map((image, index) => (
                 <button key={image?.id || `empty-${index}`} type="button" onClick={() => setActiveImage(index)} className={`${activeImage === index ? "border-bubble-ink" : "border-bubble-line opacity-60"} flex aspect-[3/4] w-[68px] shrink-0 items-center justify-center overflow-hidden border bg-bubble-cream2 transition-opacity hover:opacity-100`}>
-                  {image ? <img src={image.url} alt="" className="size-full object-cover" loading="lazy" decoding="async" /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
+                  {image ? <SafeImage src={image.url} alt="" className="size-full object-cover" loading="lazy" decoding="async" fallback={<span className="w-1/2"><ProductIcon icon={product.icon} /></span>} /> : <span className="w-1/2"><ProductIcon icon={product.icon} /></span>}
                 </button>
               ))}
             </div>
             <div onMouseMove={moveMedia} onMouseLeave={() => { if (mediaRef.current) mediaRef.current.style.transform = ""; }} className="order-1 relative flex aspect-[3/4] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_50%_42%,#FAF6E9_0%,#EAE2CC_70%)] sm:order-2">
               <div ref={mediaRef} className="flex size-full items-center justify-center transition-transform duration-500 ease-out [@media(hover:hover)]:will-change-transform [&_svg]:w-[44%] [&_svg]:opacity-90">
-                {images[activeImage] ? <img src={images[activeImage].url} alt={images[activeImage].altText || product.name} className="size-full object-cover" fetchPriority="high" decoding="async" /> : <ProductIcon icon={product.icon} />}
+                {images[activeImage] ? <SafeImage src={images[activeImage].url} alt={images[activeImage].altText || product.name} className="size-full object-cover" fetchPriority="high" decoding="async" fallback={<ProductIcon icon={product.icon} />} /> : <ProductIcon icon={product.icon} />}
               </div>
               <span className="absolute bottom-5 left-5 hidden rounded-full bg-bubble-white/90 px-3 py-2 font-sans text-[.56rem] uppercase tracking-[.12em] text-bubble-ink/60 [@media(hover:hover)]:block"><Sparkles className="mr-1 inline size-3" /> Mova para aproximar</span>
             </div>
@@ -151,7 +154,7 @@ export function ProductDetailPage({ productId }: { productId: number }) {
 
           <section className="self-start lg:sticky lg:top-[100px]">
             <div className="font-sans text-[.64rem] font-semibold uppercase tracking-[.2em] text-bubble-brown">{product.collectionName || "Wear Bubble"} · {product.sub}</div>
-            <h1 className="mt-3 text-[clamp(2.1rem,4vw,3.8rem)] leading-[.98]">{product.name}</h1>
+            <div className="mt-3 flex items-start justify-between gap-4"><h1 className="text-[clamp(2.1rem,4vw,3.8rem)] leading-[.98]">{product.name}</h1><ShareButton url={`${typeof window === "undefined" ? "" : window.location.origin}${productPath(product)}`} title={product.name} image={images[0]?.url} /></div>
             <div className="mt-5 flex items-center gap-3 border-b border-bubble-line pb-5 text-[.76rem] text-bubble-ink/55"><span className="text-bubble-brown">{"★".repeat(Math.round(product.rating))}</span><span>{product.rating.toFixed(1)} · {product.reviews} avaliações</span></div>
             <div className="mt-6">
               <div className="flex items-start justify-between gap-4">
@@ -190,12 +193,12 @@ export function ProductDetailPage({ productId }: { productId: number }) {
                 <RefreshCw size={14} /> Novas sugestões
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-px border border-bubble-ink bg-bubble-cream2 max-[980px]:grid-cols-2 max-[420px]:grid-cols-1">
+            <div className="grid grid-cols-4 gap-x-3 gap-y-9 max-[980px]:grid-cols-2 max-[720px]:gap-x-2 max-[720px]:gap-y-7">
               {suggestions.map((suggestion) => (
                 <ProductCard
                   key={suggestion.id}
                   product={suggestion}
-                  href={`/produto/${suggestion.id}${demoMode ? "?demo=1" : ""}`}
+                  href={`${productPath(suggestion)}${demoMode ? "?demo=1" : ""}`}
                 />
               ))}
             </div>

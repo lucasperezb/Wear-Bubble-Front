@@ -1,5 +1,6 @@
 "use client";
 
+import { productPath } from "../lib/product-url";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { CartDrawer } from "../components/cart";
@@ -223,7 +224,7 @@ export default function Home() {
   function openProduct(product: Product) {
     trackEvent("click", product.id);
     window.location.assign(
-      `/produto/${product.id}${demoMode ? "?demo=1" : ""}`,
+      `${productPath(product)}${demoMode ? "?demo=1" : ""}`,
     );
   }
 
@@ -332,7 +333,7 @@ export default function Home() {
         collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
         productHref={
           heroProduct
-            ? `/produto/${heroProduct.id}${demoMode ? "?demo=1" : ""}`
+            ? `${productPath(heroProduct)}${demoMode ? "?demo=1" : ""}`
             : undefined
         }
       />
@@ -359,7 +360,7 @@ export default function Home() {
         }
         onClear={() => setFilters(initialFilters)}
         productHref={(product) =>
-          `/produto/${product.id}${demoMode ? "?demo=1" : ""}`
+          `${productPath(product)}${demoMode ? "?demo=1" : ""}`
         }
         onRetry={refreshProducts}
         showFilters={false}

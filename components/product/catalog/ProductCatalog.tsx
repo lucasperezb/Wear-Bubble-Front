@@ -142,7 +142,7 @@ export function ProductCatalog({
           </span>
         </div> : null}
 
-        <div className="grid grid-cols-4 gap-0.5 border border-bubble-ink bg-bubble-cream2 max-[980px]:grid-cols-2 max-[350px]:grid-cols-1">
+        <div className="grid grid-cols-4 gap-x-3 gap-y-9 max-[980px]:grid-cols-3 max-[720px]:grid-cols-2 max-[720px]:gap-x-2 max-[720px]:gap-y-7">
           {loading ? (
             <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center gap-2.5 border border-bubble-ink/10 bg-bubble-cream2 p-8 text-center">
               Carregando a coleção...
@@ -181,7 +181,7 @@ export function ProductCatalog({
               </div>
               <span className="hidden font-serif text-[.82rem] italic text-bubble-ink/55 sm:block">Atualizadas automaticamente</span>
             </div>
-            <div className="grid grid-cols-4 gap-0.5 border border-bubble-ink bg-bubble-cream2 max-[980px]:grid-cols-2 max-[350px]:grid-cols-1">
+            <div className="grid grid-cols-4 gap-x-3 gap-y-9 max-[980px]:grid-cols-3 max-[720px]:grid-cols-2 max-[720px]:gap-x-2 max-[720px]:gap-y-7">
               {suggestionProducts.map((product) => (
                 <ProductCard key={product.id} product={product} href={productHref(product)} />
               ))}

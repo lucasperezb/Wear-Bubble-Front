@@ -1,5 +1,6 @@
 "use client";
 
+import { productPath } from "../../lib/product-url";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CartDrawer } from "../cart";
 import { Footer } from "../home";
@@ -26,6 +27,8 @@ type ShowcasePageProps = {
   title: string;
   description: string;
   showAll?: boolean;
+  /** Abre já filtrado pelas peças em promoção (página /promocoes). */
+  promoOnly?: boolean;
 };
 
 type Filters = {
@@ -46,6 +49,7 @@ export function ShowcasePage({
   title,
   description,
   showAll = false,
+  promoOnly = false,
 }: ShowcasePageProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,7 +62,7 @@ export function ShowcasePage({
   const [user, setUser] = useState<User | null>(null);
   const [toast, setToast] = useState("");
   const [demoMode, setDemoMode] = useState(false);
-  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [filters, setFilters] = useState<Filters>({ ...initialFilters, promo: promoOnly });
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const toastTimer = useRef<number | null>(null);
@@ -168,7 +172,7 @@ export function ShowcasePage({
 
   function openProduct(product: Product) {
     trackEvent("click", product.id);
-    window.location.assign(`/produto/${product.id}${demoMode ? "?demo=1" : ""}`);
+    window.location.assign(`${productPath(product)}${demoMode ? "?demo=1" : ""}`);
   }
 
   function addToCart(product: Product, size: string, color: string, bundle?: string | null) {
@@ -214,7 +218,7 @@ export function ShowcasePage({
         error={error}
         onFilter={(patch) => setFilters((current) => ({ ...current, ...patch }))}
         onClear={() => setFilters(initialFilters)}
-        productHref={(product) => `/produto/${product.id}${demoMode ? "?demo=1" : ""}`}
+        productHref={(product) => `${productPath(product)}${demoMode ? "?demo=1" : ""}`}
         onRetry={() => void load(demoMode)}
         showFilters
         showCategoryFilter={showAll}

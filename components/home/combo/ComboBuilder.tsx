@@ -3,7 +3,7 @@ import { isBottomCategory, isTopCategory } from "../../../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../../../lib/product-sizes";
 import { productPrice } from "../../../lib/pricing";
 import { productImageUrlForColor } from "../../../lib/product-images";
-import { ProductIcon } from "../../shared";
+import { ProductIcon, SafeImage } from "../../shared";
 
 type ComboBuilderProps = {
   products: Product[];
@@ -96,7 +96,7 @@ export function ComboBuilder({
         >
           <div className="relative aspect-[3/4] w-full overflow-hidden bg-bubble-cream2 text-bubble-brown [&_svg]:h-full [&_svg]:w-full [&_svg]:p-[22%]">
             {image ? (
-              <img
+              <SafeImage
                 className="size-full object-cover transition-transform duration-300 group-hover/pick:scale-[1.03]"
                 src={image}
                 alt={product.name}
@@ -293,7 +293,7 @@ function ComboMini({ product, color }: { product: Product; color: string }) {
   return (
     <div className="flex h-[52px] w-[40px] shrink-0 items-center justify-center overflow-hidden border border-bubble-cream/25 bg-bubble-brown text-bubble-cream/80 [&_svg]:w-3/5">
       {image ? (
-        <img className="size-full object-cover" src={image} alt="" loading="lazy" decoding="async" />
+        <SafeImage className="size-full object-cover" src={image} alt="" loading="lazy" decoding="async" />
       ) : (
         <ProductIcon icon={product.icon} />
       )}

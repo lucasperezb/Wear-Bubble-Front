@@ -8,7 +8,7 @@ import { FREE_SHIPPING_MINIMUM } from '../../../lib/store-config';
 import { useBodyScrollLock } from '../../../lib/use-body-scroll-lock';
 import { usePromotionSettings } from '../../../lib/use-promotion-settings';
 import { ProgressiveDiscountNotice } from '../notices/ProgressiveDiscountNotice';
-import { ProductIcon } from '../../shared';
+import { ProductIcon, SafeImage } from '../../shared';
 
 export type { CartItem } from '../../../lib/cart';
 
@@ -69,7 +69,7 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
                 <div className="flex gap-3.5 border-b border-bubble-line py-4" key={`${item.pid}-${item.color || 'legacy'}-${item.size}-${item.bundle || 'single'}`}>
                   <div className="flex h-[74px] w-[62px] shrink-0 items-center justify-center overflow-hidden bg-bubble-cream2 [&_svg]:w-3/5">
                     {product.image ? (
-                      <img className="size-full object-cover" src={product.image} alt="" loading="lazy" decoding="async" />
+                      <SafeImage className="size-full object-cover" src={product.image} alt="" loading="lazy" decoding="async" fallback={<ProductIcon icon={product.icon} />} />
                     ) : (
                       <ProductIcon icon={product.icon} />
                     )}

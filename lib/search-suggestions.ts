@@ -1,3 +1,4 @@
+import { productPath } from "./product-url";
 import type { Product } from "./api";
 import { money } from "./api";
 import { collectionSlug } from "./collections";
@@ -104,7 +105,7 @@ export function resolveSearchDestination(
     (product) => product.active !== false && normalizeSearchText(product.name) === normalizedQuery,
   );
   if (exact) {
-    return { href: withDemo(`/produto/${exact.id}`, demo), kind: "product", label: exact.name };
+    return { href: withDemo(productPath(exact), demo), kind: "product", label: exact.name };
   }
 
   const category = categoryFromQuery(cleaned);
@@ -137,7 +138,7 @@ export function resolveSearchDestination(
     (!runnerUp || runnerUp.score <= best.score - 0.12);
   if (best && clearWinner) {
     return {
-      href: withDemo(`/produto/${best.product.id}`, demo),
+      href: withDemo(productPath(best.product), demo),
       kind: "product",
       label: best.product.name,
     };
@@ -195,7 +196,7 @@ function productSuggestion(product: Product, demo: boolean): SearchSuggestion {
     kind: "product",
     label: product.name,
     detail: `${product.sub || product.cat} · ${money.format(productPrice(product))}`,
-    href: withDemo(`/produto/${product.id}`, demo),
+    href: withDemo(productPath(product), demo),
     query: product.name,
     product,
   };

@@ -1,5 +1,5 @@
 import { Product, money } from '../../../lib/api';
-import { ProductIcon, SizeGuideDialog } from '../../shared';
+import { ProductIcon, SafeImage, SizeGuideDialog } from '../../shared';
 import { useEffect, useState } from 'react';
 import { useBodyScrollLock } from '../../../lib/use-body-scroll-lock';
 import { availableVariantSizes, sortProductSizes } from '../../../lib/product-sizes';
@@ -85,7 +85,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
               <div className="relative flex min-h-[430px] items-center justify-center overflow-hidden bg-[linear-gradient(160deg,#EAE2CC,#F3EDDD)] max-[620px]:aspect-[4/5] max-[620px]:min-h-0 [&_svg]:w-[52%] [&_svg]:opacity-90">
                 {promo ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-danger px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{promotionPct(product)}% OFF</span> : product.collectionName ? <span className="absolute left-3.5 top-3.5 z-[2] bg-bubble-ink px-2.5 py-[5px] font-sans text-[.6rem] font-bold uppercase tracking-[.12em] text-bubble-white">{product.collectionName}</span> : null}
                 {selectedImage ? (
-                  <img
+                  <SafeImage
                     className="absolute inset-0 size-full object-cover"
                     src={selectedImage.url}
                     alt={selectedImage.altText || product.name}
@@ -106,7 +106,7 @@ export function ProductModal({ product, selectedSize, onSize, onClose, onAdd }: 
                       onClick={() => setSelectedImageId(image.id)}
                       aria-label="Selecionar imagem do produto"
                     >
-                      <img
+                      <SafeImage
                         className="size-full object-cover"
                         src={image.url}
                         alt="" loading="lazy" decoding="async" />

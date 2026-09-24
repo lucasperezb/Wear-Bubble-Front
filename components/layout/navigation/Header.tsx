@@ -169,7 +169,7 @@ export function Header({
 
   // Avaliado no render para servidor e cliente concordarem; vira false sozinho quando a data passa.
   const promoActive = promoCampaignActive();
-  const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "&demo=1" : ""}`;
+  const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "?demo=1" : ""}`;
 
   return (
     <>

@@ -1262,13 +1262,13 @@ function ShipmentDetail({
             {!shipments.length ? (
               <>
                 <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
-                  Chave da NF-e
+                  Chave da NF-e (opcional)
                   <input
                     className="mt-2 w-full border border-bubble-line bg-bubble-cream px-3 py-3 font-serif text-sm normal-case tracking-normal"
                     value={invoiceKey}
                     maxLength={54}
                     onChange={(event) => setInvoiceKey(event.target.value)}
-                    placeholder="44 dígitos; opcional somente no sandbox"
+                    placeholder="Em branco = declaração de conteúdo"
                   />
                 </label>
                 <button
@@ -1343,8 +1343,9 @@ function ShipmentDetail({
               </div>
             )}
             <p className={adminNote}>
-              A compra da etiqueta debita o saldo da Melhor Carteira. Em
-              produção, informe a NF-e antes de gerar.
+              A compra da etiqueta debita o saldo da Melhor Carteira. Sem chave
+              de NF-e, o envio sai com declaração de conteúdo e o código de
+              rastreio aparece no pedido automaticamente.
             </p>
           </DetailCard>
 

@@ -17,9 +17,9 @@ export const PROMO_CAMPAIGN = {
   /** Maior desconto anunciado ("até 40%"). */
   maxPct: Math.max(1, Math.min(90, Number(process.env.NEXT_PUBLIC_PROMO_MAX_PCT) || 40)),
   /** Fim da campanha; o contador do hero conta até aqui. */
-  endsAt: endsAtEnv && !Number.isNaN(Date.parse(endsAtEnv)) ? endsAtEnv : "2026-09-27T23:59:59-03:00",
+  endsAt: endsAtEnv && !Number.isNaN(Date.parse(endsAtEnv)) ? endsAtEnv : "2026-10-03T23:59:59-03:00",
   /** Página do catálogo já filtrada pelas peças com desconto. */
-  href: "/produtos?promo=1",
+  href: "/promocoes",
 };
 
 export const promoLabel = `Até ${PROMO_CAMPAIGN.maxPct}% OFF`;
