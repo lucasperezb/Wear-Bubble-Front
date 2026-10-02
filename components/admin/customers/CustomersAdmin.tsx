@@ -2,18 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch, money, type Order } from "../../../lib/api";
-import { adminNote, adminTable, stockBadge } from "../shared/styles";
-import type { AdminCustomers } from "../shared/types";
+import {
+  adminNote,
+  adminTable,
+  smallButton,
+  stockBadge,
+} from "../shared/styles";
+import type { AdminCustomers, Notify } from "../shared/types";
+import { useActionDialog } from "../../shared/overlays/ActionDialog";
 import { addressLine, maskId } from "../shared/utils";
 import { usePagination } from "../shared/usePagination";
 import { PaginationControls } from "../shared/PaginationControls";
 
 const emptyCustomers: AdminCustomers = { users: [], profiles: [] };
 
-export function CustomersAdmin() {
+export function CustomersAdmin({ notify }: { notify: Notify }) {
   const [customers, setCustomers] = useState<AdminCustomers>(emptyCustomers);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingUid, setDeletingUid] = useState<string | null>(null);
+  const actionDialog = useActionDialog();
 
   useEffect(() => {
     let cancelled = false;
@@ -61,10 +69,46 @@ export function CustomersAdmin() {
     pageStart,
   } = usePagination(rows, []);
 
+  async function removeCustomer(row: (typeof rows)[number]) {
+    const name = row.profile?.name || maskId(row.uid);
+    const orderWarning =
+      row.orders.length > 0
+        ? ` ${row.orders.length === 1 ? "O pedido deste cliente continuará" : `Os ${row.orders.length} pedidos deste cliente continuarão`} no histórico de vendas, sem vínculo com a conta.`
+        : "";
+    const confirmed = await actionDialog.confirm({
+      title: `Excluir cliente ${name}`,
+      description: `A conta, os dados pessoais e os endereços serão apagados definitivamente.${orderWarning}`,
+      confirmLabel: "Excluir cliente",
+      tone: "danger",
+    });
+    if (!confirmed) return;
+
+    setDeletingUid(row.uid);
+    try {
+      await apiFetch(`/admin/customers/${row.uid}`, { method: "DELETE" });
+      setCustomers((current) => ({
+        users: current.users.filter((user) => user.uid !== row.uid),
+        profiles: current.profiles.filter(
+          (profile) => profile.uid !== row.uid,
+        ),
+      }));
+      notify(`Cliente ${name} excluído.`);
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir cliente.",
+      );
+    } finally {
+      setDeletingUid(null);
+    }
+  }
+
   if (loading) return <p className={adminNote}>Carregando clientes...</p>;
 
   return (
     <>
+      {actionDialog.dialog}
       <div className="mb-[18px] border border-bubble-candy bg-bubble-candy/15 px-[13px] py-[11px] text-[.68rem] leading-[1.6] text-bubble-ink">
         <b>Cofre de dados pessoais.</b> Estes dados são visíveis apenas para o
         gerente e devem ser usados para entrega e atendimento.
@@ -80,13 +124,14 @@ export function CustomersAdmin() {
             <th>Pedidos</th>
             <th>Total gasto</th>
             <th>Cadastro</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
               <td
-                colSpan={7}
+                colSpan={8}
                 className="p-[26px] text-center text-bubble-ink/50"
               >
                 Nenhum cliente cadastrado ainda.
@@ -131,6 +176,20 @@ export function CustomersAdmin() {
                       "pt-BR",
                     )
                   : "-"}
+              </td>
+              <td>
+                {row.user.role === "manager" ? (
+                  <span className="text-[.7rem] text-bubble-ink/40">—</span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={deletingUid !== null}
+                    className={`${smallButton} border-bubble-danger text-bubble-danger hover:bg-bubble-danger hover:text-white disabled:cursor-wait disabled:opacity-50`}
+                    onClick={() => removeCustomer(row)}
+                  >
+                    {deletingUid === row.uid ? "Excluindo..." : "Excluir"}
+                  </button>
+                )}
               </td>
             </tr>
           ))}

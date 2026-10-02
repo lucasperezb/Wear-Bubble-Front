@@ -182,8 +182,7 @@ export function ShipAdmin({
   );
   const returnCounts = useMemo(
     () => ({
-      exchange: returns.filter((request) => request.kind === "exchange")
-        .length,
+      exchange: returns.filter((request) => request.kind === "exchange").length,
       return: returns.filter((request) => request.kind === "return").length,
     }),
     [returns],
@@ -453,59 +452,58 @@ export function ShipAdmin({
               </tr>
             ) : null}
             {paginatedOrders.map((order) => (
-                <tr key={order.id} onClick={() => setSelectedId(order.id)}>
-                  <td className="whitespace-nowrap">
-                    <strong>#{order.number}</strong>
-                    <br />
-                    <span className="text-[.68rem] text-bubble-ink/50">
-                      {dateTime.format(order.date)}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="font-semibold">
-                      {order.delivery?.name || "Cliente não informado"}
-                    </div>
-                    <div className="text-[.68rem] text-bubble-ink/50">
-                      {order.delivery?.email || order.customerId || "Anônimo"}
-                    </div>
-                  </td>
-                  <td>
-                    {order.items.reduce((sum, item) => sum + item.qty, 0)}{" "}
-                    peça(s)
-                  </td>
-                  <td className="whitespace-nowrap font-semibold">
-                    {money.format(order.total)}
-                  </td>
-                  <td className="max-w-[180px] truncate">
-                    {order.tracking || "Não informado"}
-                  </td>
-                  <td>
-                    <StageBadge order={order} />
-                  </td>
-                  <td>
-                    <ReturnBadge requests={returnsByOrder.get(order.id)} />
-                  </td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="inline-flex items-center gap-1 font-sans text-[.62rem] font-bold uppercase tracking-[.08em]"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedId(order.id);
-                        }}
-                      >
-                        Abrir <ChevronRight size={14} />
-                      </button>
-                      <DeleteOrderButton
-                        order={order}
-                        onSaved={handleSaved}
-                        notify={notify}
-                        compact
-                      />
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              <tr key={order.id} onClick={() => setSelectedId(order.id)}>
+                <td className="whitespace-nowrap">
+                  <strong>#{order.number}</strong>
+                  <br />
+                  <span className="text-[.68rem] text-bubble-ink/50">
+                    {dateTime.format(order.date)}
+                  </span>
+                </td>
+                <td>
+                  <div className="font-semibold">
+                    {order.delivery?.name || "Cliente não informado"}
+                  </div>
+                  <div className="text-[.68rem] text-bubble-ink/50">
+                    {order.delivery?.email || order.customerId || "Anônimo"}
+                  </div>
+                </td>
+                <td>
+                  {order.items.reduce((sum, item) => sum + item.qty, 0)} peça(s)
+                </td>
+                <td className="whitespace-nowrap font-semibold">
+                  {money.format(order.total)}
+                </td>
+                <td className="max-w-[180px] truncate">
+                  {order.tracking || "Não informado"}
+                </td>
+                <td>
+                  <StageBadge order={order} />
+                </td>
+                <td>
+                  <ReturnBadge requests={returnsByOrder.get(order.id)} />
+                </td>
+                <td className="whitespace-nowrap">
+                  <div className="flex items-center gap-3">
+                    <button
+                      className="inline-flex items-center gap-1 font-sans text-[.62rem] font-bold uppercase tracking-[.08em]"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(order.id);
+                      }}
+                    >
+                      Abrir <ChevronRight size={14} />
+                    </button>
+                    <DeleteOrderButton
+                      order={order}
+                      onSaved={handleSaved}
+                      notify={notify}
+                      compact
+                    />
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -706,20 +704,36 @@ function ShipmentDetail({
     void loadShipments();
   }, [order.id]);
 
-  async function cancelOrder() {
-    const confirmed = await actionDialog.confirm({
-      title: `Cancelar pedido #${order.number}`,
-      description: `O pedido será cancelado e ${money.format(order.total)} será enviado ao fluxo de estorno do Asaas. Esta ação não pode ser desfeita.`,
-      confirmLabel: "Cancelar e estornar",
-      tone: "danger",
-    });
+  async function cancelOrder(refundedExternally: boolean) {
+    const confirmed = await actionDialog.confirm(
+      refundedExternally
+        ? {
+            title: `Cancelar pedido #${order.number}`,
+            description: `O pedido será cancelado agora, sem pedir estorno ao Asaas. Faça o estorno de ${money.format(order.total)} manualmente no Asaas; o pedido fica como "estorno pendente" até o Asaas confirmar. As peças voltam ao estoque e o cliente recebe o e-mail de cancelamento. Esta ação não pode ser desfeita.`,
+            confirmLabel: "Confirmar cancelamento",
+            tone: "danger",
+          }
+        : {
+            title: `Cancelar pedido #${order.number}`,
+            description: `O pedido será cancelado e ${money.format(order.total)} será enviado ao fluxo de estorno do Asaas. As peças voltam ao estoque e o cliente recebe o e-mail de cancelamento. Esta ação não pode ser desfeita.`,
+            confirmLabel: "Cancelar e estornar",
+            tone: "danger",
+          },
+    );
     if (!confirmed) return;
 
     setCanceling(true);
     try {
-      await apiFetch(`/payment/orders/${order.id}/cancel`, { method: "POST" });
+      await apiFetch(`/payment/orders/${order.id}/cancel`, {
+        method: "POST",
+        body: JSON.stringify({ refundedExternally }),
+      });
       await onSaved();
-      notify(`Pedido #${order.number} cancelado e valor estornado.`);
+      notify(
+        refundedExternally
+          ? `Pedido #${order.number} cancelado. Lembre-se de fazer o estorno no Asaas.`
+          : `Pedido #${order.number} cancelado e valor estornado.`,
+      );
     } catch (error) {
       notify(
         error instanceof Error
@@ -882,17 +896,27 @@ function ShipmentDetail({
             Total do pedido
           </div>
           <strong className="text-2xl">{money.format(order.total)}</strong>
-          {order.status === "paid" &&
-          order.gateway === "asaas" &&
-          order.asaasPaymentId ? (
-            <button
-              type="button"
-              disabled={canceling}
-              onClick={() => void cancelOrder()}
-              className="block w-full border border-red-700 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-red-700 transition-colors hover:bg-red-700 hover:text-white disabled:cursor-wait disabled:opacity-50 md:w-auto"
-            >
-              {canceling ? "Cancelando..." : "Cancelar e estornar"}
-            </button>
+          {order.status === "paid" ? (
+            <div className="flex flex-col gap-2 md:items-end">
+              {order.gateway === "asaas" && order.asaasPaymentId ? (
+                <button
+                  type="button"
+                  disabled={canceling}
+                  onClick={() => void cancelOrder(false)}
+                  className="block w-full border border-red-700 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-red-700 transition-colors hover:bg-red-700 hover:text-white disabled:cursor-wait disabled:opacity-50 md:w-auto"
+                >
+                  {canceling ? "Cancelando..." : "Cancelar e estornar"}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={canceling}
+                onClick={() => void cancelOrder(true)}
+                className="block w-full border border-red-700/50 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-red-700/80 transition-colors hover:bg-red-700 hover:text-white disabled:cursor-wait disabled:opacity-50 md:w-auto"
+              >
+                Cancelar (estorno manual)
+              </button>
+            </div>
           ) : null}
           <DeleteOrderButton order={order} onSaved={onSaved} notify={notify} />
         </div>
@@ -1398,8 +1422,8 @@ function ShipmentDetail({
             </button>
             <p className={adminNote}>
               Use quando a etiqueta foi comprada fora da Melhor Envio (ex.:
-              diretamente nos Correios). O cliente recebe um e-mail com o
-              código assim que você salvar.
+              diretamente nos Correios). O cliente recebe um e-mail com o código
+              assim que você salvar.
             </p>
             <label className="mt-4 block font-sans text-[.6rem] font-bold uppercase tracking-[.1em] text-bubble-ink/55">
               Ajuste manual da etapa
@@ -1407,7 +1431,9 @@ function ShipmentDetail({
                 className="mt-2 h-11 w-full border border-bubble-line bg-bubble-cream px-3 text-sm normal-case tracking-normal outline-none focus:border-bubble-ink disabled:cursor-not-allowed disabled:opacity-45"
                 value={order.shipStage}
                 disabled={canceled || order.status !== "paid" || stageBusy}
-                onChange={(event) => void updateShipStage(Number(event.target.value))}
+                onChange={(event) =>
+                  void updateShipStage(Number(event.target.value))
+                }
               >
                 {shippingStages.map((stage, index) => (
                   <option value={index} key={stage}>

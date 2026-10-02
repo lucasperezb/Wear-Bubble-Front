@@ -156,7 +156,7 @@ export function AdminPanel({ open, managerLabel, onClose, onChanged, notify, dem
               {tab === 'dash' && <Dashboard />}
               {tab === 'products' && <ProductsAdmin onSaved={handleChanged} notify={notify} demoMode={demoMode} />}
               {tab === 'ship' && <ShipAdmin onSaved={handleChanged} notify={notify} />}
-              {tab === 'customers' && <CustomersAdmin />}
+              {tab === 'customers' && <CustomersAdmin notify={notify} />}
               {tab === 'coupons' && <CouponsAdmin onSaved={handleChanged} notify={notify} />}
               {tab === 'promotions' && <PromotionsAdmin onSaved={handleChanged} notify={notify} />}
               {tab === 'showcases' && <ShowcasesAdmin notify={notify} demoMode={demoMode} onSaved={handleChanged} />}
