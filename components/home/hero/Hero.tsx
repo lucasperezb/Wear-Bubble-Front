@@ -1,11 +1,13 @@
 "use client";
 
+import { Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { money, type HeroConfig, type Product } from "../../../lib/api";
 import { productPrice } from "../../../lib/pricing";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
 import { usePromoCountdown } from "../../../lib/use-promo-countdown";
 import { ProductIcon, SafeImage } from "../../shared";
+import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
 import { ProgressivePromoBanner } from "./ProgressivePromoBanner";
 
 type HeroProps = {
@@ -24,6 +26,7 @@ export function Hero({
   const slides = config.slides.filter((slide) => slide.active);
   const promoActive = promoCampaignActive();
   const useCarousel = config.enabled && slides.length > 0;
+  const shippingPromo = useFreeShippingPromo();
 
   return (
     <>
@@ -39,6 +42,9 @@ export function Hero({
       )}
       {/* Com o carrossel ligado o hero é só imagem; a campanha ganha uma faixa própria. */}
       {useCarousel && promoActive ? <PromoStrip /> : null}
+      {useCarousel && !promoActive && shippingPromo.active ? (
+        <ShippingStrip collectionHref={collectionHref} />
+      ) : null}
       {/* Só renderiza com o desconto progressivo ligado no painel. */}
       <ProgressivePromoBanner href={collectionHref} />
       <PromoMarquee promoActive={promoActive} />
@@ -108,6 +114,41 @@ function PromoStrip() {
           className="inline-flex min-h-12 items-center justify-center border border-bubble-danger bg-bubble-danger px-6 py-3 font-sans text-[.7rem] font-semibold uppercase tracking-[.14em] text-bubble-white transition-colors hover:border-bubble-ink hover:bg-bubble-ink"
         >
           Ver peças em promoção
+        </a>
+      </div>
+    </div>
+  );
+}
+
+/** Selo da campanha de frete grátis: tom da marca, sem o vermelho de liquidação. */
+function ShippingSeal() {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-bubble-ink px-3 py-[6px] font-sans text-[.58rem] font-semibold uppercase tracking-[.16em] text-bubble-ink sm:text-[.62rem] sm:tracking-[.18em]">
+      <Truck size={15} strokeWidth={1.5} aria-hidden="true" />
+      <span className="whitespace-nowrap sm:hidden">Frete grátis · Brasil</span>
+      <span className="max-sm:hidden">
+        Outubro Bubble · Frete grátis para todo o Brasil
+      </span>
+    </span>
+  );
+}
+
+/** Faixa do frete grátis para quando o hero é o carrossel de imagens. */
+function ShippingStrip({ collectionHref }: { collectionHref: string }) {
+  return (
+    <div className="border-b border-bubble-ink bg-bubble-cream px-6 py-5">
+      <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <ShippingSeal />
+          <span className="font-serif text-[1.05rem] italic">
+            A entrega é por nossa conta durante todo o mês de outubro.
+          </span>
+        </div>
+        <a
+          href={collectionHref}
+          className="inline-flex min-h-12 items-center justify-center border border-bubble-ink px-6 py-3 font-sans text-[.7rem] font-semibold uppercase tracking-[.14em] text-bubble-ink transition-colors hover:bg-bubble-ink hover:text-bubble-white"
+        >
+          Ver a coleção
         </a>
       </div>
     </div>
@@ -219,6 +260,7 @@ function StaticHero({
 }: Pick<HeroProps, "product" | "productHref" | "collectionHref"> & {
   promoActive: boolean;
 }) {
+  const shippingPromo = useFreeShippingPromo();
   return (
     <section
       className="relative overflow-hidden border-b border-bubble-ink bg-bubble-cream px-6 py-12 md:px-10 md:py-16 lg:min-h-[680px] lg:py-20"
@@ -250,6 +292,8 @@ function StaticHero({
         <div className="relative z-10 col-start-1 row-start-1 min-w-0 max-w-[590px] text-left">
           {promoActive ? (
             <PromoPill />
+          ) : shippingPromo.active ? (
+            <ShippingSeal />
           ) : (
             <span className="font-sans text-[.64rem] font-semibold uppercase tracking-[.16em] text-bubble-brown sm:text-[.68rem] sm:tracking-[.28em]">
               Moda fitness feminina · Coleção Core
@@ -265,6 +309,14 @@ function StaticHero({
               <>
                 vista bubble <span className="not-italic text-bubble-danger">por menos</span>.
               </>
+            ) : shippingPromo.active ? (
+              <>
+                vista bubble —{" "}
+                <span className="not-italic text-bubble-brown">
+                  a entrega é por nossa conta
+                </span>
+                .
+              </>
             ) : (
               "vista bubble."
             )}
@@ -274,11 +326,22 @@ function StaticHero({
           <p className="mx-auto mt-6 max-w-[540px] font-serif text-[clamp(1rem,1.7vw,1.25rem)] italic leading-[1.65] text-bubble-ink/70 lg:mx-0">
             {promoActive
               ? `Peças de toque macio, conforto e design versátil — agora com até ${PROMO_CAMPAIGN.maxPct}% de desconto.`
-              : "Peças de toque macio, conforto e design versátil para acompanhar você dentro e fora do treino."}
+              : shippingPromo.active
+                ? `Peças de toque macio, conforto e design versátil. Frete grátis para todo o Brasil ${shippingPromo.period}, de um top ao conjunto completo, sem cupom.`
+                : "Peças de toque macio, conforto e design versátil para acompanhar você dentro e fora do treino."}
           </p>
           {promoActive ? (
             <div className="mt-6 flex justify-center lg:justify-start">
               <PromoCountdown />
+            </div>
+          ) : shippingPromo.active ? (
+            <div className="mt-6 flex justify-center lg:justify-start">
+              <span className="inline-flex items-center gap-2 border-y border-bubble-line py-2 font-sans text-[.62rem] font-semibold uppercase tracking-[.2em] text-bubble-ink/70">
+                Válido
+                <b className="font-display text-[.82rem] normal-case tracking-[.02em] text-bubble-ink">
+                  {shippingPromo.period}
+                </b>
+              </span>
             </div>
           ) : null}
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
@@ -305,7 +368,11 @@ function StaticHero({
             </a>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 font-sans text-[.63rem] font-semibold uppercase tracking-[.1em] text-bubble-ink/60 lg:justify-start">
-            <span>Frete grátis acima de R$ 299</span>
+            <span>
+              {shippingPromo.active
+                ? "Frete grátis para todo o Brasil"
+                : `Frete grátis acima de R$ ${shippingPromo.minimum}`}
+            </span>
             <span
               className="hidden size-1 rounded-full bg-bubble-brown sm:block"
               aria-hidden="true"
@@ -314,10 +381,26 @@ function StaticHero({
           </div>
         </div>
         <div className="relative col-start-2 row-start-1 mx-auto w-full max-w-[340px] self-center sm:max-w-[400px] lg:row-span-2 lg:max-w-[450px]">
-          <div
-            className="absolute -right-5 -top-5 size-28 rounded-full bg-bubble-candy/35 blur-2xl max-[620px]:hidden"
-            aria-hidden="true"
-          />
+          {shippingPromo.active ? (
+            <div
+              className="absolute -right-6 -top-6 z-10 flex size-[118px] -rotate-[8deg] flex-col items-center justify-center rounded-full border border-bubble-ink bg-bubble-candy text-center max-[620px]:hidden"
+              aria-hidden="true"
+            >
+              <span className="font-serif text-[1.2rem] font-semibold italic leading-none">
+                frete
+                <br />
+                grátis
+              </span>
+              <span className="mt-1 font-sans text-[.52rem] uppercase tracking-[.2em]">
+                {shippingPromo.month.slice(0, 3)}.
+              </span>
+            </div>
+          ) : (
+            <div
+              className="absolute -right-5 -top-5 size-28 rounded-full bg-bubble-candy/35 blur-2xl max-[620px]:hidden"
+              aria-hidden="true"
+            />
+          )}
           <a
             href={productHref || "#colecao"}
             className="group relative block aspect-[4/5] w-full cursor-pointer overflow-hidden border border-bubble-ink bg-[linear-gradient(145deg,#e5dcc5,#f5f0e4)] text-left transition-shadow duration-300 hover:shadow-[0_28px_70px_rgba(23,19,14,.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bubble-ink"
@@ -340,6 +423,11 @@ function StaticHero({
                 <ProductIcon icon={product?.icon} />
               )}
             </div>
+            {shippingPromo.active ? (
+              <span className="absolute right-2 top-2 z-10 border border-bubble-ink bg-bubble-candy px-2 py-1 font-sans text-[.56rem] font-bold uppercase tracking-[.14em] text-bubble-ink min-[621px]:hidden">
+                Frete R$ 0
+              </span>
+            ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink/85 via-bubble-ink/35 to-transparent px-3 pb-3 pt-12 text-bubble-white sm:px-7 sm:pb-7 sm:pt-24">
               <span className="hidden font-sans text-[.58rem] font-semibold uppercase tracking-[.18em] text-bubble-white/75 sm:block">
                 Destaque da coleção
@@ -368,12 +456,16 @@ function StaticHero({
 }
 
 function PromoMarquee({ promoActive }: { promoActive: boolean }) {
+  const shippingPromo = useFreeShippingPromo();
+  const shipping = shippingPromo.active
+    ? `FRETE GRÁTIS PARA TODO O BRASIL ${shippingPromo.period.toUpperCase()}`
+    : `FRETE GRÁTIS ACIMA DE R$ ${shippingPromo.minimum}`;
   if (promoActive) {
     // O letreiro precisa de duas metades iguais: a animação anda -50% e recomeça.
     const half = (
       <>
         <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> COLEÇÃO CORE NO AR{" "}
-        <span>FRETE GRÁTIS DE LANÇAMENTO</span> 5% OFF NO PIX{" "}
+        <span>{shipping}</span> 5% OFF NO PIX{" "}
         <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> TROCA EM 30 DIAS{" "}
         <span>CONJUNTO COM 5% OFF</span> POR TEMPO LIMITADO{" "}
       </>
@@ -390,10 +482,15 @@ function PromoMarquee({ promoActive }: { promoActive: boolean }) {
   return (
     <div className="overflow-hidden whitespace-nowrap bg-bubble-ink py-[13px] text-bubble-cream">
       <div className="inline-block animate-marquee font-sans text-[.72rem] uppercase tracking-[.24em] motion-reduce:animate-none [&_span]:mx-7 [&_span]:text-bubble-cream/85">
-        <span>COLEÇÃO CORE NO AR</span> FRETE GRÁTIS DE LANÇAMENTO{" "}
+        {shippingPromo.active ? (
+          <>
+            <b className="mx-7 font-bold text-bubble-candy">OUTUBRO BUBBLE</b>{" "}
+          </>
+        ) : null}
+        <span>COLEÇÃO CORE NO AR</span> {shipping}{" "}
         <span>5% OFF NO PIX</span> CONJUNTO COM 5% OFF{" "}
         <span>TROCA EM 30 DIAS</span> COLEÇÃO CORE NO AR{" "}
-        <span>FRETE GRÁTIS EM TODOS OS PEDIDOS</span> 5% OFF NO PIX{" "}
+        <span>{shipping}</span> 5% OFF NO PIX{" "}
         <span>CONJUNTO COM 5% OFF</span> TROCA EM 30 DIAS
       </div>
     </div>

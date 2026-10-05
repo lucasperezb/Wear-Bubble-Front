@@ -5,6 +5,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Instante do build: base da primeira renderização da campanha de frete
+  // (lib/use-free-shipping-promo.ts), igual no servidor e no cliente.
+  env: { NEXT_PUBLIC_BUILD_TIME: String(Date.now()) },
   output: 'standalone',
   outputFileTracingRoot: __dirname,
   allowedDevOrigins: ['*.trycloudflare.com'],

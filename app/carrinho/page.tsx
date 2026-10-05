@@ -36,7 +36,7 @@ import {
   type CartItem,
   type PaymentMethod,
 } from "../../lib/cart";
-import { FREE_SHIPPING_MINIMUM } from "../../lib/store-config";
+import { useFreeShippingPromo } from "../../lib/use-free-shipping-promo";
 import { trackGoogleAdsPurchase } from "../../lib/google-ads";
 import { usePromotionSettings } from "../../lib/use-promotion-settings";
 
@@ -283,12 +283,14 @@ export default function CartPage() {
   }, [pixPayment]);
 
   const promotionSettings = usePromotionSettings();
+  const shippingPromo = useFreeShippingPromo();
   const totals = calculateCart(
     cart,
     products,
     coupon,
     method,
     promotionSettings,
+    shippingPromo.minimum,
   );
   const ready = cartHydrated && productsLoaded;
   const displayedTotal =
@@ -296,7 +298,7 @@ export default function CartPage() {
   // O Pix não reduz a base do frete; preços promocionais, conjuntos e cupons reduzem.
   const freeShipping =
     Boolean(coupon && (coupon.minimumCharge || coupon.freeShipping)) ||
-    totals.freeShippingSubtotal >= FREE_SHIPPING_MINIMUM;
+    totals.freeShippingSubtotal >= shippingPromo.minimum;
   const shippingPrice = selectedShipping
     ? freeShipping
       ? 0
@@ -487,6 +489,9 @@ export default function CartPage() {
             installments: card.installments,
             existingOrderId: pixPayment?.orderId,
             shippingQuoteToken: selectedShipping?.quoteToken,
+            // A API recusa o pedido se o frete deixou de ser grátis (fim da
+            // campanha) em vez de cobrar um valor que a sacola não mostrou.
+            expectedFreeShipping: freeShipping,
           }),
         },
       );

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import type { Product } from '../../../lib/api';
 import { calculateCart, type CartItem } from '../../../lib/cart';
 import { productPrice } from '../../../lib/pricing';
-import { FREE_SHIPPING_MINIMUM } from '../../../lib/store-config';
+import { useFreeShippingPromo } from '../../../lib/use-free-shipping-promo';
 import { useBodyScrollLock } from '../../../lib/use-body-scroll-lock';
 import { usePromotionSettings } from '../../../lib/use-promotion-settings';
 import { ProgressiveDiscountNotice } from '../notices/ProgressiveDiscountNotice';
@@ -24,8 +24,11 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
   useBodyScrollLock(open);
   const router = useRouter();
   const promotionSettings = usePromotionSettings();
-  const { lines, subtotal, freeShippingSubtotal, freeShippingRemaining, progressive, progressiveDiscount, nextProgressiveStep } = calculateCart(cart, products, null, 'Cartão de crédito', promotionSettings);
-  const progress = Math.min(100, (freeShippingSubtotal / FREE_SHIPPING_MINIMUM) * 100);
+  const freeShipping = useFreeShippingPromo();
+  const { lines, subtotal, freeShippingSubtotal, freeShippingRemaining, progressive, progressiveDiscount, nextProgressiveStep } = calculateCart(cart, products, null, 'Cartão de crédito', promotionSettings, freeShipping.minimum);
+  const shippingPromo = freeShipping.active;
+  const minimum = freeShipping.minimum;
+  const progress = minimum > 0 ? Math.min(100, (freeShippingSubtotal / minimum) * 100) : 100;
 
   function goToCart() {
     onClose();
@@ -54,7 +57,9 @@ export function CartDrawer({ open, cart, products, onQty, onClose }: CartDrawerP
             <>
               <div className="mb-[18px]">
                 <div className={`mb-2 text-[.74rem] ${freeShippingRemaining <= 0 ? 'font-semibold text-bubble-success' : 'text-bubble-ink/70 [&_b]:text-bubble-brown'}`}>
-                  {freeShippingRemaining <= 0 ? (
+                  {shippingPromo ? (
+                    <><b>FRETE GRÁTIS</b> para todo o Brasil {freeShipping.period}!</>
+                  ) : freeShippingRemaining <= 0 ? (
                     <>Você ganhou <b>FRETE GRÁTIS</b>!</>
                   ) : (
                     <>Faltam <b>R$ {freeShippingRemaining.toFixed(2).replace('.', ',')}</b> para o frete grátis</>

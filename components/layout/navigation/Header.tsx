@@ -10,6 +10,7 @@ import {
   PackageCheck,
   RotateCcw,
   ShoppingBag,
+  Truck,
   UserPlus,
   UserRound,
   X,
@@ -19,6 +20,7 @@ import { apiFetch, type User } from "../../../lib/api";
 import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
+import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
 import { SearchBox } from "./SearchBox";
 
 type HeaderProps = {
@@ -169,17 +171,43 @@ export function Header({
 
   // Avaliado no render para servidor e cliente concordarem; vira false sozinho quando a data passa.
   const promoActive = promoCampaignActive();
+  const freeShipping = useFreeShippingPromo();
+  const shippingPromo = freeShipping.active;
+  const shippingBarText = shippingPromo
+    ? `FRETE GRÁTIS PARA TODO O BRASIL ${freeShipping.period.toUpperCase()}`
+    : `FRETE GRÁTIS A PARTIR DE R$ ${freeShipping.minimum}`;
   const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "?demo=1" : ""}`;
 
   return (
     <>
       {promoActive ? (
         <div className="bg-bubble-danger px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-white [&_b]:font-bold">
-          <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
+          <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · {shippingBarText} · <b>5% OFF</b> NO PIX
         </div>
       ) : (
         <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
-          FRETE GRÁTIS A PARTIR DE R$ 299 · <b>5% OFF</b> NO PIX
+          {shippingPromo ? (
+            <>
+              <span
+                className="mr-2 inline-block size-1.5 rounded-full bg-bubble-candy align-middle"
+                aria-hidden="true"
+              />
+              {/* Versão curta no celular para caber em uma linha. */}
+              <span className="max-[520px]:hidden">
+                OUTUBRO BUBBLE ·{" "}
+                <b className="text-bubble-candy">FRETE GRÁTIS PARA TODO O BRASIL</b>{" "}
+                · {freeShipping.period.toUpperCase()} · <b>5% OFF</b> NO PIX
+              </span>
+              <span className="min-[521px]:hidden">
+                <b className="text-bubble-candy">FRETE GRÁTIS PARA TODO O BRASIL</b> · EM{" "}
+                {freeShipping.month.toUpperCase()}
+              </span>
+            </>
+          ) : (
+            <>
+              {shippingBarText} · <b>5% OFF</b> NO PIX
+            </>
+          )}
         </div>
       )}
       <header className="sticky top-0 z-[200] border-b border-bubble-ink bg-bubble-cream min-[981px]:bg-bubble-cream/95 min-[981px]:backdrop-blur-[10px]">
@@ -520,6 +548,14 @@ export function Header({
         </div>
 
         <SearchBox variant="mobile" demoMode={demoMode} initialQuery={searchQuery} onNavigate={() => setMobileOpen(false)} />
+
+        {/* A barra do topo some no primeiro scroll; no celular a oferta segue presa ao menu. */}
+        {shippingPromo ? (
+          <div className="flex h-[26px] items-center justify-center gap-2 overflow-hidden whitespace-nowrap bg-bubble-ink px-3 font-sans text-[.58rem] font-medium uppercase tracking-[.16em] text-bubble-cream min-[981px]:hidden">
+            <Truck size={13} aria-hidden="true" />
+            Frete grátis para todo o Brasil · {freeShipping.month}
+          </div>
+        ) : null}
 
         {mobileOpen ? (
           <div className="absolute inset-x-0 top-full max-h-[calc(100dvh-152px)] overflow-y-auto overscroll-contain border-b border-bubble-ink bg-bubble-cream shadow-bubble min-[981px]:hidden">

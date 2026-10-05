@@ -8,7 +8,7 @@ import {
   type ProgressiveUnit,
   type PromotionSettings,
 } from './progressive-discount';
-import { FREE_SHIPPING_MINIMUM } from './store-config';
+import { freeShippingMinimum } from './store-config';
 
 export type CartItem = {
   pid: number;
@@ -54,6 +54,7 @@ export function calculateCart(
   coupon: AppliedCoupon = null,
   method: PaymentMethod = "Pix",
   settings: PromotionSettings | null = null,
+  freeShippingMin = freeShippingMinimum(),
 ) {
   const lines = cart
     .map((item) => ({
@@ -155,7 +156,7 @@ export function calculateCart(
     // Considera preços vigentes, conjunto e cupom. Apenas o desconto Pix
     // não reduz a base usada para conquistar o frete grátis.
     freeShippingSubtotal: beforePayment,
-    freeShippingRemaining: Math.max(0, FREE_SHIPPING_MINIMUM - beforePayment),
+    freeShippingRemaining: Math.max(0, freeShippingMin - beforePayment),
   };
 }
 

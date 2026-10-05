@@ -10,7 +10,9 @@ import {
   ContactSection,
   Footer,
   Hero,
+  ShippingReassurance,
 } from "../components/home";
+import { useFreeShippingPromo } from "../lib/use-free-shipping-promo";
 import { Header } from "../components/layout";
 import { ProductCatalog, ProductModal } from "../components/product";
 import { HeroConfig, Product, ShowcaseMap, User, apiFetch } from "../lib/api";
@@ -49,6 +51,7 @@ const initialFilters: Filters = {
 };
 
 export default function Home() {
+  const shippingPromo = useFreeShippingPromo();
   const [products, setProducts] = useState<Product[]>([]);
   const [heroConfig, setHeroConfig] = useState<HeroConfig>({
     enabled: false,
@@ -364,9 +367,16 @@ export default function Home() {
         }
         onRetry={refreshProducts}
         showFilters={false}
-        eyebrow="Curadoria Bubble · 4 escolhas"
+        eyebrow={
+          shippingPromo.active
+            ? "Curadoria Bubble · frete grátis em todas"
+            : "Curadoria Bubble · 4 escolhas"
+        }
         title="Em destaque"
         description="Clique na peça para ver detalhes, tecido e sugestão de conjunto."
+      />
+      <ShippingReassurance
+        collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
       />
       <ComboBuilder
         products={products}

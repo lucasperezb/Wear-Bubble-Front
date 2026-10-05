@@ -2,6 +2,7 @@ import { Product, money } from "../../../lib/api";
 import { isBottomCategory, isTopCategory } from "../../../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../../../lib/product-sizes";
 import { productPrice } from "../../../lib/pricing";
+import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
 import { productImageUrlForColor } from "../../../lib/product-images";
 import { ProductIcon, SafeImage } from "../../shared";
 
@@ -28,6 +29,7 @@ export function ComboBuilder({
   onVariantChange,
   onAdd,
 }: ComboBuilderProps) {
+  const shippingPromo = useFreeShippingPromo();
   const featured = products
     .filter(
       (product) =>
@@ -227,6 +229,12 @@ export function ComboBuilder({
             <h2 className="text-[clamp(2rem,5vw,2.6rem)]">
               Monte seu Conjunto · 5% OFF
             </h2>
+            {shippingPromo.active ? (
+              <p className="m-0 mt-2 font-serif text-[.95rem] italic text-bubble-brown">
+                Conjunto com 5% OFF + frete grátis para todo o Brasil em{" "}
+                {shippingPromo.month}.
+              </p>
+            ) : null}
           </div>
           <p className="max-w-[380px] text-[.9rem] italic leading-[1.6] text-bubble-ink/60">
             Escolha uma das peças selecionadas pela Wear Bubble e monte a
