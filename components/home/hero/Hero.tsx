@@ -383,15 +383,15 @@ function StaticHero({
         <div className="relative col-start-2 row-start-1 mx-auto w-full max-w-[340px] self-center sm:max-w-[400px] lg:row-span-2 lg:max-w-[450px]">
           {shippingPromo.active ? (
             <div
-              className="absolute -right-6 -top-6 z-10 flex size-[118px] -rotate-[8deg] flex-col items-center justify-center rounded-full border border-bubble-ink bg-bubble-candy text-center max-[620px]:hidden"
+              className="absolute -right-3 -top-3 z-10 flex size-[74px] -rotate-[8deg] flex-col items-center justify-center rounded-full border border-bubble-ink bg-bubble-candy text-center sm:-right-6 sm:-top-6 sm:size-[118px]"
               aria-hidden="true"
             >
-              <span className="font-serif text-[1.2rem] font-semibold italic leading-none">
+              <span className="font-serif text-[.8rem] font-semibold italic leading-none sm:text-[1.2rem]">
                 frete
                 <br />
                 grátis
               </span>
-              <span className="mt-1 font-sans text-[.52rem] uppercase tracking-[.2em]">
+              <span className="mt-0.5 font-sans text-[.42rem] uppercase tracking-[.2em] sm:mt-1 sm:text-[.52rem]">
                 {shippingPromo.month.slice(0, 3)}.
               </span>
             </div>
@@ -423,11 +423,6 @@ function StaticHero({
                 <ProductIcon icon={product?.icon} />
               )}
             </div>
-            {shippingPromo.active ? (
-              <span className="absolute right-2 top-2 z-10 border border-bubble-ink bg-bubble-candy px-2 py-1 font-sans text-[.56rem] font-bold uppercase tracking-[.14em] text-bubble-ink min-[621px]:hidden">
-                Frete R$ 0
-              </span>
-            ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bubble-ink/85 via-bubble-ink/35 to-transparent px-3 pb-3 pt-12 text-bubble-white sm:px-7 sm:pb-7 sm:pt-24">
               <span className="hidden font-sans text-[.58rem] font-semibold uppercase tracking-[.18em] text-bubble-white/75 sm:block">
                 Destaque da coleção
