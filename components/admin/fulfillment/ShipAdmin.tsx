@@ -479,6 +479,12 @@ export function ShipAdmin({
                 </td>
                 <td>
                   <StageBadge order={order} />
+                  {order.review?.status === "pending" &&
+                  order.status !== "canceled" ? (
+                    <span className="mt-1 block w-fit bg-amber-100 px-2 py-0.5 font-sans text-[.56rem] font-bold uppercase tracking-[.08em] text-amber-900">
+                      Revisar
+                    </span>
+                  ) : null}
                 </td>
                 <td>
                   <ReturnBadge requests={returnsByOrder.get(order.id)} />
@@ -578,6 +584,7 @@ function ShipmentDetail({
   const [shipments, setShipments] = useState<OrderShipment[]>([]);
   const [labelBusy, setLabelBusy] = useState(false);
   const [canceling, setCanceling] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [returnBusy, setReturnBusy] = useState("");
   const [stageBusy, setStageBusy] = useState(false);
   const [trackingInput, setTrackingInput] = useState(order.tracking || "");
@@ -703,6 +710,30 @@ function ShipmentDetail({
   useEffect(() => {
     void loadShipments();
   }, [order.id]);
+
+  async function clearReview() {
+    const confirmed = await actionDialog.confirm({
+      title: `Liberar pedido #${order.number}`,
+      description:
+        "Confirme que você conferiu os dados do comprador e do pagamento. A etiqueta e as etapas de envio serão liberadas.",
+      confirmLabel: "Marcar como revisado",
+    });
+    if (!confirmed) return;
+    setReviewing(true);
+    try {
+      await apiFetch(`/orders/${order.id}/review`, { method: "PATCH" });
+      await onSaved();
+      notify(`Pedido #${order.number} liberado para envio.`);
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível liberar o pedido.",
+      );
+    } finally {
+      setReviewing(false);
+    }
+  }
 
   async function cancelOrder(refundedExternally: boolean) {
     const confirmed = await actionDialog.confirm(
@@ -927,6 +958,29 @@ function ShipmentDetail({
       {canceled ? (
         <div className="border border-red-300 bg-red-50 p-4 text-sm text-red-800">
           <b>Pedido cancelado.</b> As ações de envio estão bloqueadas.
+        </div>
+      ) : order.review?.status === "pending" ? (
+        <div className="flex flex-wrap items-start justify-between gap-4 border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+          <div>
+            <b>Pedido em revisão de segurança.</b> Etiqueta e envio ficam
+            bloqueados até você conferir:
+            <ul className="mb-0 mt-2 list-disc pl-5">
+              {order.review.reasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+            <p className="mb-0 mt-2 text-[.78rem] text-amber-900/80">
+              Se o pedido parecer fraude, use "Cancelar" acima.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={reviewing}
+            onClick={() => void clearReview()}
+            className="border border-amber-900 px-3 py-2 font-sans text-[.58rem] font-bold uppercase tracking-[.1em] text-amber-950 transition-colors hover:bg-amber-900 hover:text-white disabled:cursor-wait disabled:opacity-50"
+          >
+            {reviewing ? "Liberando..." : "Marcar como revisado"}
+          </button>
         </div>
       ) : null}
 

@@ -125,6 +125,12 @@ export type Order = {
     | "refunded"
     | "failed";
   stockConflictReason?: string | null;
+  /** Revisão de segurança: "pending" bloqueia etiqueta e envio. */
+  review?: {
+    status: "none" | "pending" | "cleared";
+    reasons: string[];
+    reviewedAt: number | null;
+  };
   shipStage: number;
   tracking?: string;
   gateway?: string;

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     'Como a Wear Bubble coleta, usa, compartilha e protege os seus dados pessoais, em conformidade com a LGPD (Lei nº 13.709/2018).',
 };
 
-const UPDATED_AT = '11 de agosto de 2026';
+const UPDATED_AT = '9 de outubro de 2026';
 
 function Section({ id, title, children }: { id: string; title: string; children: React.ReactNode }) {
   return (
@@ -96,9 +96,11 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
           <p>
-            <strong>Dados de pagamento.</strong> Não armazenamos números de cartão, CVV ou credenciais bancárias. Esses
-            dados são coletados e processados diretamente pelo nosso provedor de pagamento (Asaas) em ambiente próprio.
-            Recebemos de volta apenas o status da transação e um identificador do pagamento.
+            <strong>Dados de pagamento.</strong> Não armazenamos o número completo do cartão, o CVV ou credenciais
+            bancárias. Os dados do cartão trafegam de forma criptografada pelo nosso servidor apenas para serem enviados
+            ao provedor de pagamento (Asaas), que processa a cobrança; recebemos de volta o status da transação e um
+            identificador do pagamento. Para prevenir fraudes, registramos de cada tentativa com cartão somente os 4
+            últimos dígitos, o mês e o ano de validade, se foi aprovada, o e-mail, o CPF e o endereço IP usados.
           </p>
           <p>
             <strong>Dados de crianças e adolescentes.</strong> A loja é destinada a maiores de 18 anos. Não coletamos
@@ -134,6 +136,9 @@ export default function PrivacyPolicyPage() {
             </li>
             <li>
               <strong>Prevenir fraudes, abusos e uso indevido de cupons</strong> — legítimo interesse (art. 7º, IX).
+              Isso inclui recusar e-mails temporários, limitar o envio de e-mails automáticos e sinalizar para revisão
+              manual compras com sinais de fraude (como o mesmo CPF em várias contas ou muitos cartões recusados). Pedidos
+              sinalizados são analisados por uma pessoa da equipe; o sistema não cancela compras por conta própria.
             </li>
             <li>
               <strong>Medir o desempenho da loja e melhorar a experiência de compra</strong> — legítimo interesse (art.
@@ -205,6 +210,13 @@ export default function PrivacyPolicyPage() {
             <li>
               <strong>Códigos de login e tokens de redefinição de senha:</strong> expiram em minutos e são descartados
               logo após o uso.
+            </li>
+            <li>
+              <strong>Registros de tentativas com cartão (prevenção a fraudes):</strong> 90 dias.
+            </li>
+            <li>
+              <strong>Controle de envio de e-mails automáticos:</strong> 2 dias, com o endereço de e-mail guardado
+              apenas de forma cifrada (hash), junto do IP de origem.
             </li>
             <li>
               <strong>E-mail de newsletter:</strong> até você retirar o consentimento.
