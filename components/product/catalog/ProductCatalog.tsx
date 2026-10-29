@@ -34,6 +34,12 @@ type ProductCatalogProps = {
   emptyDescription?: ReactNode;
   suggestionProducts?: Product[];
   suggestionTitle?: string;
+  /** Esconde o título da seção (a página já tem a faixa de título). */
+  hideHeader?: boolean;
+  /** Barra própria no lugar dos filtros padrão (ex.: pílulas da coleção). */
+  toolbar?: ReactNode;
+  /** 5 colunas no desktop (listagem da coleção de verão). */
+  wide?: boolean;
 };
 
 export function ProductCatalog({
@@ -56,11 +62,15 @@ export function ProductCatalog({
   eyebrow = "Coleção Core · Linha feminina",
   title = "Core Collection",
   description = "Clique na peça para ver detalhes, tecido e sugestão de conjunto. Peças da coleção não voltam ao estoque.",
+  hideHeader = false,
+  toolbar,
+  wide = false,
 }: ProductCatalogProps) {
   return (
-    <section id="colecao" className="py-[85px] max-[520px]:py-10">
+    <section id="colecao" className={hideHeader ? "pb-[85px] pt-8 max-[520px]:pb-10 max-[520px]:pt-5" : "py-[85px] max-[520px]:py-10"}>
       <div className="mx-auto max-w-[1200px] px-8 max-[520px]:px-3.5">
-        <div className="mb-9 flex flex-wrap items-end justify-between gap-4 max-[520px]:mb-5">
+        {toolbar}
+        <div className={`${hideHeader ? "hidden" : "flex"} mb-9 flex-wrap items-end justify-between gap-4 max-[520px]:mb-5`}>
           <div>
             <span className="font-sans text-[.72rem] font-semibold uppercase tracking-[.32em] text-bubble-brown max-[520px]:text-[.66rem] max-[520px]:tracking-[.2em]">
               {eyebrow}
@@ -142,7 +152,7 @@ export function ProductCatalog({
           </span>
         </div> : null}
 
-        <div className="grid grid-cols-4 gap-x-3 gap-y-9 max-[980px]:grid-cols-3 max-[720px]:grid-cols-2 max-[720px]:gap-x-2 max-[720px]:gap-y-7">
+        <div className={`grid ${wide ? "grid-cols-5 max-[1100px]:grid-cols-4" : "grid-cols-4"} gap-x-3 gap-y-9 max-[980px]:grid-cols-3 max-[720px]:grid-cols-2 max-[720px]:gap-x-2 max-[720px]:gap-y-7`}>
           {loading ? (
             <div className="col-span-full flex min-h-[220px] flex-col items-center justify-center gap-2.5 border border-bubble-ink/10 bg-bubble-cream2 p-8 text-center">
               Carregando a coleção...

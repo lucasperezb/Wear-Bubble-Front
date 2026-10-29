@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { SizeGuideDialog } from "../../shared";
 import { COOKIE_PREFERENCES_EVENT } from "../../../lib/google-ads";
+import { SUMMER } from "../../../lib/season";
+import { useSummerTheme } from "../../../lib/use-summer-theme";
+import { Wave } from "../../season";
 
 export function ContactSection() {
   return (
@@ -105,6 +108,19 @@ export function BrandSections() {
 
 export function Footer() {
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
+  const summer = useSummerTheme();
+
+  if (summer) {
+    return (
+      <>
+        <SummerFooter onSizeGuide={() => setSizeGuideOpen(true)} />
+        <SizeGuideDialog
+          open={sizeGuideOpen}
+          onClose={() => setSizeGuideOpen(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -173,3 +189,84 @@ export function Footer() {
     </>
   );
 }
+
+/** Rodapé de verão: fundo damasco, onda no topo e uma bolha grande vazada. */
+function SummerFooter({ onSizeGuide }: { onSizeGuide: () => void }) {
+  const linkList =
+    "m-0 flex list-none flex-col gap-0.5 p-0 text-[.85rem] [&_a]:inline-block [&_a]:py-1 [&_button]:py-1 [&_a:hover]:text-bubble-sun-dark [&_button:hover]:text-bubble-sun-dark";
+  const heading =
+    "mb-2 font-sans text-[.64rem] font-semibold uppercase tracking-[.16em]";
+  return (
+    <footer id="rodape" className="relative overflow-hidden text-bubble-ink">
+      <Wave className="text-bubble-sun" flip />
+      <div className="relative bg-bubble-sun pb-6 pt-10">
+        <span
+          className="pointer-events-none absolute -bottom-36 -right-16 size-[240px] rounded-full border-[16px] border-bubble-brown/40 max-[620px]:-bottom-24 max-[620px]:-right-14 max-[620px]:size-[150px] max-[620px]:border-[12px]"
+          aria-hidden="true"
+        />
+        <span
+          className="pointer-events-none absolute right-[3%] top-12 size-[34px] rounded-full border-[5px] border-bubble-brown/40 max-[980px]:hidden"
+          aria-hidden="true"
+        />
+        <div className="relative mx-auto max-w-[1200px] px-8 max-[520px]:px-4">
+          <div className="flex flex-wrap justify-between gap-10 border-b border-bubble-ink/20 pb-8">
+            <div>
+              <span className="block font-display text-[clamp(2.4rem,5vw,3.6rem)] leading-none">
+                vista bubble.
+              </span>
+              <span className="mt-3 block font-sans text-[.66rem] font-semibold uppercase tracking-[.16em]">
+                {SUMMER.season} · Coleção {SUMMER.collectionName}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-10 max-[620px]:grid-cols-2 max-[620px]:gap-6">
+              <div>
+                <h4 className={heading}>Loja</h4>
+                <ul className={linkList}>
+                  <li><a href={SUMMER.collectionHref}>Coleção {SUMMER.collectionName}</a></li>
+                  <li><a href="/colecoes/core">Coleção Core</a></li>
+                  <li><a href="/#conjunto">Monte seu conjunto</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className={heading}>Ajuda</h4>
+                <ul className={linkList}>
+                  <li>
+                    <button
+                      type="button"
+                      className="cursor-pointer border-0 bg-transparent p-0 text-left text-inherit"
+                      onClick={onSizeGuide}
+                    >
+                      Tabela de medidas
+                    </button>
+                  </li>
+                  <li><a href="/conta?tab=orders&intent=trocas">Trocas em 30 dias</a></li>
+                  <li><a href="/contato">Contato</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className={heading}>Siga</h4>
+                <ul className={linkList}>
+                  <li><a href="https://instagram.com/wearbubble_" target="_blank" rel="noreferrer">@wearbubble_</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pt-5 text-[.72rem]">
+            <span>© 2026 wear BUBBLE · CNPJ 68.177.794/0001-05</span>
+            <span className="flex flex-wrap gap-x-5 gap-y-1">
+              <a href="/politica-de-privacidade" className="underline-offset-4 hover:underline">Política de Privacidade</a>
+              <button
+                type="button"
+                className="cursor-pointer border-0 bg-transparent p-0 text-inherit underline-offset-4 hover:underline"
+                onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
+              >
+                Preferências de cookies
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+

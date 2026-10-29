@@ -10,6 +10,7 @@ import {
   PackageCheck,
   RotateCcw,
   ShoppingBag,
+  Sun,
   Truck,
   UserPlus,
   UserRound,
@@ -21,6 +22,8 @@ import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
 import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
+import { useSummerTheme } from "../../../lib/use-summer-theme";
+import { SUMMER } from "../../../lib/season";
 import { SearchBox } from "./SearchBox";
 
 type HeaderProps = {
@@ -177,12 +180,24 @@ export function Header({
     ? `FRETE GRÁTIS PARA TODO O BRASIL ${freeShipping.period.toUpperCase()}`
     : `FRETE GRÁTIS A PARTIR DE R$ ${freeShipping.minimum}`;
   const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "?demo=1" : ""}`;
+  const summer = useSummerTheme();
+  const summerHref = `${SUMMER.collectionHref}${demoMode ? "?demo=1" : ""}`;
 
   return (
     <>
       {promoActive ? (
         <div className="bg-bubble-danger px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-white [&_b]:font-bold">
           <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · {shippingBarText} · <b>5% OFF</b> NO PIX
+        </div>
+      ) : summer ? (
+        <div className="flex items-center justify-center gap-2 bg-bubble-sun px-4 py-[9px] text-center font-sans text-[.72rem] font-semibold uppercase tracking-[.14em] text-bubble-ink">
+          <Sun className="size-[14px] shrink-0" strokeWidth={2} aria-hidden="true" />
+          <span>
+            {SUMMER.season} · Coleção {SUMMER.collectionName} no ar
+            <span className="max-[520px]:hidden">
+              {shippingPromo ? ` · Frete grátis para todo o Brasil em ${freeShipping.month}` : ""} · 5% OFF no Pix
+            </span>
+          </span>
         </div>
       ) : (
         <div className="bg-bubble-ink px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-cream [&_b]:font-bold">
@@ -232,6 +247,18 @@ export function Header({
             className="flex h-[38px] items-center gap-1 font-sans text-[.76rem] font-medium uppercase tracking-[.08em] max-[980px]:hidden"
             aria-label="Navegação principal"
           >
+            {summer ? (
+              <a
+                href={summerHref}
+                className="relative flex h-full items-center gap-2 px-3 after:absolute after:bottom-0 after:left-3 after:h-[2px] after:w-[calc(100%-1.5rem)] after:bg-bubble-sun"
+              >
+                Verão
+                <span className="rounded-full bg-bubble-sun px-2 py-0.5 text-[.52rem] font-semibold tracking-[.08em] text-bubble-ink">
+                  {SUMMER.collectionName}
+                </span>
+              </a>
+            ) : null}
+
             <DesktopMenu label="Coleções">
               <div className="grid grid-cols-2 gap-px bg-bubble-ink/20">
                 {collectionTopics.map((topic) => (
@@ -575,6 +602,21 @@ export function Header({
                   </span>
                   <span className="bg-bubble-danger px-2.5 py-1 font-sans text-[.56rem] font-bold tracking-[.1em] text-bubble-white">
                     ATÉ {PROMO_CAMPAIGN.maxPct}% OFF
+                  </span>
+                </a>
+              ) : null}
+              {summer ? (
+                <a
+                  href={summerHref}
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center justify-between border-b border-bubble-ink/25 px-1 py-4 font-display text-lg uppercase"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <Sun className="size-4" strokeWidth={2} aria-hidden="true" />
+                    Verão
+                  </span>
+                  <span className="rounded-full bg-bubble-sun px-2.5 py-1 font-sans text-[.56rem] font-bold tracking-[.1em] text-bubble-ink">
+                    COLEÇÃO {SUMMER.collectionName.toUpperCase()}
                   </span>
                 </a>
               ) : null}

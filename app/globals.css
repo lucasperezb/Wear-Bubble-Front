@@ -100,3 +100,57 @@
     font-family: inherit;
   }
 }
+
+/* Tema de verão (lib/season.ts). Some quando o tema é desligado, porque
+   nenhum componente usa estas classes fora do verão. */
+@keyframes wb-bolha-sobe {
+  0% { transform: translateY(0) scale(0.85); opacity: 0; }
+  12% { opacity: 0.75; }
+  100% { transform: translateY(-460px) scale(1.05); opacity: 0; }
+}
+
+@keyframes wb-gira {
+  to { transform: rotate(360deg); }
+}
+
+.wb-bolha {
+  position: absolute;
+  bottom: -40px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(21, 19, 15, 0.35);
+  animation: wb-bolha-sobe 10s linear infinite;
+  pointer-events: none;
+}
+
+.wb-bolha--sol {
+  border-color: rgba(242, 163, 107, 0.85);
+}
+
+.wb-selo {
+  animation: wb-gira 18s linear infinite;
+}
+
+/* Pontinhos damasco, como gás numa bebida. */
+.wb-efervescente {
+  background-image: radial-gradient(rgba(242, 163, 107, 0.35) 1.5px, transparent 1.7px);
+  background-size: 26px 26px;
+}
+
+/* Marca-texto em uma palavra do título. */
+.wb-marca {
+  background: linear-gradient(transparent 56%, #F2A36B 56%, #F2A36B 92%, transparent 92%);
+  padding: 0 6px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wb-bolha,
+  .wb-selo {
+    animation: none;
+  }
+  .wb-bolha {
+    display: none;
+  }
+}
+

@@ -3,6 +3,7 @@ import { isBottomCategory, isTopCategory } from "../../../lib/product-filters";
 import { availableVariantSizes, sortProductSizes } from "../../../lib/product-sizes";
 import { productPrice } from "../../../lib/pricing";
 import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
+import { useSummerTheme } from "../../../lib/use-summer-theme";
 import { productImageUrlForColor } from "../../../lib/product-images";
 import { ProductIcon, SafeImage } from "../../shared";
 
@@ -30,6 +31,7 @@ export function ComboBuilder({
   onAdd,
 }: ComboBuilderProps) {
   const shippingPromo = useFreeShippingPromo();
+  const summer = useSummerTheme();
   const featured = products
     .filter(
       (product) =>
@@ -227,7 +229,9 @@ export function ComboBuilder({
               Compre o look completo
             </span>
             <h2 className="text-[clamp(2rem,5vw,2.6rem)]">
-              Monte seu Conjunto · 5% OFF
+              Monte seu{" "}
+              <span className={summer ? "wb-marca" : undefined}>Conjunto</span>{" "}
+              · 5% OFF
             </h2>
             {shippingPromo.active ? (
               <p className="m-0 mt-2 font-serif text-[.95rem] italic text-bubble-brown">

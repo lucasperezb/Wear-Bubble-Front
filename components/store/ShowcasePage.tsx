@@ -18,6 +18,9 @@ import { collectionSlug as slugForCollection } from "../../lib/collections";
 import { matchingProducts, searchProducts } from "../../lib/product-search";
 import { addSearchToHistory } from "../../lib/search-history";
 import { suggestCorrection } from "../../lib/search-suggestions";
+import { SUMMER } from "../../lib/season";
+import { useSummerTheme } from "../../lib/use-summer-theme";
+import { BenefitsStrip, SummerBubbles, Wave } from "../season";
 
 type ShowcasePageProps = {
   category?: string;
@@ -65,6 +68,10 @@ export function ShowcasePage({
   const [filters, setFilters] = useState<Filters>({ ...initialFilters, promo: promoOnly });
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestionOffset, setSuggestionOffset] = useState(0);
+  const [subFilter, setSubFilter] = useState("");
+  const summer = useSummerTheme();
+  const summerCollection =
+    summer && !!collectionSlug && collectionSlug === SUMMER.collectionSlug;
   const toastTimer = useRef<number | null>(null);
 
   useEffect(() => {
@@ -167,8 +174,15 @@ export function ShowcasePage({
     if (filters.sort === "price-desc") list = [...list].sort((a, b) => productPrice(b) - productPrice(a));
     if (filters.sort === "stock-asc") list = [...list].sort((a, b) => a.stock - b.stock);
     if (filters.sort === "stock-desc") list = [...list].sort((a, b) => b.stock - a.stock);
+    if (summerCollection && subFilter) list = list.filter((product) => product.sub === subFilter);
     return list;
-  }, [filters, scopedProducts, searchMatches, searchQuery, showAll]);
+  }, [filters, scopedProducts, searchMatches, searchQuery, showAll, summerCollection, subFilter]);
+
+  // Pílulas da coleção de verão: um tipo de peça por pílula (campo "sub").
+  const subOptions = useMemo(
+    () => Array.from(new Set(scopedProducts.map((product) => product.sub).filter(Boolean))),
+    [scopedProducts],
+  );
 
   function openProduct(product: Product) {
     trackEvent("click", product.id);
@@ -202,13 +216,36 @@ export function ShowcasePage({
         onCart={() => setCartOpen(true)}
         onAccount={() => window.location.assign(user ? "/conta" : "/login")}
       />
-      <section className="border-b border-bubble-ink bg-bubble-ink px-6 py-20 text-bubble-cream sm:py-24">
-        <div className="mx-auto max-w-[1200px]">
-          <span className="font-sans text-[.68rem] font-semibold uppercase tracking-[.28em] text-bubble-candy">{eyebrow}</span>
-          <h1 className="mt-5 max-w-[850px] text-[clamp(2.8rem,7vw,6rem)] leading-[.95]">{title}</h1>
-          <p className="mt-6 max-w-[600px] text-[1rem] italic leading-relaxed text-bubble-cream/70">{description}</p>
-        </div>
-      </section>
+      {summer ? (
+        <section className="relative overflow-hidden bg-bubble-sun text-bubble-ink">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(rgba(21,19,15,.09)_1.5px,transparent_1.7px)] bg-[length:26px_26px]" aria-hidden="true" />
+          <SummerBubbles />
+          <span className="pointer-events-none absolute -top-16 right-[6%] size-[210px] rounded-full border-[16px] border-bubble-brown/40 max-[620px]:size-[130px] max-[620px]:border-[11px]" aria-hidden="true" />
+          <div className="relative mx-auto max-w-[1200px] px-8 pb-10 pt-12 max-[520px]:px-4 sm:pb-12 sm:pt-14">
+            <nav aria-label="Você está em" className="font-sans text-[.62rem] font-semibold uppercase tracking-[.16em]">
+              <a href={`/${demoMode ? "?demo=1" : ""}`} className="hover:underline">Início</a>
+              {(summerCollection ? ["Verão", `Coleção ${SUMMER.collectionName}`] : eyebrow.split(" · ")).map((part) => (
+                <span key={part}> / {part}</span>
+              ))}
+            </nav>
+            <h1 className="mt-4 max-w-[850px] text-[clamp(2.6rem,6.5vw,5rem)] leading-[.95]">
+              {summerCollection ? `Coleção ${SUMMER.collectionName}` : title}
+            </h1>
+            <p className="m-0 mt-3 max-w-[600px] font-serif text-[1.05rem] italic leading-relaxed">
+              {summerCollection ? SUMMER.tagline : description}
+            </p>
+          </div>
+          <Wave className="relative -mb-px text-bubble-cream" flip />
+        </section>
+      ) : (
+        <section className="border-b border-bubble-ink bg-bubble-ink px-6 py-20 text-bubble-cream sm:py-24">
+          <div className="mx-auto max-w-[1200px]">
+            <span className="font-sans text-[.68rem] font-semibold uppercase tracking-[.28em] text-bubble-candy">{eyebrow}</span>
+            <h1 className="mt-5 max-w-[850px] text-[clamp(2.8rem,7vw,6rem)] leading-[.95]">{title}</h1>
+            <p className="mt-6 max-w-[600px] text-[1rem] italic leading-relaxed text-bubble-cream/70">{description}</p>
+          </div>
+        </section>
+      )}
       {demoMode ? <div className="border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.66rem] font-semibold uppercase tracking-[.1em]">Modo demonstração · dados locais</div> : null}
       <ProductCatalog
         filters={filters}
@@ -220,7 +257,27 @@ export function ShowcasePage({
         onClear={() => setFilters(initialFilters)}
         productHref={(product) => `${productPath(product)}${demoMode ? "?demo=1" : ""}`}
         onRetry={() => void load(demoMode)}
-        showFilters
+        showFilters={!summerCollection}
+        hideHeader={summerCollection}
+        wide={summerCollection}
+        toolbar={summerCollection ? (
+          <div className="mb-7 flex flex-wrap items-center gap-2">
+            {[{ value: "", label: "Todas" }, ...subOptions.map((sub) => ({ value: sub, label: pluralLabel(sub) }))].map((option) => (
+              <button
+                key={option.value || "all"}
+                type="button"
+                aria-pressed={subFilter === option.value}
+                onClick={() => setSubFilter(option.value)}
+                className={`${subFilter === option.value ? "bg-bubble-ink text-bubble-cream" : "bg-transparent text-bubble-ink hover:bg-bubble-ink/5"} min-h-10 cursor-pointer rounded-full border border-bubble-ink px-4 font-sans text-[.64rem] font-semibold uppercase tracking-[.12em]`}
+              >
+                {option.label}
+              </button>
+            ))}
+            <span className="ml-auto font-serif text-[.8rem] italic text-bubble-ink/60">
+              {visibleProducts.length} peça{visibleProducts.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+        ) : undefined}
         showCategoryFilter={showAll}
         promoCount={promoCount}
         emptyTitle={searchQuery.trim() ? "Não encontramos sua busca" : filters.promo ? "Nenhuma peça em promoção neste momento" : undefined}
@@ -255,10 +312,18 @@ export function ShowcasePage({
         title={showAll ? "Todas as peças" : collectionName ? `Todas as peças ${collectionName}` : "Todas as peças"}
         description={showAll ? "Explore toda a coleção e encontre as peças que combinam com o seu movimento." : collectionName ? `Todas as peças cadastradas na coleção ${collectionName}.` : "Todas as peças publicadas nesta categoria."}
       />
+      {summer ? <BenefitsStrip className="border-t" /> : null}
       <Footer />
       <CartDrawer open={cartOpen} cart={cart} products={products} onQty={changeQty} onClose={() => setCartOpen(false)} />
       <ProductModal product={selectedProduct} selectedSize={selectedSize} onSize={setSelectedSize} onClose={() => setSelectedProduct(null)} onAdd={addToCart} />
       <div className={`fixed bottom-7 left-1/2 z-[900] -translate-x-1/2 bg-bubble-ink px-6 py-3 text-sm text-bubble-cream shadow-bubble transition-all ${toast ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-8 opacity-0"}`}>{toast}</div>
     </main>
   );
+}
+
+/** "Short" → "Shorts", "Calça" → "Calças", "Macacão" → "Macacões". */
+function pluralLabel(value: string) {
+  if (/s$/i.test(value)) return value;
+  if (/ão$/i.test(value)) return value.replace(/ão$/i, "ões");
+  return `${value}s`;
 }

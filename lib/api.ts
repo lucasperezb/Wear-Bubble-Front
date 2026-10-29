@@ -48,6 +48,29 @@ export type ShowcaseKey =
   "hero" | "home" | "core" | "tops" | "bottoms" | "sets";
 export type ShowcaseMap = Record<ShowcaseKey, Product[]>;
 
+/** Layout da página inicial publicado no painel (Vitrines do site). */
+export type HomeLayoutKey = "padrao" | "fizz";
+
+export type FizzLayoutConfig = {
+  heroProductId: number | null;
+  heroColor: string;
+  sideProductId: number | null;
+  /** "As novidades", na ordem escolhida (até 10). */
+  newsProductIds: number[];
+  /** Fotos de "A coleção": peça, cor e posição na galeria daquela cor. */
+  storyImages: Array<{
+    productId: number | null;
+    color: string;
+    imageIndex: number;
+    label: string;
+  }>;
+};
+
+export type HomeLayoutSettings = {
+  active: HomeLayoutKey;
+  fizz: FizzLayoutConfig;
+};
+
 export type ProductImage = {
   id: string;
   url: string;

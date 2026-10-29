@@ -16,6 +16,12 @@ const config: Config = {
           success: '#3F6B3F',
           danger: '#A6392B',
           line: 'rgba(23, 19, 14, 0.3)',
+          // Tema de verão (lib/season.ts): texto sempre preto por cima destas cores.
+          sun: '#F2A36B',
+          'sun-dark': '#B4521A',
+          peach: '#F9DCC2',
+          lime: '#D9E36B',
+          'cream-light': '#F8F4EA',
         },
       },
       fontFamily: {

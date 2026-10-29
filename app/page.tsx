@@ -13,6 +13,14 @@ import {
   ShippingReassurance,
 } from "../components/home";
 import { useFreeShippingPromo } from "../lib/use-free-shipping-promo";
+import { useSummerTheme } from "../lib/use-summer-theme";
+import { resolveFizzHome } from "../lib/season";
+import { useHomeLayout } from "../lib/home-layout";
+import {
+  SummerHero,
+  SummerNews,
+  SummerStory,
+} from "../components/home/summer/SummerHome";
 import { Header } from "../components/layout";
 import { ProductCatalog, ProductModal } from "../components/product";
 import { HeroConfig, Product, ShowcaseMap, User, apiFetch } from "../lib/api";
@@ -52,6 +60,8 @@ const initialFilters: Filters = {
 
 export default function Home() {
   const shippingPromo = useFreeShippingPromo();
+  const summer = useSummerTheme();
+  const homeLayout = useHomeLayout();
   const [products, setProducts] = useState<Product[]>([]);
   const [heroConfig, setHeroConfig] = useState<HeroConfig>({
     enabled: false,
@@ -217,6 +227,14 @@ export default function Home() {
     return (selected.length ? selected : visibleProducts).slice(0, 4);
   }, [products, showcases, visibleProducts]);
 
+  const fizzHome = useMemo(
+    () => resolveFizzHome(products, homeLayout?.fizz),
+    [products, homeLayout],
+  );
+  // Home de verão quando o layout "Coleção Fizz" está publicado no painel e
+  // há peças para mostrar; sem peças, a home volta ao layout padrão.
+  const summerHome = summer && (productsLoading || fizzHome.news.length > 0);
+
   const heroProduct = useMemo(() => {
     const selectedId = showcases?.hero?.[0]?.id;
     return (
@@ -330,16 +348,24 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      <Hero
-        config={heroConfig}
-        product={heroProduct}
-        collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
-        productHref={
-          heroProduct
-            ? `${productPath(heroProduct)}${demoMode ? "?demo=1" : ""}`
-            : undefined
-        }
-      />
+      {summerHome ? (
+        <SummerHero
+          home={fizzHome}
+          loading={productsLoading}
+          demoMode={demoMode}
+        />
+      ) : (
+        <Hero
+          config={heroConfig}
+          product={heroProduct}
+          collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
+          productHref={
+            heroProduct
+              ? `${productPath(heroProduct)}${demoMode ? "?demo=1" : ""}`
+              : undefined
+          }
+        />
+      )}
       {demoMode ? (
         <div className="flex flex-wrap items-center justify-center gap-3 border-b border-bubble-ink bg-bubble-candy px-4 py-3 text-center font-sans text-[.68rem] font-semibold uppercase tracking-[.1em]">
           Modo demonstração · escolhas salvas neste navegador
@@ -352,32 +378,45 @@ export default function Home() {
           </button>
         </div>
       ) : null}
-      <ProductCatalog
-        filters={filters}
-        sports={sports}
-        products={homeProducts}
-        loading={productsLoading}
-        error={productsError}
-        onFilter={(patch) =>
-          setFilters((current) => ({ ...current, ...patch }))
-        }
-        onClear={() => setFilters(initialFilters)}
-        productHref={(product) =>
-          `${productPath(product)}${demoMode ? "?demo=1" : ""}`
-        }
-        onRetry={refreshProducts}
-        showFilters={false}
-        eyebrow={
-          shippingPromo.active
-            ? "Curadoria Bubble · frete grátis em todas"
-            : "Curadoria Bubble · 4 escolhas"
-        }
-        title="Em destaque"
-        description="Clique na peça para ver detalhes, tecido e sugestão de conjunto."
-      />
-      <ShippingReassurance
-        collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
-      />
+      {summerHome ? (
+        <>
+          <SummerNews
+            home={fizzHome}
+            loading={productsLoading}
+            demoMode={demoMode}
+          />
+          <SummerStory home={fizzHome} />
+        </>
+      ) : (
+        <>
+          <ProductCatalog
+            filters={filters}
+            sports={sports}
+            products={homeProducts}
+            loading={productsLoading}
+            error={productsError}
+            onFilter={(patch) =>
+              setFilters((current) => ({ ...current, ...patch }))
+            }
+            onClear={() => setFilters(initialFilters)}
+            productHref={(product) =>
+              `${productPath(product)}${demoMode ? "?demo=1" : ""}`
+            }
+            onRetry={refreshProducts}
+            showFilters={false}
+            eyebrow={
+              shippingPromo.active
+                ? "Curadoria Bubble · frete grátis em todas"
+                : "Curadoria Bubble · 4 escolhas"
+            }
+            title="Em destaque"
+            description="Clique na peça para ver detalhes, tecido e sugestão de conjunto."
+          />
+          <ShippingReassurance
+            collectionHref={demoMode ? "/produtos?demo=1" : "/produtos"}
+          />
+        </>
+      )}
       <ComboBuilder
         products={products}
         bottomId={combo.bottomId}
