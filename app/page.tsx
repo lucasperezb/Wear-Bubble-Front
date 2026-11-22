@@ -14,6 +14,8 @@ import {
 } from "../components/home";
 import { useFreeShippingPromo } from "../lib/use-free-shipping-promo";
 import { useSummerTheme } from "../lib/use-summer-theme";
+import { useBlackFriday } from "../lib/use-black-friday";
+import { BlackFridayHome } from "../components/home/blackfriday/BlackFridayHome";
 import { resolveFizzHome } from "../lib/season";
 import { useHomeLayout } from "../lib/home-layout";
 import {
@@ -61,6 +63,7 @@ const initialFilters: Filters = {
 export default function Home() {
   const shippingPromo = useFreeShippingPromo();
   const summer = useSummerTheme();
+  const blackFriday = useBlackFriday();
   const homeLayout = useHomeLayout();
   const [products, setProducts] = useState<Product[]>([]);
   const [heroConfig, setHeroConfig] = useState<HeroConfig>({
@@ -348,7 +351,13 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      {summerHome ? (
+      {blackFriday ? (
+        <BlackFridayHome
+          products={products}
+          loading={productsLoading}
+          demoMode={demoMode}
+        />
+      ) : summerHome ? (
         <SummerHero
           home={fizzHome}
           loading={productsLoading}
@@ -378,7 +387,7 @@ export default function Home() {
           </button>
         </div>
       ) : null}
-      {summerHome ? (
+      {blackFriday ? null : summerHome ? (
         <>
           <SummerNews
             home={fizzHome}
