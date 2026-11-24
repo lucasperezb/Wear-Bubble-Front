@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  BlackFridayConfig,
   FizzLayoutConfig,
   HomeLayoutKey,
   HomeLayoutSettings,
@@ -10,6 +11,7 @@ import {
   apiFetch,
   money,
 } from "../../../lib/api";
+import { blackFridayRunning, emptyBlackFridayConfig } from "../../../lib/black-friday";
 import {
   defaultHomeLayout,
   readDemoHomeLayout,
@@ -19,6 +21,7 @@ import {
 import { orderedProductImages, productImagesForColor } from "../../../lib/product-images";
 import { ProductIcon } from "../../shared";
 import { saveButton } from "../shared/styles";
+import { BlackFridayEditor } from "./BlackFridayEditor";
 import type { Notify } from "../shared/types";
 import {
   readDemoProducts,
@@ -38,6 +41,11 @@ const layouts: Array<{ key: HomeLayoutKey; name: string; description: string }> 
     key: "fizz",
     name: "Coleção Fizz · Verão",
     description: 'Tema de verão: hero da coleção com selo giratório, "As novidades", "A coleção" em pêssego e rodapé laranja.',
+  },
+  {
+    key: "blackfriday",
+    name: "Black Friday",
+    description: 'Home escura com contagem regressiva, "Preço de Black" e peças por treino. No fim do prazo, o layout anterior volta sozinho.',
   },
 ];
 
@@ -63,6 +71,25 @@ function Thumb({ product, color, index, placeholder }: { product?: Product; colo
 /** Miniatura de cada layout no passo 1. */
 function LayoutPreview({ layout }: { layout: HomeLayoutKey }) {
   const fizz = layout === "fizz";
+  if (layout === "blackfriday") {
+    return (
+      <div className="relative h-[140px] overflow-hidden border border-bubble-line bg-bubble-ink" aria-hidden="true">
+        <div className="h-2.5 bg-bubble-sun" />
+        <div className="flex gap-3 p-3">
+          <div className="flex flex-1 flex-col gap-1.5">
+            <div className="h-4 w-4/5 bg-bubble-cream" />
+            <div className="h-4 w-3/5 bg-bubble-cream" />
+            <div className="h-3 w-1/2 bg-bubble-sun" />
+            <div className="mt-1.5 flex gap-1">
+              {[0, 1, 2, 3].map((item) => <span key={item} className="size-5 border border-bubble-cream/50" />)}
+            </div>
+          </div>
+          <div className="h-[92px] w-[34%] border border-bubble-cream bg-bubble-sun" />
+        </div>
+        <div className="absolute inset-x-0 bottom-0 h-3 bg-bubble-cream" />
+      </div>
+    );
+  }
   return (
     <div
       className={`relative h-[140px] overflow-hidden border border-bubble-line ${fizz ? "bg-bubble-cream bg-[radial-gradient(rgba(242,163,107,.5)_1.5px,transparent_1.7px)] bg-[length:12px_12px]" : "bg-bubble-cream"}`}
@@ -100,6 +127,7 @@ export function ShowcasesAdmin({
   const [heroId, setHeroId] = useState(0);
   const [ids, setIds] = useState<number[]>([0, 0, 0, 0]);
   const [fizz, setFizz] = useState<FizzLayoutConfig>(defaultHomeLayout().fizz);
+  const [blackFriday, setBlackFriday] = useState<BlackFridayConfig>(emptyBlackFridayConfig());
   const [showcasesLoading, setShowcasesLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
   const [layoutLoading, setLayoutLoading] = useState(true);
@@ -142,6 +170,7 @@ export function ShowcasesAdmin({
       setLayout(value);
       setSelected(value.active);
       setFizz(value.fizz);
+      setBlackFriday(value.blackFriday || emptyBlackFridayConfig());
     };
     if (demoMode) {
       apply(readDemoHomeLayout());
@@ -186,7 +215,7 @@ export function ShowcasesAdmin({
   }
 
   /** Salva as peças do layout que está sendo editado. */
-  async function savePieces(): Promise<boolean> {
+  async function savePieces(publish: boolean): Promise<boolean> {
     if (selected === "padrao") {
       if (!heroId) {
         notify("Selecione a peça de destaque principal.");
@@ -207,6 +236,19 @@ export function ShowcasesAdmin({
       setShowcases(response);
       return true;
     }
+    if (selected === "blackfriday") {
+      if ((publish || isLive) && !blackFridayRunning(blackFriday)) {
+        notify("O término da Black Friday precisa estar no futuro. Para tirar do ar, publique outro layout.");
+        return false;
+      }
+      const next = demoMode
+        ? saveDemoHomeLayout({ ...layout, blackFriday })
+        : await apiFetch<HomeLayoutSettings>("/home-layout", { method: "PATCH", body: JSON.stringify({ blackFriday }) });
+      if (!demoMode) setHomeLayout(next);
+      setLayout(next);
+      setBlackFriday(next.blackFriday || blackFriday);
+      return true;
+    }
     if (!fizz.newsProductIds.length) {
       notify('Escolha pelo menos uma peça para "As novidades".');
       return false;
@@ -223,10 +265,10 @@ export function ShowcasesAdmin({
   async function save(publish: boolean) {
     setSaving(true);
     try {
-      if (!(await savePieces())) return;
+      if (!(await savePieces(publish))) return;
       if (publish && layout.active !== selected) {
         const next = demoMode
-          ? saveDemoHomeLayout({ ...layout, fizz, active: selected })
+          ? saveDemoHomeLayout({ ...layout, fizz, blackFriday, active: selected, previous: selected === "blackfriday" && layout.active !== "blackfriday" ? layout.active : layout.previous })
           : await apiFetch<HomeLayoutSettings>("/home-layout", { method: "PATCH", body: JSON.stringify({ active: selected }) });
         if (!demoMode) setHomeLayout(next);
         setLayout(next);
@@ -249,7 +291,7 @@ export function ShowcasesAdmin({
   return (
     <>
       <div className="mb-5 border border-bubble-candy bg-bubble-candy/15 p-4 text-[.72rem] leading-relaxed">
-        <b>Página inicial do site.</b> Escolha o layout, selecione as peças dele e publique. Trocar de layout muda também o tema do site inteiro (barra de aviso, menu, selos e rodapé). As demais páginas continuam sendo preenchidas pela categoria e pela coleção de cada produto.
+        <b>Página inicial do site.</b> Escolha o layout, selecione as peças dele e publique. Trocar entre Padrão e Coleção Fizz muda também o tema do site inteiro (barra de aviso, menu, selos e rodapé); a Black Friday muda a página inicial, a barra de aviso e o menu. As demais páginas continuam sendo preenchidas pela categoria e pela coleção de cada produto.
       </div>
 
       {loading ? (
@@ -260,7 +302,7 @@ export function ShowcasesAdmin({
             <span className={eyebrow}>Passo 1</span>
             <h3 id="vitrine-passo-1" className="mt-1 text-xl">Layout da página inicial</h3>
             <p className="mt-1 text-[.78rem] text-bubble-ink/60">Escolha o layout para editar. Ele só vai para o site quando você publicar.</p>
-            <div role="radiogroup" aria-label="Layout da página inicial" className="mt-4 grid gap-4 md:grid-cols-2">
+            <div role="radiogroup" aria-label="Layout da página inicial" className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {layouts.map((item) => {
                 const isSelected = selected === item.key;
                 return (
@@ -298,7 +340,9 @@ export function ShowcasesAdmin({
             <span className={eyebrow}>Passo 2</span>
             <h3 id="vitrine-passo-2" className="mt-1 text-xl">Peças da página inicial · {selectedName}</h3>
             <p className="mb-4 mt-1 text-[.78rem] text-bubble-ink/60">
-              {selected === "fizz"
+              {selected === "blackfriday"
+                ? 'Deixe em "Automático" para usar as peças da coleção Fizz. Os preços vêm do desconto cadastrado em cada peça.'
+                : selected === "fizz"
                 ? 'Os blocos seguem a ordem da página: hero, "As novidades" e "A coleção". Qualquer peça publicada e com estoque pode entrar.'
                 : 'Uma peça para a abertura do site e quatro para a seção "Em destaque".'}
             </p>
@@ -343,6 +387,14 @@ export function ShowcasesAdmin({
                   ))}
                 </div>
               </>
+            ) : selected === "blackfriday" ? (
+              <BlackFridayEditor
+                value={blackFriday}
+                available={available}
+                notify={notify}
+                onChange={(patch) => setBlackFriday((current) => ({ ...current, ...patch }))}
+                thumb={(props) => <Thumb {...props} />}
+              />
             ) : (
               <div className="flex flex-col gap-5">
                 <div className="grid gap-4 lg:grid-cols-2">

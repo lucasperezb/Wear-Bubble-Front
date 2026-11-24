@@ -1,16 +1,14 @@
 "use client";
 
-import { Product } from "../../../lib/api";
-import { blackFridayEndLabel, blackFridayOffer } from "../../../lib/black-friday";
-import { productHasPromotion } from "../../../lib/pricing";
-import { orderedProductImages } from "../../../lib/product-images";
+import type { BlackFridayConfig, Product } from "../../../lib/api";
+import { blackFridayEndLabel, blackFridayOffer, resolveBlackFriday } from "../../../lib/black-friday";
+import { productImageUrlForColor } from "../../../lib/product-images";
 import { productPath } from "../../../lib/product-url";
-import { findProductByName, summerProducts } from "../../../lib/season";
 import { useBlackFridayCountdown } from "../../../lib/use-black-friday";
 import { ProductCard } from "../../product/catalog/ProductCard";
 import { SafeImage } from "../../shared";
 
-type Props = { products: Product[]; loading?: boolean; demoMode?: boolean };
+type Props = { config: BlackFridayConfig; products: Product[]; loading?: boolean; demoMode?: boolean };
 
 const btn =
   "inline-flex min-h-13 items-center justify-center border-2 px-7 py-4 font-sans text-[.74rem] font-semibold uppercase tracking-[.16em] transition-colors";
@@ -19,21 +17,12 @@ const label = "font-sans text-[.68rem] font-semibold uppercase tracking-[.22em]"
 function withDemo(href: string, demoMode?: boolean) {
   return `${href}${demoMode ? (href.includes("?") ? "&demo=1" : "?demo=1") : ""}`;
 }
-const img = (p?: Product) => (p ? orderedProductImages(p)[0]?.url || p.image || "" : "");
+const img = (product: Product, color = "") =>
+  productImageUrlForColor(product, color) || product.image || "";
 const two = (n: number) => String(n).padStart(2, "0");
 
-/** Peças da vitrine: as da coleção de verão com desconto; sem desconto, a coleção inteira. */
-function offerProducts(products: Product[]) {
-  const published = products.filter((p) => p.active !== false);
-  const fizz = summerProducts(products);
-  const onSale = published.filter(productHasPromotion);
-  const fizzOnSale = fizz.filter(productHasPromotion);
-  const list = fizzOnSale.length ? [...fizzOnSale, ...onSale.filter((p) => !fizzOnSale.includes(p))] : onSale.length ? onSale : fizz;
-  return list.slice(0, 8);
-}
-
-function Countdown({ compact }: { compact?: boolean }) {
-  const c = useBlackFridayCountdown();
+function Countdown({ endsAt, compact }: { endsAt: string; compact?: boolean }) {
+  const c = useBlackFridayCountdown(endsAt);
   const parts: Array<[string, number | undefined]> = [
     ["dias", c?.days], ["horas", c?.hours], ["min", c?.minutes], ["seg", c?.seconds],
   ];
@@ -51,29 +40,18 @@ function Countdown({ compact }: { compact?: boolean }) {
 }
 
 /** Barra do topo durante a Black (substitui a do Header na home). */
-export function BlackFridayBar() {
+export function BlackFridayBar({ config }: { config: BlackFridayConfig }) {
   return (
     <div className="bg-bubble-sun px-4 py-[9px] text-center font-sans text-[.72rem] font-semibold uppercase tracking-[.16em] text-bubble-ink">
-      Black Friday Bubble · {blackFridayOffer}
-      <span className="max-[520px]:hidden"> · termina em <Countdown compact /> · +5% OFF no Pix</span>
+      Black Friday Bubble · {blackFridayOffer(config)}
+      <span className="max-[520px]:hidden"> · termina em <Countdown endsAt={config.endsAt} compact /> · +5% OFF no Pix</span>
     </div>
   );
 }
 
-export function BlackFridayHome({ products, loading, demoMode }: Props) {
-  const offers = offerProducts(products);
-  const fizz = summerProducts(products);
-  const pick = (name: string) => findProductByName(products, name) || fizz[0];
-  const heroMain = pick("Short Fizz Pocket");
-  const heroA = pick("Calça Fizz Flare");
-  const heroB = pick("Macaquinho Fizz");
-  const treinos = [
-    { sport: "Musculação", name: "Short Fizz Pocket", line: "bolso que segura o celular" },
-    { sport: "Pilates", name: "Calça Fizz Flare", line: "cintura em V, boca flare" },
-    { sport: "Beach tennis", name: "Short-saia Fizz", line: "cara de saia, short por baixo" },
-    { sport: "Corrida", name: "Macaquinho Fizz", line: "uma peça só, look pronto" },
-  ].map((t) => ({ ...t, product: findProductByName(products, t.name) }))
-    .filter((t) => t.product);
+export function BlackFridayHome({ config, products, loading, demoMode }: Props) {
+  const { hero, offers, trainings } = resolveBlackFriday(products, config);
+  const [heroMain, ...heroSide] = hero;
 
   return (
     <div className="bg-bubble-ink text-bubble-cream">
@@ -84,31 +62,31 @@ export function BlackFridayHome({ products, loading, demoMode }: Props) {
           <h1 className="mt-4 font-display text-[clamp(3.4rem,9vw,7.4rem)] uppercase leading-[.9] text-bubble-cream">
             Black<br />Friday<br />Bubble
           </h1>
-          <p className="mt-4 font-display text-[clamp(2.2rem,5.5vw,4.6rem)] uppercase leading-[.95] text-bubble-sun">{blackFridayOffer}</p>
+          <p className="mt-4 font-display text-[clamp(2.2rem,5.5vw,4.6rem)] uppercase leading-[.95] text-bubble-sun">{blackFridayOffer(config)}</p>
           <p className="mt-6 max-w-[500px] font-serif text-[1.15rem] leading-[1.55] text-bubble-cream/80 max-[520px]:text-base">
-            A Fizz com preço de Black, e ainda 5% off no Pix e 5% off montando seu conjunto. Quantidade limitada.
+            {config.heroText}
           </p>
-          <div className="mt-7"><Countdown /></div>
+          <div className="mt-7"><Countdown endsAt={config.endsAt} /></div>
           <div className="mt-8 flex flex-wrap gap-3">
             <a href="#ofertas" className={`${btn} border-bubble-sun bg-bubble-sun text-bubble-ink hover:bg-bubble-cream hover:border-bubble-cream`}>Ver ofertas</a>
             <a href="#conjunto" className={`${btn} border-bubble-cream text-bubble-cream hover:bg-bubble-cream hover:text-bubble-ink`}>Montar meu conjunto</a>
           </div>
         </div>
         {heroMain ? <div className="grid h-[600px] grid-cols-[1.4fr_1fr] gap-3 max-[720px]:h-[420px]">
-          {[heroMain].map((p) => p && (
-            <a key={p.id} href={withDemo(productPath(p), demoMode)} className="relative overflow-hidden border-2 border-bubble-cream">
-              <SafeImage src={img(p)} alt={p.name} className="size-full object-cover object-[30%_30%]" />
-              <span className={`${label} absolute bottom-3 left-3 bg-bubble-sun px-2.5 py-1.5 text-bubble-ink`}>{p.name}</span>
-            </a>
-          ))}
-          <div className="grid grid-rows-2 gap-3">
-            {[heroA, heroB].map((p, i) => p && (
-              <a key={`${p.id}-${i}`} href={withDemo(productPath(p), demoMode)} className="relative overflow-hidden border-2 border-bubble-cream">
-                <SafeImage src={img(p)} alt={p.name} className="size-full object-cover object-top" />
-                <span className={`${label} absolute bottom-3 left-3 bg-bubble-sun px-2.5 py-1.5 text-[.6rem] text-bubble-ink`}>{p.name}</span>
-              </a>
-            ))}
-          </div>
+          <a href={withDemo(productPath(heroMain.product), demoMode)} className={`relative overflow-hidden border-2 border-bubble-cream ${heroSide.length ? "" : "col-span-2"}`}>
+            <SafeImage src={img(heroMain.product, heroMain.color)} alt={heroMain.product.name} className="size-full object-cover object-[30%_30%]" />
+            <span className={`${label} absolute bottom-3 left-3 bg-bubble-sun px-2.5 py-1.5 text-bubble-ink`}>{heroMain.product.name}</span>
+          </a>
+          {heroSide.length ? (
+            <div className="grid min-h-0 auto-rows-fr gap-3">
+              {heroSide.map(({ product, color }, index) => (
+                <a key={index} href={withDemo(productPath(product), demoMode)} className="relative min-h-0 overflow-hidden border-2 border-bubble-cream">
+                  <SafeImage src={img(product, color)} alt={product.name} className="size-full object-cover object-top" />
+                  <span className={`${label} absolute bottom-3 left-3 bg-bubble-sun px-2.5 py-1.5 text-[.6rem] text-bubble-ink`}>{product.name}</span>
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div> : null}
       </section>
 
@@ -145,17 +123,17 @@ export function BlackFridayHome({ products, loading, demoMode }: Props) {
       </section> : null}
 
       {/* POR TREINO */}
-      {treinos.length ? (
+      {trainings.length ? (
         <section className="mx-auto max-w-[1200px] px-8 pb-[85px] max-[520px]:px-3.5 max-[520px]:pb-12">
           <span className={`${label} text-bubble-sun`}>Compre pelo seu treino</span>
           <h2 className="mb-8 mt-2 font-display text-[3.4rem] uppercase leading-[.92] max-[520px]:text-[2.3rem]">Qual modo é o seu?</h2>
           <div className="grid grid-cols-4 border border-bubble-cream/20 max-[720px]:grid-cols-2">
-            {treinos.map((t) => (
-              <a key={t.sport} href={withDemo(productPath(t.product as Product), demoMode)} className="group relative h-[420px] overflow-hidden border-r border-bubble-cream/20 last:border-r-0 max-[720px]:h-[250px] max-[720px]:border-b">
-                <SafeImage src={img(t.product)} alt={t.name} className="absolute inset-0 size-full object-cover object-top brightness-[.6] grayscale transition duration-300 group-hover:brightness-90 group-hover:grayscale-0" />
+            {trainings.map((t, index) => (
+              <a key={index} href={withDemo(productPath(t.product), demoMode)} className="group relative h-[420px] overflow-hidden border-r border-bubble-cream/20 last:border-r-0 max-[720px]:h-[250px] max-[720px]:border-b">
+                <SafeImage src={img(t.product, t.color)} alt={t.product.name} className="absolute inset-0 size-full object-cover object-top brightness-[.6] grayscale transition duration-300 group-hover:brightness-90 group-hover:grayscale-0" />
                 <div className="absolute inset-x-5 bottom-5 max-[520px]:inset-x-3 max-[520px]:bottom-3">
                   <span className={`${label} text-bubble-sun`}>{t.sport}</span>
-                  <h3 className="mt-1 font-display text-[1.9rem] uppercase leading-[.95] text-bubble-cream max-[520px]:text-[1.15rem]">{t.name}</h3>
+                  <h3 className="mt-1 font-display text-[1.9rem] uppercase leading-[.95] text-bubble-cream max-[520px]:text-[1.15rem]">{t.product.name}</h3>
                   <p className="mt-1.5 font-serif text-[.92rem] italic text-bubble-cream/85 max-[520px]:text-[.78rem]">{t.line}</p>
                 </div>
               </a>
@@ -187,7 +165,7 @@ export function BlackFridayHome({ products, loading, demoMode }: Props) {
         </div>
         <div>
           {[
-            ["Até quando vale a Black?", `Até ${blackFridayEndLabel()}, ou enquanto durar o estoque.`],
+            ["Até quando vale a Black?", `Até ${blackFridayEndLabel(config)}, ou enquanto durar o estoque.`],
             ["O top das fotos vem junto?", "Não. O Short Fizz Pocket e a Calça Fizz Flare são vendidos sem o top."],
             ["Os descontos se somam?", "Sim: preço de Black, mais 5% montando o conjunto e mais 5% pagando no Pix."],
             ["Posso trocar peça comprada na Black?", "Pode, em até 30 dias."],
@@ -204,7 +182,7 @@ export function BlackFridayHome({ products, loading, demoMode }: Props) {
 
       {/* BARRA FIXA NO CELULAR */}
       <a href="#ofertas" className="fixed inset-x-0 bottom-0 z-[150] flex items-center justify-between bg-bubble-sun px-4 py-3.5 font-sans text-[.74rem] font-semibold uppercase tracking-[.12em] text-bubble-ink md:hidden">
-        <span>Black · termina em <Countdown compact /></span><span>Ver ofertas →</span>
+        <span>Black · termina em <Countdown endsAt={config.endsAt} compact /></span><span>Ver ofertas →</span>
       </a>
       <div className="h-12 md:hidden" aria-hidden="true" />
     </div>

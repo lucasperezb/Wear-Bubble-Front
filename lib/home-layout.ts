@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
+import { emptyBlackFridayConfig } from "./black-friday";
 import { apiFetch, type FizzLayoutConfig, type HomeLayoutSettings } from "./api";
 
 /** Última resposta guardada no navegador: a página abre no tema certo sem piscar. */
@@ -23,7 +24,9 @@ export const emptyFizzConfig = (): FizzLayoutConfig => ({
 
 export const defaultHomeLayout = (): HomeLayoutSettings => ({
   active: "padrao",
+  previous: "padrao",
   fizz: emptyFizzConfig(),
+  blackFriday: emptyBlackFridayConfig(),
 });
 
 let current: HomeLayoutSettings | null = null;
@@ -40,7 +43,7 @@ function isDemo() {
 function readStored(key: string): HomeLayoutSettings | null {
   try {
     const value = JSON.parse(window.localStorage.getItem(key) || "null") as HomeLayoutSettings | null;
-    return value && (value.active === "padrao" || value.active === "fizz") ? value : null;
+    return value && ["padrao", "fizz", "blackfriday"].includes(value.active) ? value : null;
   } catch {
     return null;
   }

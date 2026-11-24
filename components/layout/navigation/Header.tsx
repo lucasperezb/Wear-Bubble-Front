@@ -189,7 +189,7 @@ export function Header({
   return (
     <>
       {blackFriday ? (
-        <BlackFridayBar />
+        <BlackFridayBar config={blackFriday} />
       ) : promoActive ? (
         <div className="bg-bubble-danger px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-white [&_b]:font-bold">
           <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · {shippingBarText} · <b>5% OFF</b> NO PIX
@@ -254,10 +254,9 @@ export function Header({
           >
             {blackFriday ? (
               <a href={demoMode ? "/?demo=1#ofertas" : "/#ofertas"} className="flex h-full items-center px-3">
-                <span className="bg-bubble-ink px-2 py-1 font-semibold tracking-[.1em] text-bubble-sun">Black Friday</span>
+                <span className="whitespace-nowrap bg-bubble-ink px-2 py-1 font-semibold tracking-[.1em] text-bubble-sun">Black Friday</span>
               </a>
-            ) : null}
-            {summer ? (
+            ) : summer ? (
               <a
                 href={summerHref}
                 className="relative flex h-full items-center gap-2 px-3 after:absolute after:bottom-0 after:left-3 after:h-[2px] after:w-[calc(100%-1.5rem)] after:bg-bubble-sun"

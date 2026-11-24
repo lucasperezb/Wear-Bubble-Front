@@ -1,7 +1,7 @@
 "use client";
 
 import { productPath } from "../lib/product-url";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { CartDrawer } from "../components/cart";
 import {
@@ -137,11 +137,12 @@ export default function Home() {
     if (cartHydrated) writeCart(cart);
   }, [cart, cartHydrated]);
 
-  function showToast(message: string) {
+  // Estável: o painel recarrega os dados quando esta função muda.
+  const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 3000);
-  }
+  }, []);
 
   async function refreshProducts(useDemo = demoMode) {
     setProductsLoading(true);
@@ -353,6 +354,7 @@ export default function Home() {
       />
       {blackFriday ? (
         <BlackFridayHome
+          config={blackFriday}
           products={products}
           loading={productsLoading}
           demoMode={demoMode}
