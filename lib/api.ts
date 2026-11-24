@@ -49,7 +49,7 @@ export type ShowcaseKey =
 export type ShowcaseMap = Record<ShowcaseKey, Product[]>;
 
 /** Layout da página inicial publicado no painel (Vitrines do site). */
-export type HomeLayoutKey = "padrao" | "fizz";
+export type HomeLayoutKey = "padrao" | "fizz" | "blackfriday";
 
 export type FizzLayoutConfig = {
   heroProductId: number | null;
@@ -66,9 +66,27 @@ export type FizzLayoutConfig = {
   }>;
 };
 
+export type BlackFridayPiece = { productId: number | null; color: string };
+
+export type BlackFridayConfig = {
+  /** Maior desconto anunciado; 0 = "Preço de Black". */
+  maxPct: number;
+  /** Fim da campanha (ISO). Depois disso volta o layout anterior. */
+  endsAt: string;
+  heroText: string;
+  hero: BlackFridayPiece[];
+  /** Vitrine "Preço de Black" (até 12); vazio = peças com desconto. */
+  offerProductIds: number[];
+  trainings: Array<BlackFridayPiece & { sport: string; line: string }>;
+};
+
 export type HomeLayoutSettings = {
   active: HomeLayoutKey;
+  /** Layout que volta ao ar quando a Black Friday termina. */
+  previous?: Exclude<HomeLayoutKey, "blackfriday">;
   fizz: FizzLayoutConfig;
+  /** Ausente enquanto a API for anterior ao layout de Black Friday. */
+  blackFriday?: BlackFridayConfig;
 };
 
 export type ProductImage = {

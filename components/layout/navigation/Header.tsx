@@ -21,6 +21,8 @@ import { apiFetch, type User } from "../../../lib/api";
 import { collectionSlug } from "../../../lib/collections";
 import { readDemoProducts } from "../../../lib/demo-store";
 import { PROMO_CAMPAIGN, promoCampaignActive } from "../../../lib/promo-campaign";
+import { useBlackFriday } from "../../../lib/use-black-friday";
+import { BlackFridayBar } from "../../home/blackfriday/BlackFridayHome";
 import { useFreeShippingPromo } from "../../../lib/use-free-shipping-promo";
 import { useSummerTheme } from "../../../lib/use-summer-theme";
 import { SUMMER } from "../../../lib/season";
@@ -181,11 +183,14 @@ export function Header({
     : `FRETE GRÁTIS A PARTIR DE R$ ${freeShipping.minimum}`;
   const promoHref = `${PROMO_CAMPAIGN.href}${demoMode ? "?demo=1" : ""}`;
   const summer = useSummerTheme();
+  const blackFriday = useBlackFriday();
   const summerHref = `${SUMMER.collectionHref}${demoMode ? "?demo=1" : ""}`;
 
   return (
     <>
-      {promoActive ? (
+      {blackFriday ? (
+        <BlackFridayBar config={blackFriday} />
+      ) : promoActive ? (
         <div className="bg-bubble-danger px-4 py-[9px] text-center font-sans text-[.72rem] font-medium uppercase tracking-[.14em] text-bubble-white [&_b]:font-bold">
           <b>ATÉ {PROMO_CAMPAIGN.maxPct}% OFF</b> NA COLEÇÃO CORE · {shippingBarText} · <b>5% OFF</b> NO PIX
         </div>
@@ -247,7 +252,11 @@ export function Header({
             className="flex h-[38px] items-center gap-1 font-sans text-[.76rem] font-medium uppercase tracking-[.08em] max-[980px]:hidden"
             aria-label="Navegação principal"
           >
-            {summer ? (
+            {blackFriday ? (
+              <a href={demoMode ? "/?demo=1#ofertas" : "/#ofertas"} className="flex h-full items-center px-3">
+                <span className="whitespace-nowrap bg-bubble-ink px-2 py-1 font-semibold tracking-[.1em] text-bubble-sun">Black Friday</span>
+              </a>
+            ) : summer ? (
               <a
                 href={summerHref}
                 className="relative flex h-full items-center gap-2 px-3 after:absolute after:bottom-0 after:left-3 after:h-[2px] after:w-[calc(100%-1.5rem)] after:bg-bubble-sun"

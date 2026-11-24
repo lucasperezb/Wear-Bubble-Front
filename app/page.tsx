@@ -1,7 +1,7 @@
 "use client";
 
 import { productPath } from "../lib/product-url";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { CartDrawer } from "../components/cart";
 import {
@@ -14,6 +14,8 @@ import {
 } from "../components/home";
 import { useFreeShippingPromo } from "../lib/use-free-shipping-promo";
 import { useSummerTheme } from "../lib/use-summer-theme";
+import { useBlackFriday } from "../lib/use-black-friday";
+import { BlackFridayHome } from "../components/home/blackfriday/BlackFridayHome";
 import { resolveFizzHome } from "../lib/season";
 import { useHomeLayout } from "../lib/home-layout";
 import {
@@ -61,6 +63,7 @@ const initialFilters: Filters = {
 export default function Home() {
   const shippingPromo = useFreeShippingPromo();
   const summer = useSummerTheme();
+  const blackFriday = useBlackFriday();
   const homeLayout = useHomeLayout();
   const [products, setProducts] = useState<Product[]>([]);
   const [heroConfig, setHeroConfig] = useState<HeroConfig>({
@@ -134,11 +137,12 @@ export default function Home() {
     if (cartHydrated) writeCart(cart);
   }, [cart, cartHydrated]);
 
-  function showToast(message: string) {
+  // Estável: o painel recarrega os dados quando esta função muda.
+  const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(""), 3000);
-  }
+  }, []);
 
   async function refreshProducts(useDemo = demoMode) {
     setProductsLoading(true);
@@ -348,7 +352,14 @@ export default function Home() {
           window.location.assign(user ? "/conta" : "/login");
         }}
       />
-      {summerHome ? (
+      {blackFriday ? (
+        <BlackFridayHome
+          config={blackFriday}
+          products={products}
+          loading={productsLoading}
+          demoMode={demoMode}
+        />
+      ) : summerHome ? (
         <SummerHero
           home={fizzHome}
           loading={productsLoading}
@@ -378,7 +389,7 @@ export default function Home() {
           </button>
         </div>
       ) : null}
-      {summerHome ? (
+      {blackFriday ? null : summerHome ? (
         <>
           <SummerNews
             home={fizzHome}
